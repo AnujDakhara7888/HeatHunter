@@ -60,6 +60,23 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+@keyframes thermal-sweep {
+  0%, 8% { clip-path: inset(0 100% 0 0); }
+  45%, 60% { clip-path: inset(0 0 0 0); }
+  95%, 100% { clip-path: inset(0 0 0 100%); }
+}
+@keyframes thermal-line {
+  0%, 8% { left: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  45% { left: 100%; opacity: 1; }
+  46%, 60% { opacity: 0; left: 0%; }
+  62% { opacity: 1; left: 0%; }
+  95% { left: 100%; opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+.thermal-sweep { animation: thermal-sweep 9s ease-in-out infinite; }
+.thermal-line { animation: thermal-line 9s ease-in-out infinite; }
+
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }

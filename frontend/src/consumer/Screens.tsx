@@ -1,4 +1,4 @@
-import { ArrowRight, Check, ClipboardList, EyeOff, FileUp, Flame, Home, Lock, Moon, Search, Sparkles, Wind } from "lucide-react";
+import { ArrowRight, Check, ClipboardList, EyeOff, FileUp, Flame, Home, Lock, Moon, Search, Wind } from "lucide-react";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { api, FLOOR_PLAN_URL, type RealHouse, type ScenarioCreateRequest } from "../lib/api";
 import { fmt } from "../lib/format";
@@ -23,6 +23,43 @@ function Secondary({ children, onClick }: { children: ReactNode; onClick: () => 
 }
 
 const noop = () => undefined;
+
+/** Optional bundled photo: drop any licensed house photo at frontend/public/hero-house.jpg. */
+const HERO_PHOTO = "/hero-house.jpg";
+
+function useHeroPhoto(): boolean | null {
+  const [ok, setOk] = useState<boolean | null>(null);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setOk(img.naturalWidth > 0);
+    img.onerror = () => setOk(false);
+    img.src = HERO_PHOTO;
+  }, []);
+  return ok;
+}
+
+/** Photo with an animated thermal-camera sweep: an inverted "ironbow" colour map, so a bright sky reads cold and dark windows read warm. */
+function PhotoHero() {
+  return (
+    <div className="absolute inset-0">
+      <svg className="absolute h-0 w-0" aria-hidden>
+        <filter id="ironbow" colorInterpolationFilters="sRGB">
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncR type="table" tableValues="1 1 1 0.78 0.35 0.03" />
+            <feFuncG type="table" tableValues="1 0.88 0.48 0.08 0 0" />
+            <feFuncB type="table" tableValues="0.85 0.15 0.02 0.32 0.55 0.18" />
+          </feComponentTransfer>
+        </filter>
+      </svg>
+      <img src={HERO_PHOTO} alt="A family home" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="thermal-sweep absolute inset-0">
+        <img src={HERO_PHOTO} alt="" aria-hidden className="h-full w-full object-cover" style={{ filter: "url(#ironbow) contrast(1.15)" }} />
+      </div>
+      <div className="thermal-line pointer-events-none absolute inset-y-0 w-[3px] bg-cyan-300 shadow-[0_0_24px_6px_rgba(103,232,249,0.65)]" />
+    </div>
+  );
+}
 
 function HeroHouse() {
   return (
@@ -54,6 +91,7 @@ function HeroHouse() {
 
 export function Landing({ onCheck, onExample }: { onCheck: () => void; onExample: () => void }) {
   const [house, setHouse] = useState<RealHouse | null>(null);
+  const photo = useHeroPhoto();
   useEffect(() => {
     api.realHouse().then(setHouse).catch(() => setHouse(null));
   }, []);
@@ -93,8 +131,10 @@ export function Landing({ onCheck, onExample }: { onCheck: () => void; onExample
           </div>
         </div>
         <div className="relative h-[420px] overflow-hidden rounded-[28px] border border-white/10 shadow-2xl shadow-black/50 sm:h-[540px]">
-          <HeroHouse />
-          <div className="pointer-events-none absolute bottom-4 left-4 rounded-full bg-black/45 px-3 py-1.5 text-[12.5px] text-white/80 backdrop-blur">Drag to look around</div>
+          {photo ? <PhotoHero /> : photo === false ? <HeroHouse /> : <div className="h-full w-full animate-pulse bg-white/5" />}
+          <div className="pointer-events-none absolute bottom-4 left-4 rounded-full bg-black/45 px-3 py-1.5 text-[12.5px] text-white/80 backdrop-blur">
+            {photo ? "Illustrative photo · thermal-camera effect" : "Drag to look around"}
+          </div>
         </div>
       </section>
 
@@ -278,14 +318,6 @@ export function PickHome({ onPick, onChallenge, onBack }: { onPick: (r: Scenario
       cta: "Start the walkthrough",
     },
     {
-      title: "Mystery home",
-      body: "We hide a problem at random in one room — or nothing at all. Can HeatHunter find it?",
-      icon: Sparkles,
-      tone: "#9fd3ff",
-      action: () => onPick({ mode: "surprise" }),
-      cta: "Check a mystery home",
-    },
-    {
       title: "Set a challenge",
       body: "You choose the problem and the room. We keep it secret from HeatHunter.",
       icon: EyeOff,
@@ -295,15 +327,15 @@ export function PickHome({ onPick, onChallenge, onBack }: { onPick: (r: Scenario
     },
   ];
   return (
-    <div className="mx-auto max-w-[1180px] px-6 py-12">
+    <div className="mx-auto max-w-[920px] px-6 py-12">
       <button className="text-[14px] text-white/50 hover:text-white" onClick={onBack}>
         ← Back
       </button>
       <h1 className="mt-4 text-[34px] font-semibold tracking-tight text-white">Choose an example home</h1>
       <p className="mt-2 max-w-2xl text-[16px] text-white/60">
-        Each one is a virtual copy of the same real bungalow in England, with a different hidden problem for HeatHunter to find.
+        Both use a virtual copy of a real bungalow in England with a hidden problem for HeatHunter to find.
       </p>
-      <div className="mt-8 grid gap-5 md:grid-cols-3">
+      <div className="mt-8 grid gap-5 md:grid-cols-2">
         {cards.map((c) => (
           <button
             key={c.title}

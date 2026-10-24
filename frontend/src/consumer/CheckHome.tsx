@@ -347,17 +347,12 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
           {!t.diagnosis_matched && <p className="text-white/55">Drafts and poor insulation can look almost the same from temperatures alone. HeatHunter would rather say "not sure" than send you the wrong fix.</p>}
         </Message>
         <div className="space-y-2.5">
-          <Button onClick={() => onNew({ mode: "surprise" })}>
-            <Sparkles size={17} /> Try a mystery home
+          <Button onClick={onChallenge}>
+            <EyeOff size={17} /> Hide a problem for HeatHunter
           </Button>
-          <div className="grid grid-cols-2 gap-2.5">
-            <Button tone="ghost" onClick={onChallenge}>
-              <EyeOff size={16} /> Hide a problem
-            </Button>
-            <Button tone="ghost" onClick={onBack}>
-              <Home size={16} /> Choose a home
-            </Button>
-          </div>
+          <Button tone="ghost" onClick={onBack}>
+            <Home size={16} /> Choose a home
+          </Button>
         </div>
       </div>
     );
