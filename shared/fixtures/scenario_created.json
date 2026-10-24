@@ -1,0 +1,9 @@
+{
+  "scenario_id": "fixture-scenario-001",
+  "mode": "guided",
+  "created_at": "2025-01-07T00:00:00Z",
+  "available_actions": [
+    "observations",
+    "diagnose"
+  ]
+}

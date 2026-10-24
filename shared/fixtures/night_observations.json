@@ -1,0 +1,86 @@
+{
+  "night_id": "synthetic-night-001",
+  "kind": "passive",
+  "room_temperature_series": {
+    "living_room": {
+      "timestamps": [
+        "2025-01-07T00:00:00Z",
+        "2025-01-07T01:00:00Z",
+        "2025-01-07T02:00:00Z"
+      ],
+      "values": [20.5, 20.1, 19.7],
+      "unit": "degC",
+      "provenance": "SIMULATED_MEASUREMENT"
+    },
+    "kitchen": {
+      "timestamps": [
+        "2025-01-07T00:00:00Z",
+        "2025-01-07T01:00:00Z",
+        "2025-01-07T02:00:00Z"
+      ],
+      "values": [20.4, 19.9, 19.4],
+      "unit": "degC",
+      "provenance": "SIMULATED_MEASUREMENT"
+    },
+    "bedroom_1": {
+      "timestamps": [
+        "2025-01-07T00:00:00Z",
+        "2025-01-07T01:00:00Z",
+        "2025-01-07T02:00:00Z"
+      ],
+      "values": [20.3, 19.5, 18.7],
+      "unit": "degC",
+      "provenance": "SIMULATED_MEASUREMENT"
+    },
+    "bedroom_2": {
+      "timestamps": [
+        "2025-01-07T00:00:00Z",
+        "2025-01-07T01:00:00Z",
+        "2025-01-07T02:00:00Z"
+      ],
+      "values": [20.2, 19.8, 19.3],
+      "unit": "degC",
+      "provenance": "SIMULATED_MEASUREMENT"
+    }
+  },
+  "weather": {
+    "night_id": "synthetic-weather-001",
+    "source": {
+      "provider": "HeatHunter",
+      "dataset": "Clearly synthetic integration fixture",
+      "notes": "Not historical weather; do not use for scientific claims."
+    },
+    "location": {
+      "name": "Synthetic Stony Brook fixture",
+      "latitude": 40.9126,
+      "longitude": -73.1234,
+      "timezone": "UTC"
+    },
+    "outdoor_temperature": {
+      "timestamps": [
+        "2025-01-07T00:00:00Z",
+        "2025-01-07T01:00:00Z",
+        "2025-01-07T02:00:00Z"
+      ],
+      "values": [-5.0, -5.4, -5.8],
+      "unit": "degC",
+      "provenance": "SIMULATED_MEASUREMENT"
+    },
+    "wind_speed": {
+      "timestamps": [
+        "2025-01-07T00:00:00Z",
+        "2025-01-07T01:00:00Z",
+        "2025-01-07T02:00:00Z"
+      ],
+      "values": [8.8, 9.3, 9.8],
+      "unit": "m/s",
+      "provenance": "SIMULATED_MEASUREMENT"
+    },
+    "train_or_heldout_split": "training"
+  },
+  "protocol": {
+    "heating_off": true,
+    "doors_closed": true,
+    "fan_on": false
+  }
+}

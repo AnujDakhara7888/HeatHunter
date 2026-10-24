@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "night_id": "kisp-2025-02-15",
+  "source": {
+    "provider": "NOAA National Centers for Environmental Information",
+    "dataset": "Global Hourly",
+    "station_id": "72505004781",
+    "station_call_sign": "KISP",
+    "station_name": "ISLIP LI MACARTHUR AIRPORT, NY US",
+    "url": "https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&stations=72505004781&startDate=2025-01-01T00:00:00&endDate=2025-03-01T23:59:59&format=json&units=metric&includeAttributes=true",
+    "citation": "NOAA NCEI Global Hourly, station 72505004781 (KISP)",
+    "notes": "Source timestamps are UTC. FM-15 routine reports only; NOAA quality flags 0, 1, 4, and 5 retained; no imputation."
+  },
+  "location": {
+    "name": "Islip Long Island MacArthur Airport, New York, US",
+    "latitude": 40.79389,
+    "longitude": -73.10181,
+    "elevation_m": 25.4,
+    "distance_to_stony_brook_km_approx": 14.0,
+    "timezone": "America/New_York"
+  },
+  "local_night_date": "2025-02-15",
+  "utc_window": {
+    "start": "2025-02-15T00:00:00Z",
+    "end": "2025-02-15T10:59:59Z",
+    "note": "Equivalent to the prior evening through early morning in EST."
+  },
+  "outdoor_temperature": {
+    "timestamps": [
+      "2025-02-15T00:56:00Z",
+      "2025-02-15T01:56:00Z",
+      "2025-02-15T02:56:00Z",
+      "2025-02-15T03:56:00Z",
+      "2025-02-15T04:56:00Z",
+      "2025-02-15T05:56:00Z",
+      "2025-02-15T06:56:00Z",
+      "2025-02-15T07:56:00Z",
+      "2025-02-15T08:56:00Z",
+      "2025-02-15T09:56:00Z",
+      "2025-02-15T10:56:00Z"
+    ],
+    "values": [
+      0.0,
+      -1.1,
+      -1.1,
+      -1.7,
+      -1.7,
+      -2.2,
+      -2.8,
+      -2.2,
+      -3.9,
+      -3.3,
+      -3.3
+    ],
+    "unit": "degC",
+    "provenance": "REAL_MEASUREMENT"
+  },
+  "wind_speed": {
+    "timestamps": [
+      "2025-02-15T00:56:00Z",
+      "2025-02-15T01:56:00Z",
+      "2025-02-15T02:56:00Z",
+      "2025-02-15T03:56:00Z",
+      "2025-02-15T04:56:00Z",
+      "2025-02-15T05:56:00Z",
+      "2025-02-15T06:56:00Z",
+      "2025-02-15T07:56:00Z",
+      "2025-02-15T08:56:00Z",
+      "2025-02-15T09:56:00Z",
+      "2025-02-15T10:56:00Z"
+    ],
+    "values": [
+      3.6,
+      2.1,
+      3.1,
+      2.1,
+      0.0,
+      1.5,
+      0.0,
+      0.0,
+      1.5,
+      0.0,
+      2.1
+    ],
+    "unit": "m/s",
+    "provenance": "REAL_MEASUREMENT"
+  },
+  "train_or_heldout_split": "heldout",
+  "selection_metadata": {
+    "weather_regime": "calm",
+    "mean_temperature_deg_c": -2.118,
+    "mean_wind_speed_m_s": 1.455,
+    "observation_count": 11,
+    "temperature_quality_flags": [
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5"
+    ],
+    "wind_quality_flags": [
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5",
+      "5"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "template_id": "synthetic-public-template-v1",
+  "rooms": [
+    {
+      "room_id": "living_room",
+      "room_name": "Living Room",
+      "volume_m3": 72.0,
+      "nominal_capacitance_j_per_k": 2400000.0,
+      "nominal_envelope_conductance_w_per_k": 58.0,
+      "nominal_infiltration_conductance_w_per_k": 18.0,
+      "wind_sensitivity_s_per_m": 0.08,
+      "nominal_leakage_share": 0.25
+    },
+    {
+      "room_id": "kitchen",
+      "room_name": "Kitchen",
+      "volume_m3": 48.0,
+      "nominal_capacitance_j_per_k": 1850000.0,
+      "nominal_envelope_conductance_w_per_k": 46.0,
+      "nominal_infiltration_conductance_w_per_k": 14.0,
+      "wind_sensitivity_s_per_m": 0.08,
+      "nominal_leakage_share": 0.25
+    },
+    {
+      "room_id": "bedroom_1",
+      "room_name": "Bedroom 1",
+      "volume_m3": 42.0,
+      "nominal_capacitance_j_per_k": 1650000.0,
+      "nominal_envelope_conductance_w_per_k": 40.0,
+      "nominal_infiltration_conductance_w_per_k": 12.0,
+      "wind_sensitivity_s_per_m": 0.08,
+      "nominal_leakage_share": 0.25
+    },
+    {
+      "room_id": "bedroom_2",
+      "room_name": "Bedroom 2",
+      "volume_m3": 42.0,
+      "nominal_capacitance_j_per_k": 1650000.0,
+      "nominal_envelope_conductance_w_per_k": 40.0,
+      "nominal_infiltration_conductance_w_per_k": 12.0,
+      "wind_sensitivity_s_per_m": 0.08,
+      "nominal_leakage_share": 0.25
+    }
+  ],
+  "inter_room_couplings": [
+    {
+      "room_a_id": "living_room",
+      "room_b_id": "kitchen",
+      "conductance_w_per_k": 24.0
+    },
+    {
+      "room_a_id": "living_room",
+      "room_b_id": "bedroom_1",
+      "conductance_w_per_k": 16.0
+    },
+    {
+      "room_a_id": "kitchen",
+      "room_b_id": "bedroom_2",
+      "conductance_w_per_k": 16.0
+    }
+  ],
+  "calibrated_from_split": "training",
+  "provenance": "MODEL_ESTIMATE"
+}
