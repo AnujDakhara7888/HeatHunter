@@ -237,7 +237,7 @@ function Roof({ open, roofTex, brick }: { open: boolean; roofTex: THREE.Texture;
 const SKY: Record<Phase, { top: string; bottom: string; sun: number; hemi: number; fog: string }> = {
   day: { top: "#3d7fd1", bottom: "#cfe6f7", sun: 2.4, hemi: 0.9, fog: "#cfe6f7" },
   heating: { top: "#1f2a5a", bottom: "#e79b6a", sun: 0.9, hemi: 0.45, fog: "#6a5a6a" },
-  night: { top: "#050914", bottom: "#17223b", sun: 0.45, hemi: 0.42, fog: "#0d1526" },
+  night: { top: "#050914", bottom: "#17223b", sun: 0.35, hemi: 0.32, fog: "#0d1526" },
 };
 
 function Sky({ phase }: { phase: Phase }) {
@@ -304,7 +304,38 @@ function Sky({ phase }: { phase: Phase }) {
   );
 }
 
-function Garden({ grass, paving }: { grass: THREE.Texture; paving: THREE.Texture }) {
+/** A tree whose sway follows the measured wind speed (direction is not in the data, so it only rocks). */
+function Tree({ position, scale, index, wind }: { position: [number, number, number]; scale: number; index: number; wind: React.RefObject<number> }) {
+  const group = useRef<THREE.Group>(null);
+  const smooth = useRef(0);
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    smooth.current += ((wind.current ?? 0) - smooth.current) * 0.05;
+    const strength = Math.min(smooth.current, 12) / 12;
+    const t = clock.elapsedTime * (1.1 + strength * 1.6) + index * 1.7;
+    const gust = Math.sin(t) * 0.6 + Math.sin(t * 2.3) * 0.25;
+    group.current.rotation.z = strength * (0.05 + 0.07 * gust);
+    group.current.rotation.x = strength * 0.035 * Math.sin(t * 0.8 + index);
+  });
+  return (
+    <group ref={group} position={position} scale={scale}>
+      <mesh position={[0, 0.9, 0]} castShadow>
+        <cylinderGeometry args={[0.12, 0.18, 1.8, 8]} />
+        <meshStandardMaterial color="#5a3d26" roughness={1} />
+      </mesh>
+      <mesh position={[0, 2.4, 0]} castShadow>
+        <icosahedronGeometry args={[1.1, 1]} />
+        <meshStandardMaterial color="#3f6b35" roughness={0.9} flatShading />
+      </mesh>
+      <mesh position={[0.4, 2.0, 0.3]} castShadow>
+        <icosahedronGeometry args={[0.75, 1]} />
+        <meshStandardMaterial color="#4b7a3c" roughness={0.9} flatShading />
+      </mesh>
+    </group>
+  );
+}
+
+function Garden({ grass, paving, wind }: { grass: THREE.Texture; paving: THREE.Texture; wind: React.RefObject<number> }) {
   const [dx, dz] = w(257, 631);
   const trees: [number, number, number][] = [
     [-6.5, -4.5, 1.2],
@@ -329,21 +360,8 @@ function Garden({ grass, paving }: { grass: THREE.Texture; paving: THREE.Texture
         <planeGeometry args={[1.1, 4.8]} />
         <meshStandardMaterial map={paving} roughness={0.95} />
       </mesh>
-      {trees.map(([x, z, s], i) => (
-        <group key={i} position={[x, 0, z]} scale={s}>
-          <mesh position={[0, 0.9, 0]} castShadow>
-            <cylinderGeometry args={[0.12, 0.18, 1.8, 8]} />
-            <meshStandardMaterial color="#5a3d26" roughness={1} />
-          </mesh>
-          <mesh position={[0, 2.4, 0]} castShadow>
-            <icosahedronGeometry args={[1.1, 1]} />
-            <meshStandardMaterial color="#3f6b35" roughness={0.9} flatShading />
-          </mesh>
-          <mesh position={[0.4, 2.0, 0.3]} castShadow>
-            <icosahedronGeometry args={[0.75, 1]} />
-            <meshStandardMaterial color="#4b7a3c" roughness={0.9} flatShading />
-          </mesh>
-        </group>
+      {trees.map(([x, z, sc], i) => (
+        <Tree key={i} position={[x, 0, z]} scale={sc} index={i} wind={wind} />
       ))}
       {bushes.map(([x, z], i) => (
         <mesh key={i} position={[x, 0.35, z]} castShadow>
@@ -687,10 +705,14 @@ export interface HouseProps {
   view: CameraView;
   viewNonce: number;
   height: number | string;
+  /** Measured wind speed (m/s) at the current playback time; drives tree sway. */
+  windSpeed?: number | null;
 }
 
 export default function RealisticHouse(props: HouseProps) {
-  const { phase, roofOpen, heatView, readings, thermal, showLabels, problemRoom, problem, fixedRoom, truthRoom, fanOn, selected, onSelect, autoRotate, view, viewNonce, height } = props;
+  const { phase, roofOpen, heatView, readings, thermal, showLabels, problemRoom, problem, fixedRoom, truthRoom, fanOn, selected, onSelect, autoRotate, view, viewNonce, height, windSpeed } = props;
+  const wind = useRef(windSpeed ?? 1.5);
+  wind.current = windSpeed ?? 1.5;
   const tex = useMemo(() => ({ brick: brickTexture(), roof: roofTexture(), grass: grassTexture(), wood: woodTexture(), paving: pavingTexture() }), []);
   const controls = useRef<OrbitControlsImpl | null>(null);
   const labels = useRef<Record<string, HTMLDivElement | null>>({});
@@ -715,7 +737,7 @@ export default function RealisticHouse(props: HouseProps) {
         aria-label="Interactive 3D illustration of the example home"
       >
         <Sky phase={phase} />
-        <Garden grass={tex.grass} paving={tex.paving} />
+        <Garden grass={tex.grass} paving={tex.paving} wind={wind} />
         <ExteriorWalls brick={tex.brick} />
         <Openings phase={phase} />
         {TWIN_ORDER.map((id) => (

@@ -78,6 +78,24 @@ home" form, a home picker and the check itself.
 - **No developer terms** (BIC, provenance, codes) appear. Each result says in
   plain words that the home is a simulation planted for the demo.
 
+Additional homeowner features, all frontend-only and computed from API data:
+
+- **Outside weather card:** outdoor temperature and wind (m/s, mph and the
+  Beaufort name), with sparklines and a playback marker. The 3D trees sway in
+  proportion to the measured wind speed. Wind direction is not in the API, so
+  nothing shows direction.
+- **"Why we think so":** the flagged room against the average of the other
+  rooms for each night. The sentences (overnight drop, and drop while the fan
+  ran) are computed from the readings.
+- **Home Heat Report:** a printable one-page report (browser "Save as PDF")
+  with the result, cost, tested fix, why-charts, next steps and the demo
+  answer.
+- **A real week in 3D:** the real SMETER HH09 readings (18–24 Feb 2021)
+  replayed in the same house. It is labelled *Real measurements*, the sky
+  follows the real time of day, and no fault is claimed.
+- **Hero photo (optional):** add a licensed house photo at
+  `frontend/src/assets/hero-house.jpg`. Without one, the 3D house is shown.
+
 The original console (Fault Lab, Real Homes, Evidence, Simple/Expert) stays
 at **`/#/lab`**, linked as "Researcher view" in the site footer. Use it for
 judging and scientific Q&A.

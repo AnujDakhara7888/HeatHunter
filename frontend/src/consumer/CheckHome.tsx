@@ -6,7 +6,9 @@ import {
   EyeOff,
   Fan,
   Flame,
+  FileText,
   Hammer,
+  LineChart as LineChartIcon,
   Home,
   Loader2,
   Moon,
@@ -22,13 +24,16 @@ import {
   XCircle,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { Diagnosis, ScenarioCreateRequest } from "../lib/api";
+import type { Diagnosis, NightObservations, ScenarioCreateRequest } from "../lib/api";
 import { numericAssumption } from "../lib/assumptions";
 import { fmt, gbp, utcTime } from "../lib/format";
 import { roomName, TWIN_ROOMS, type TwinRoomId } from "../lib/rooms";
 import { useInvestigation, type InvestigationApi } from "../features/faultlab/useInvestigation";
 import { useTwinState } from "../features/faultlab/useTwinState";
 import { THERMAL_CSS, type CameraView, type Problem } from "./houseTypes";
+import { Report } from "./Report";
+import { WeatherCard } from "./WeatherCard";
+import { WhyChart, whySentence } from "./WhyChart";
 
 const RealisticHouse = lazy(() => import("./RealisticHouse"));
 
@@ -98,6 +103,37 @@ function Progress({ step }: { step: number }) {
         </li>
       ))}
     </ol>
+  );
+}
+
+/* ----------------------------------------------------------- why we think so */
+
+function WhySection({ nights, roomId }: { nights: NightObservations[]; roomId: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03]">
+      <button className="flex w-full items-center justify-between px-4 py-3 text-left text-[14.5px] font-medium text-white" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="flex items-center gap-2">
+          <LineChartIcon size={16} className="text-orange-300" /> Why we think so
+        </span>
+        <ChevronDown size={16} className={`text-white/50 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="space-y-5 border-t border-white/10 px-4 pb-4 pt-3">
+          {nights.map((n) => (
+            <div key={n.night_id + n.kind}>
+              <div className="mb-1 text-[13px] font-semibold text-white/85">{n.kind === "fan_test" ? "The fan test night" : "The first night"}</div>
+              <p className="mb-2 text-[13px] leading-snug text-white/60">{whySentence(n, roomId)}</p>
+              <WhyChart night={n} roomId={roomId} />
+            </div>
+          ))}
+          <p className="text-[12px] leading-snug text-white/40">
+            HeatHunter compares these curves with how a healthy version of this home would cool — a draft and poor insulation leave slightly
+            different fingerprints, especially when a fan pulls outside air in.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -176,6 +212,7 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
   const [viewNonce, setViewNonce] = useState(0);
   const [heatView, setHeatView] = useState(true);
   const [effectiveness, setEffectiveness] = useState(1);
+  const [report, setReport] = useState(false);
   const sawPlaying = useRef(false);
   const started = useRef(false);
   const fixStarted = useRef(false);
@@ -347,7 +384,10 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
           {!t.diagnosis_matched && <p className="text-white/55">Drafts and poor insulation can look almost the same from temperatures alone. HeatHunter would rather say "not sure" than send you the wrong fix.</p>}
         </Message>
         <div className="space-y-2.5">
-          <Button onClick={onChallenge}>
+          <Button onClick={() => setReport(true)}>
+            <FileText size={17} /> Get my home report
+          </Button>
+          <Button tone="ghost" onClick={onChallenge}>
             <EyeOff size={17} /> Hide a problem for HeatHunter
           </Button>
           <Button tone="ghost" onClick={onBack}>
@@ -381,9 +421,14 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
             </p>
           )}
         </Message>
-        <Button onClick={inv.reveal} busy={busy === "reveal"}>
-          <Eye size={17} /> Show me the hidden answer
-        </Button>
+        <div className="space-y-2.5">
+          <Button onClick={inv.reveal} busy={busy === "reveal"}>
+            <Eye size={17} /> Show me the hidden answer
+          </Button>
+          <Button tone="ghost" onClick={() => setReport(true)}>
+            <FileText size={17} /> Get my home report
+          </Button>
+        </div>
       </div>
     );
   } else if (latest && stage !== "fan" && stage !== "testing") {
@@ -413,6 +458,7 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
           <Message icon={<Thermometer size={22} />} tone="bad" title={<>The <span className="text-red-300">{room}</span> is losing heat too fast</>}>
             <p>It cools faster than it should. There are two likely reasons — and on a normal night they look almost the same:</p>
           </Message>
+          <WhySection nights={state.nights} roomId={latest.flagged_room_id!} />
           <div className="grid gap-2.5">
             {latest.ranked_causes.map((fit) => {
               const c = CAUSE[fit.fault_type as keyof typeof CAUSE];
@@ -469,6 +515,7 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
               {c.how}
             </p>
           </Message>
+          <WhySection nights={state.nights} roomId={latest.flagged_room_id!} />
           <Cost inv={inv} diagnosis={latest} />
           <Card>
             <div className="text-[15.5px] font-semibold text-white">Try the fix: {c.fix.toLowerCase()}</div>
@@ -500,6 +547,8 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
   const sel = selected ? twin.readings[selected] : undefined;
 
   return (
+    <>
+    {report && <Report state={state} onClose={() => setReport(false)} />}
     <div className="grid min-h-[calc(100vh-64px)] lg:grid-cols-[minmax(0,1fr)_440px]">
       <div className="relative min-h-[60vh] lg:h-[calc(100vh-64px)]">
         <Suspense fallback={<div className="grid h-full place-items-center text-white/60"><Loader2 className="animate-spin" /></div>}>
@@ -520,6 +569,7 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
             autoRotate={stage === "loading" || stage === "evening"}
             view={view}
             viewNonce={viewNonce}
+            windSpeed={night && !(stage === "loading" || stage === "evening") ? (night.weather.wind_speed.values[twin.index] ?? null) : null}
             height="100%"
           />
         </Suspense>
@@ -533,6 +583,15 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
             <ArrowLeft size={15} /> Choose another home
           </button>
         </div>
+
+        {night && !(stage === "loading" || stage === "evening") && (
+          <WeatherCard
+            className="absolute right-4 top-16 hidden w-[300px] md:block"
+            temps={night.weather.outdoor_temperature.values}
+            winds={night.weather.wind_speed.values}
+            index={twin.index}
+          />
+        )}
 
         {sel && selected && roofOpen && (
           <div className="absolute left-4 top-16 rounded-2xl border border-white/15 bg-black/55 px-4 py-3 text-[13.5px] text-white backdrop-blur-md">
@@ -625,5 +684,6 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
         </div>
       </aside>
     </div>
+    </>
   );
 }

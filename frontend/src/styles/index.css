@@ -224,3 +224,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Home Heat Report: print only the report document. */
+@media print {
+  @page { size: A4; margin: 12mm; }
+  html, body { background: #fff !important; background-image: none !important; }
+  #root { display: none !important; }
+  .print-portal { position: static !important; inset: auto !important; overflow: visible !important; background: #fff !important; padding: 0 !important; backdrop-filter: none !important; }
+  .no-print { display: none !important; }
+  .report-paper { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
+  .break-inside-avoid { break-inside: avoid; }
+}

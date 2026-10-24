@@ -1,4 +1,4 @@
-import { ArrowRight, Check, ClipboardList, EyeOff, FileUp, Flame, Home, Lock, Moon, Search, Wind } from "lucide-react";
+import { ArrowRight, Check, ClipboardList, EyeOff, FileUp, Flame, Home, Lock, Moon, Play, Search, Wind } from "lucide-react";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { api, FLOOR_PLAN_URL, type RealHouse, type ScenarioCreateRequest } from "../lib/api";
 import { GUIDED_FULL_ID } from "../lib/demo";
@@ -83,7 +83,7 @@ function HeroHouse() {
 
 /* ------------------------------------------------------------------ landing */
 
-export function Landing({ onCheck, onExample }: { onCheck: () => void; onExample: () => void }) {
+export function Landing({ onCheck, onExample, onRealWeek }: { onCheck: () => void; onExample: () => void; onRealWeek: () => void }) {
   const [house, setHouse] = useState<RealHouse | null>(null);
   const photo = HERO_PHOTO !== null;
   useEffect(() => {
@@ -199,6 +199,12 @@ export function Landing({ onCheck, onExample }: { onCheck: () => void; onExample
                 inside — measured by researchers with a heating test.
               </p>
             )}
+            <button
+              onClick={onRealWeek}
+              className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-5 py-3 text-[15px] font-semibold text-emerald-200 transition hover:bg-emerald-400/20"
+            >
+              <Play size={16} /> Watch a real week in 3D
+            </button>
             <p className="mt-3 text-[12.5px] text-white/35">Data: SMETER Phase 2 study, published by the UK Data Service.</p>
           </div>
           <div className="overflow-hidden rounded-3xl border border-white/10 bg-white p-3 shadow-xl">

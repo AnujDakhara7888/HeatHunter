@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import type { ScenarioCreateRequest } from "../lib/api";
 import { ChallengeDialog } from "./ChallengeDialog";
 import { CheckHome } from "./CheckHome";
+import { RealWeek } from "./RealWeek";
 import { Intake, Landing, PickHome } from "./Screens";
 
-type Screen = "home" | "intake" | "pick" | "check";
+type Screen = "home" | "intake" | "pick" | "check" | "real";
 
 function Logo({ onClick }: { onClick: () => void }) {
   return (
@@ -58,10 +59,13 @@ export default function ConsumerApp() {
               <a href="#example" className="hover:text-white" onClick={(e) => (e.preventDefault(), document.getElementById("example")?.scrollIntoView({ behavior: "smooth" }))}>
                 The example home
               </a>
+              <button className="hover:text-white" onClick={() => go("real")}>
+                Real data
+              </button>
             </nav>
           )}
           <div className="ml-auto">
-            {screen !== "check" && (
+            {screen !== "check" && screen !== "real" && (
               <button className="rounded-xl bg-white px-4 py-2 text-[14px] font-semibold text-black hover:bg-white/90" onClick={() => go("intake")}>
                 Check my home
               </button>
@@ -71,7 +75,8 @@ export default function ConsumerApp() {
       </header>
 
       <main>
-        {screen === "home" && <Landing onCheck={() => go("intake")} onExample={() => go("pick")} />}
+        {screen === "home" && <Landing onCheck={() => go("intake")} onExample={() => go("pick")} onRealWeek={() => go("real")} />}
+        {screen === "real" && <RealWeek onBack={() => go("home")} onCheck={() => go("pick")} />}
         {screen === "intake" && <Intake onSkip={() => go("pick")} onBack={() => go("home")} />}
         {screen === "pick" && <PickHome onPick={startCheck} onChallenge={() => setChallenge(true)} onBack={() => go("intake")} />}
         {screen === "check" && request && (
@@ -79,7 +84,7 @@ export default function ConsumerApp() {
         )}
       </main>
 
-      {screen !== "check" && (
+      {screen !== "check" && screen !== "real" && (
         <footer className="border-t border-white/8">
           <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-6 py-8 text-[13px] text-white/40">
             <span>HeatHunter · a student project. Example homes are simulations based on real research data; results are estimates, not a professional energy assessment.</span>
