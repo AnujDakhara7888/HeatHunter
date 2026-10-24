@@ -1,0 +1,622 @@
+{
+  "schema_version": 1,
+  "template_id": "hh09-public-template-v1",
+  "profiles": {
+    "passive": {
+      "detection_bic": 151.07416050381255,
+      "ambiguity_bic": 153.05635708291524,
+      "adequacy_rmse": 0.2960058811515648,
+      "separation": 2,
+      "measurement_noise": 0.15,
+      "calibration_note": "Conservative passive; TRAINING-only joint room/cause cutoff search; detection floor = healthy house-max BIC p99 times {1.1,1.25,1.5,2}; prefer highest supported precision then coverage; minimum 12 confident cases.",
+      "confidence_enabled": true
+    },
+    "post_fan": {
+      "detection_bic": 369.8965973939332,
+      "ambiguity_bic": 229.26490573283746,
+      "adequacy_rmse": 0.32046735439004875,
+      "separation": 2,
+      "measurement_noise": 0.15,
+      "calibration_note": "Conservative post_fan; TRAINING-only joint room/cause cutoff search; detection floor = healthy house-max BIC p99 times {1.1,1.25,1.5,2}; prefer highest supported precision then coverage; minimum 12 confident cases.",
+      "confidence_enabled": true
+    }
+  },
+  "fan_policy": {
+    "max_wind_m_s": 2.0
+  },
+  "public_assets": {
+    "backend/engine/adapter.py": "ff5bafacec94f25a74cc91bec4b6bd5aa71763524c8f0508063c11b5b9df1834",
+    "backend/engine/model.py": "aea0920006d2f92eff7bcac0d25d6e5677862cf911f61d919f93e091abb77b82",
+    "backend/engine/fitting.py": "19ad7e173e8951ec64bda8b19045e29ff45cdba17b197d49460762569bc89a63",
+    "backend/engine/prediction.py": "4d7fdf9c3609780c3f9dd746aa041eaa4532f97e6974acbec822503d8cde588f",
+    "backend/engine/templates/hh09_public_template.json": "116e5ea17fbd6cf131290f1371d49e283d06d134942e07f814fd3acb895e4f7c",
+    "backend/engine/templates/hh09_model_extension.json": "5269903449da045247c30303b3ef284c11adbcf1167dec1982915c9a80344696",
+    "backend/diagnosis/controller.py": "151d51a8518727e7052326975aeb72510da55a2f3e49dd6434812cdffc989644"
+  },
+  "simulator_assets": {
+    "backend/simulation/physics.py": "10eb4afd83d545bd5c2a049fcc9378badd449b44cd2dcd8485be66cce2cd2515",
+    "backend/simulation/observations.py": "bad3a149555e7c038d49b75688341483d1b457a7806dda5340e0f623bc465634",
+    "data/processed/hh09_twin_inputs.json": "992952b3d291a148283ad83b132e761c6f6140d9f15766067c4095b7655e011d"
+  },
+  "weather_assets": {
+    "data/weather/hh09/smeter-hh09-2019-12-01.json": "db00617016c0c0ec59ea588f99b879fe8791553a2a156b789cb0b4de1477b36a",
+    "data/weather/hh09/smeter-hh09-2020-01-28.json": "f0efcad84ff3300f72fdebb4d5236376005c55ee70c98a6618cb278fd5fe38e6",
+    "data/weather/hh09/smeter-hh09-2020-02-10.json": "e296a6d64354fe6edbf5fdc6d43f8d1cd9d7d08e8cef7df64a5f75783fc4c2c4",
+    "data/weather/hh09/smeter-hh09-2020-12-06.json": "8a5eca18ccbbcbeacc268f6ad61a6466742b4c2fc104b39ae5714ed70ba4652d"
+  },
+  "operating_assets": {
+    "backend/simulation/experiment_policy.py": "9f2ed7066c1817382b72a54b8f4dfb351820fd929d3904d7437f25722e6e1b14"
+  },
+  "training": {
+    "training_only": true,
+    "case_design": {
+      "healthy_tuning": 60,
+      "fault_tuning": 96,
+      "healthy_check": 30,
+      "fault_check": 64
+    },
+    "seed_bases": {
+      "healthy_tuning": 960000,
+      "fault_tuning": 961000,
+      "healthy_check": 962000,
+      "fault_check": 963000
+    },
+    "refinement": {
+      "first_check_promoted_to_tuning": true,
+      "initial_training_check_report": {
+        "passive": {
+          "healthy_tuning_cases": 60,
+          "tuning": {
+            "cases": 156,
+            "statuses": {
+              "no_fault": 94,
+              "ambiguous": 30,
+              "confident": 32
+            },
+            "confident_count": 32,
+            "confident_precision": 1.0,
+            "healthy_count": 60,
+            "healthy_false_alarm_rate": 0.0,
+            "supported_correct_count": 92,
+            "by_truth": {
+              "none": {
+                "cases": 60,
+                "supported_correct": 60
+              },
+              "draft": {
+                "cases": 48,
+                "supported_correct": 0
+              },
+              "envelope_conduction": {
+                "cases": 48,
+                "supported_correct": 32
+              }
+            }
+          },
+          "separate_training_check_before_safety_gate": {
+            "cases": 94,
+            "statuses": {
+              "no_fault": 49,
+              "ambiguous": 24,
+              "confident": 21
+            },
+            "confident_count": 21,
+            "confident_precision": 1.0,
+            "healthy_count": 30,
+            "healthy_false_alarm_rate": 0.0,
+            "supported_correct_count": 51,
+            "by_truth": {
+              "none": {
+                "cases": 30,
+                "supported_correct": 30
+              },
+              "draft": {
+                "cases": 32,
+                "supported_correct": 0
+              },
+              "envelope_conduction": {
+                "cases": 32,
+                "supported_correct": 21
+              }
+            }
+          },
+          "confidence_safety_gate_passed": true,
+          "separate_training_check": {
+            "cases": 94,
+            "statuses": {
+              "no_fault": 49,
+              "ambiguous": 24,
+              "confident": 21
+            },
+            "confident_count": 21,
+            "confident_precision": 1.0,
+            "healthy_count": 30,
+            "healthy_false_alarm_rate": 0.0,
+            "supported_correct_count": 51,
+            "by_truth": {
+              "none": {
+                "cases": 30,
+                "supported_correct": 30
+              },
+              "draft": {
+                "cases": 32,
+                "supported_correct": 0
+              },
+              "envelope_conduction": {
+                "cases": 32,
+                "supported_correct": 21
+              }
+            }
+          }
+        },
+        "post_fan": {
+          "healthy_tuning_cases": 60,
+          "tuning": {
+            "cases": 156,
+            "statuses": {
+              "no_fault": 93,
+              "ambiguous": 2,
+              "unexplained": 19,
+              "confident": 42
+            },
+            "confident_count": 42,
+            "confident_precision": 1.0,
+            "healthy_count": 60,
+            "healthy_false_alarm_rate": 0.0,
+            "supported_correct_count": 102,
+            "by_truth": {
+              "none": {
+                "cases": 60,
+                "supported_correct": 60
+              },
+              "draft": {
+                "cases": 48,
+                "supported_correct": 0
+              },
+              "envelope_conduction": {
+                "cases": 48,
+                "supported_correct": 42
+              }
+            }
+          },
+          "separate_training_check_before_safety_gate": {
+            "cases": 94,
+            "statuses": {
+              "no_fault": 49,
+              "unexplained": 15,
+              "confident": 27,
+              "ambiguous": 3
+            },
+            "confident_count": 27,
+            "confident_precision": 0.9629629629629629,
+            "healthy_count": 30,
+            "healthy_false_alarm_rate": 0.0,
+            "supported_correct_count": 56,
+            "by_truth": {
+              "none": {
+                "cases": 30,
+                "supported_correct": 30
+              },
+              "draft": {
+                "cases": 32,
+                "supported_correct": 0
+              },
+              "envelope_conduction": {
+                "cases": 32,
+                "supported_correct": 26
+              }
+            }
+          },
+          "confidence_safety_gate_passed": true,
+          "separate_training_check": {
+            "cases": 94,
+            "statuses": {
+              "no_fault": 49,
+              "unexplained": 15,
+              "confident": 27,
+              "ambiguous": 3
+            },
+            "confident_count": 27,
+            "confident_precision": 0.9629629629629629,
+            "healthy_count": 30,
+            "healthy_false_alarm_rate": 0.0,
+            "supported_correct_count": 56,
+            "by_truth": {
+              "none": {
+                "cases": 30,
+                "supported_correct": 30
+              },
+              "draft": {
+                "cases": 32,
+                "supported_correct": 0
+              },
+              "envelope_conduction": {
+                "cases": 32,
+                "supported_correct": 26
+              }
+            }
+          }
+        }
+      },
+      "fresh_training_check_seed_bases": {
+        "healthy_check": 964000,
+        "fault_check": 965000
+      },
+      "fresh_training_check_design": {
+        "healthy_check": 30,
+        "fault_check": 64
+      },
+      "second_refinement": {
+        "previous_training_check_promoted_to_tuning": true,
+        "previous_training_check_report": {
+          "passive": {
+            "healthy_tuning_cases": 90,
+            "tuning": {
+              "cases": 250,
+              "statuses": {
+                "no_fault": 143,
+                "ambiguous": 54,
+                "confident": 53
+              },
+              "confident_count": 53,
+              "confident_precision": 1.0,
+              "healthy_count": 90,
+              "healthy_false_alarm_rate": 0.0,
+              "supported_correct_count": 143,
+              "by_truth": {
+                "none": {
+                  "cases": 90,
+                  "supported_correct": 90
+                },
+                "draft": {
+                  "cases": 80,
+                  "supported_correct": 0
+                },
+                "envelope_conduction": {
+                  "cases": 80,
+                  "supported_correct": 53
+                }
+              }
+            },
+            "separate_training_check_before_safety_gate": {
+              "cases": 94,
+              "statuses": {
+                "no_fault": 48,
+                "ambiguous": 29,
+                "confident": 17
+              },
+              "confident_count": 17,
+              "confident_precision": 1.0,
+              "healthy_count": 30,
+              "healthy_false_alarm_rate": 0.0,
+              "supported_correct_count": 47,
+              "by_truth": {
+                "none": {
+                  "cases": 30,
+                  "supported_correct": 30
+                },
+                "draft": {
+                  "cases": 32,
+                  "supported_correct": 0
+                },
+                "envelope_conduction": {
+                  "cases": 32,
+                  "supported_correct": 17
+                }
+              }
+            },
+            "confidence_safety_gate_passed": true,
+            "separate_training_check": {
+              "cases": 94,
+              "statuses": {
+                "no_fault": 48,
+                "ambiguous": 29,
+                "confident": 17
+              },
+              "confident_count": 17,
+              "confident_precision": 1.0,
+              "healthy_count": 30,
+              "healthy_false_alarm_rate": 0.0,
+              "supported_correct_count": 47,
+              "by_truth": {
+                "none": {
+                  "cases": 30,
+                  "supported_correct": 30
+                },
+                "draft": {
+                  "cases": 32,
+                  "supported_correct": 0
+                },
+                "envelope_conduction": {
+                  "cases": 32,
+                  "supported_correct": 17
+                }
+              }
+            }
+          },
+          "post_fan": {
+            "healthy_tuning_cases": 90,
+            "tuning": {
+              "cases": 250,
+              "statuses": {
+                "no_fault": 140,
+                "ambiguous": 15,
+                "unexplained": 29,
+                "confident": 66
+              },
+              "confident_count": 66,
+              "confident_precision": 1.0,
+              "healthy_count": 90,
+              "healthy_false_alarm_rate": 0.0,
+              "supported_correct_count": 156,
+              "by_truth": {
+                "none": {
+                  "cases": 90,
+                  "supported_correct": 90
+                },
+                "draft": {
+                  "cases": 80,
+                  "supported_correct": 0
+                },
+                "envelope_conduction": {
+                  "cases": 80,
+                  "supported_correct": 66
+                }
+              }
+            },
+            "separate_training_check_before_safety_gate": {
+              "cases": 94,
+              "statuses": {
+                "no_fault": 44,
+                "unexplained": 12,
+                "ambiguous": 10,
+                "confident": 28
+              },
+              "confident_count": 28,
+              "confident_precision": 1.0,
+              "healthy_count": 30,
+              "healthy_false_alarm_rate": 0.0,
+              "supported_correct_count": 58,
+              "by_truth": {
+                "none": {
+                  "cases": 30,
+                  "supported_correct": 30
+                },
+                "draft": {
+                  "cases": 32,
+                  "supported_correct": 0
+                },
+                "envelope_conduction": {
+                  "cases": 32,
+                  "supported_correct": 28
+                }
+              }
+            },
+            "confidence_safety_gate_passed": true,
+            "separate_training_check": {
+              "cases": 94,
+              "statuses": {
+                "no_fault": 44,
+                "unexplained": 12,
+                "ambiguous": 10,
+                "confident": 28
+              },
+              "confident_count": 28,
+              "confident_precision": 1.0,
+              "healthy_count": 30,
+              "healthy_false_alarm_rate": 0.0,
+              "supported_correct_count": 58,
+              "by_truth": {
+                "none": {
+                  "cases": 30,
+                  "supported_correct": 30
+                },
+                "draft": {
+                  "cases": 32,
+                  "supported_correct": 0
+                },
+                "envelope_conduction": {
+                  "cases": 32,
+                  "supported_correct": 28
+                }
+              }
+            }
+          }
+        },
+        "final_training_check_seed_bases": {
+          "healthy_check": 966000,
+          "fault_check": 967000
+        },
+        "final_training_check_design": {
+          "healthy_check": 30,
+          "fault_check": 64
+        }
+      }
+    },
+    "weather_night_ids": [
+      "smeter-hh09-2019-12-01",
+      "smeter-hh09-2020-01-28",
+      "smeter-hh09-2020-02-10",
+      "smeter-hh09-2020-12-06"
+    ],
+    "purpose": "Conservative operational settings; not a held-out accuracy claim",
+    "protocol_design": "Mixed calm/windy passive nights; different calm-only fan night",
+    "tuning_case_count": 344,
+    "training_check_case_count": 94
+  },
+  "validation": {
+    "passive": {
+      "healthy_tuning_cases": 120,
+      "tuning": {
+        "cases": 344,
+        "statuses": {
+          "no_fault": 176,
+          "ambiguous": 97,
+          "confident": 71
+        },
+        "confident_count": 71,
+        "confident_precision": 1.0,
+        "healthy_count": 120,
+        "healthy_false_alarm_rate": 0.008333333333333333,
+        "supported_correct_count": 190,
+        "by_truth": {
+          "none": {
+            "cases": 120,
+            "supported_correct": 119
+          },
+          "draft": {
+            "cases": 112,
+            "supported_correct": 0
+          },
+          "envelope_conduction": {
+            "cases": 112,
+            "supported_correct": 71
+          }
+        }
+      },
+      "separate_training_check_before_safety_gate": {
+        "cases": 94,
+        "statuses": {
+          "no_fault": 48,
+          "ambiguous": 27,
+          "confident": 19
+        },
+        "confident_count": 19,
+        "confident_precision": 1.0,
+        "healthy_count": 30,
+        "healthy_false_alarm_rate": 0.0,
+        "supported_correct_count": 49,
+        "by_truth": {
+          "none": {
+            "cases": 30,
+            "supported_correct": 30
+          },
+          "draft": {
+            "cases": 32,
+            "supported_correct": 0
+          },
+          "envelope_conduction": {
+            "cases": 32,
+            "supported_correct": 19
+          }
+        }
+      },
+      "confidence_safety_gate_passed": true,
+      "separate_training_check": {
+        "cases": 94,
+        "statuses": {
+          "no_fault": 48,
+          "ambiguous": 27,
+          "confident": 19
+        },
+        "confident_count": 19,
+        "confident_precision": 1.0,
+        "healthy_count": 30,
+        "healthy_false_alarm_rate": 0.0,
+        "supported_correct_count": 49,
+        "by_truth": {
+          "none": {
+            "cases": 30,
+            "supported_correct": 30
+          },
+          "draft": {
+            "cases": 32,
+            "supported_correct": 0
+          },
+          "envelope_conduction": {
+            "cases": 32,
+            "supported_correct": 19
+          }
+        }
+      }
+    },
+    "post_fan": {
+      "healthy_tuning_cases": 120,
+      "tuning": {
+        "cases": 344,
+        "statuses": {
+          "no_fault": 176,
+          "unexplained": 67,
+          "confident": 95,
+          "ambiguous": 6
+        },
+        "confident_count": 95,
+        "confident_precision": 1.0,
+        "healthy_count": 120,
+        "healthy_false_alarm_rate": 0.0,
+        "supported_correct_count": 214,
+        "by_truth": {
+          "none": {
+            "cases": 120,
+            "supported_correct": 119
+          },
+          "draft": {
+            "cases": 112,
+            "supported_correct": 0
+          },
+          "envelope_conduction": {
+            "cases": 112,
+            "supported_correct": 95
+          }
+        }
+      },
+      "separate_training_check_before_safety_gate": {
+        "cases": 94,
+        "statuses": {
+          "no_fault": 48,
+          "unexplained": 16,
+          "ambiguous": 2,
+          "confident": 28
+        },
+        "confident_count": 28,
+        "confident_precision": 1.0,
+        "healthy_count": 30,
+        "healthy_false_alarm_rate": 0.0,
+        "supported_correct_count": 58,
+        "by_truth": {
+          "none": {
+            "cases": 30,
+            "supported_correct": 30
+          },
+          "draft": {
+            "cases": 32,
+            "supported_correct": 0
+          },
+          "envelope_conduction": {
+            "cases": 32,
+            "supported_correct": 28
+          }
+        }
+      },
+      "confidence_safety_gate_passed": true,
+      "separate_training_check": {
+        "cases": 94,
+        "statuses": {
+          "no_fault": 48,
+          "unexplained": 16,
+          "ambiguous": 2,
+          "confident": 28
+        },
+        "confident_count": 28,
+        "confident_precision": 1.0,
+        "healthy_count": 30,
+        "healthy_false_alarm_rate": 0.0,
+        "supported_correct_count": 58,
+        "by_truth": {
+          "none": {
+            "cases": 30,
+            "supported_correct": 30
+          },
+          "draft": {
+            "cases": 32,
+            "supported_correct": 0
+          },
+          "envelope_conduction": {
+            "cases": 32,
+            "supported_correct": 28
+          }
+        }
+      }
+    }
+  }
+}
