@@ -18,7 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import scan from "../../../../shared/fixtures/guided_seed_scan.json";
+import { GUIDED_FULL_ID } from "../../lib/demo";
 import type { Diagnosis, HypothesisFit } from "../../lib/api";
 import { numericAssumption } from "../../lib/assumptions";
 import { fmt, gbp, utcTime } from "../../lib/format";
@@ -30,7 +30,7 @@ import { TwinView } from "./TwinView";
 import type { InvestigationApi } from "./useInvestigation";
 import { firstValue, mean, type TwinState } from "./useTwinState";
 
-const GUIDED = { mode: "guided", guided_scenario_id: "hh09-guided-v1" } as const;
+const GUIDED = { mode: "guided", guided_scenario_id: GUIDED_FULL_ID } as const;
 
 const CAUSE_PLAIN: Record<string, { name: string; short: string; how: string; fix: string; icon: typeof Wind }> = {
   draft: {
@@ -687,8 +687,8 @@ export function SimpleLab({ inv, twin }: { inv: InvestigationApi; twin: TwinStat
           {state.mode === "guided" && (
             <p className="mt-3 flex items-start gap-2 px-1 text-[12px] leading-relaxed text-ink-4">
               <Info size={13} className="mt-0.5 shrink-0" />
-              About this demo: it uses a scenario picked because it shows every step. Across {scan.seeds} similar runs, HeatHunter got this
-              exact problem fully right {scan.diagnosis_matched} times — so don't take it as typical. Everything you see is calculated live.
+              About this demo: it uses a practice example picked because it shows every step, so don't take it as typical — other homes
+              can end with "not sure". Everything you see is calculated live.
             </p>
           )}
           {state.mode && state.mode !== "guided" && !state.truth && (

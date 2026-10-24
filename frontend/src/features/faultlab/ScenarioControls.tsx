@@ -1,12 +1,13 @@
 import { Dices, Gavel, Play, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { GUIDED_FULL_ID } from "../../lib/demo";
 import { useRegisterModal } from "../../lib/modal";
 import type { FaultType, ScenarioCreateRequest } from "../../lib/api";
 import { CAUSE_LABEL, TWIN_ORDER, TWIN_ROOMS, type TwinRoomId } from "../../lib/rooms";
 import { Slider, Spinner } from "../../components/ui";
 
-const GUIDED_ID = "hh09-guided-v1";
+const GUIDED_ID = GUIDED_FULL_ID;
 
 export function JudgeDialog({ onClose, onLaunch }: { onClose: () => void; onLaunch: (r: ScenarioCreateRequest) => void }) {
   const [fault, setFault] = useState<FaultType>("draft");

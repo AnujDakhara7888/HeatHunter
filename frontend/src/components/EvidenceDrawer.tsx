@@ -113,11 +113,11 @@ export function EvidenceDrawer({ open, onClose }: { open: boolean; onClose: () =
             <Benchmark />
           </Section>
 
-          <Section title="Guided demo transparency">
+          <Section title="Historical seed scan (earlier thresholds)">
             <p className="text-[12px] leading-relaxed text-ink-2">
-              {scan.guided_fault}. Outcomes across {scan.seeds} TRAINING seeds, run through the same live pipeline. The guided demo
-              uses one of the {scan.full_correct_arc_seeds.length} seeds ({scan.full_correct_arc_seeds.join(", ")}) that show the full
-              correct path.
+              Snapshot of the original Bedroom draft example under the earlier provisional thresholds: {scan.guided_fault}, run
+              across {scan.seeds} TRAINING seeds. The current guided walkthrough is a separate curated insulation example chosen to
+              show every step; neither is a benchmark.
             </p>
             <div className="space-y-1.5">
               {arcs.map(([arc, count]) => (

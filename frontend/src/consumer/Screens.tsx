@@ -1,11 +1,12 @@
 import { ArrowRight, Check, ClipboardList, EyeOff, FileUp, Flame, Home, Lock, Moon, Search, Wind } from "lucide-react";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { api, FLOOR_PLAN_URL, type RealHouse, type ScenarioCreateRequest } from "../lib/api";
+import { GUIDED_FULL_ID } from "../lib/demo";
 import { fmt } from "../lib/format";
 
 const RealisticHouse = lazy(() => import("./RealisticHouse"));
 
-export const GUIDED: ScenarioCreateRequest = { mode: "guided", guided_scenario_id: "hh09-guided-v1" };
+export const GUIDED: ScenarioCreateRequest = { mode: "guided", guided_scenario_id: GUIDED_FULL_ID };
 
 function Primary({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
@@ -24,22 +25,15 @@ function Secondary({ children, onClick }: { children: ReactNode; onClick: () => 
 
 const noop = () => undefined;
 
-/** Optional bundled photo: drop any licensed house photo at frontend/public/hero-house.jpg. */
-const HERO_PHOTO = "/hero-house.jpg";
-
-function useHeroPhoto(): boolean | null {
-  const [ok, setOk] = useState<boolean | null>(null);
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setOk(img.naturalWidth > 0);
-    img.onerror = () => setOk(false);
-    img.src = HERO_PHOTO;
-  }, []);
-  return ok;
-}
+/**
+ * Optional hero photo, picked up at build time: add any licensed house photo as
+ * frontend/src/assets/hero-house.(jpg|jpeg|png|webp). Without one, the 3D house is shown.
+ */
+const HERO_PHOTOS = import.meta.glob("../assets/hero-house.{jpg,jpeg,png,webp}", { eager: true, query: "?url", import: "default" }) as Record<string, string>;
+const HERO_PHOTO: string | null = Object.values(HERO_PHOTOS)[0] ?? null;
 
 /** Photo with an animated thermal-camera sweep: an inverted "ironbow" colour map, so a bright sky reads cold and dark windows read warm. */
-function PhotoHero() {
+function PhotoHero({ src }: { src: string }) {
   return (
     <div className="absolute inset-0">
       <svg className="absolute h-0 w-0" aria-hidden>
@@ -52,9 +46,9 @@ function PhotoHero() {
           </feComponentTransfer>
         </filter>
       </svg>
-      <img src={HERO_PHOTO} alt="A family home" className="absolute inset-0 h-full w-full object-cover" />
+      <img src={src} alt="A family home" className="absolute inset-0 h-full w-full object-cover" />
       <div className="thermal-sweep absolute inset-0">
-        <img src={HERO_PHOTO} alt="" aria-hidden className="h-full w-full object-cover" style={{ filter: "url(#ironbow) contrast(1.15)" }} />
+        <img src={src} alt="" aria-hidden className="h-full w-full object-cover" style={{ filter: "url(#ironbow) contrast(1.15)" }} />
       </div>
       <div className="thermal-line pointer-events-none absolute inset-y-0 w-[3px] bg-cyan-300 shadow-[0_0_24px_6px_rgba(103,232,249,0.65)]" />
     </div>
@@ -91,7 +85,7 @@ function HeroHouse() {
 
 export function Landing({ onCheck, onExample }: { onCheck: () => void; onExample: () => void }) {
   const [house, setHouse] = useState<RealHouse | null>(null);
-  const photo = useHeroPhoto();
+  const photo = HERO_PHOTO !== null;
   useEffect(() => {
     api.realHouse().then(setHouse).catch(() => setHouse(null));
   }, []);
@@ -131,7 +125,7 @@ export function Landing({ onCheck, onExample }: { onCheck: () => void; onExample
           </div>
         </div>
         <div className="relative h-[420px] overflow-hidden rounded-[28px] border border-white/10 shadow-2xl shadow-black/50 sm:h-[540px]">
-          {photo ? <PhotoHero /> : photo === false ? <HeroHouse /> : <div className="h-full w-full animate-pulse bg-white/5" />}
+          {HERO_PHOTO ? <PhotoHero src={HERO_PHOTO} /> : <HeroHouse />}
           <div className="pointer-events-none absolute bottom-4 left-4 rounded-full bg-black/45 px-3 py-1.5 text-[12.5px] text-white/80 backdrop-blur">
             {photo ? "Illustrative photo · thermal-camera effect" : "Drag to look around"}
           </div>

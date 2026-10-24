@@ -1,6 +1,6 @@
 import { ChevronRight, Pause, Play, Radar, SkipBack } from "lucide-react";
 import { useEffect, useState } from "react";
-import scan from "../../../../shared/fixtures/guided_seed_scan.json";
+import { GUIDED_FULL_ID, GUIDED_UNSURE_ID } from "../../lib/demo";
 import { fmt, shortId, utcDate, utcTime } from "../../lib/format";
 import { roomName, TWIN_ORDER, TWIN_ROOMS } from "../../lib/rooms";
 import { SeriesLegend, TelemetryChart, WindChart } from "../../components/TelemetryChart";
@@ -31,7 +31,7 @@ export function ExpertLab({ inv, twin }: { inv: InvestigationApi; twin: TwinStat
   // Next-step command bar.
   let next: { text: string; action?: { label: string; run: () => void } } = {
     text: "Start an investigation. The guided demo walks through every step; Judge mode lets you plant a hidden fault.",
-    action: { label: "Start guided demo", run: () => start({ mode: "guided", guided_scenario_id: "hh09-guided-v1" }) },
+    action: { label: "Start guided demo", run: () => start({ mode: "guided", guided_scenario_id: GUIDED_FULL_ID }) },
   };
   if (state.nights.length && !first) next = { text: "Evidence collected: one heating-off night of simulated room temperatures. Analyze it.", action: { label: "Analyze house", run: diagnose } };
   else if (first && first.test_decision?.recommended && !state.experimentRun)
@@ -40,7 +40,7 @@ export function ExpertLab({ inv, twin }: { inv: InvestigationApi; twin: TwinStat
     next = { text: "Cause identified. Review the modeled cost, then apply the diagnosed repair and re-measure.", action: { label: "Go to repair", run: () => scrollTo("panel-repair") } };
   else if (first && !state.truth)
     next = { text: latest?.status === "confident" ? "Repair verified in simulation. Reveal the hidden fault to see whether HeatHunter was right." : "The investigation has gone as far as the evidence allows. Reveal the hidden fault.", action: { label: "Go to reveal", run: () => scrollTo("panel-reveal") } };
-  else if (state.truth) next = { text: "Investigation complete. Start another — try Judge mode to plant your own fault.", action: { label: "New guided demo", run: () => start({ mode: "guided", guided_scenario_id: "hh09-guided-v1" }) } };
+  else if (state.truth) next = { text: "Investigation complete. Start another — try Judge mode to plant your own fault.", action: { label: "New guided demo", run: () => start({ mode: "guided", guided_scenario_id: GUIDED_FULL_ID }) } };
 
   return (
     <div className="grid gap-4 pb-8 xl:grid-cols-[264px_minmax(0,1fr)_400px]">
@@ -79,10 +79,10 @@ export function ExpertLab({ inv, twin }: { inv: InvestigationApi; twin: TwinStat
 
         {state.mode === "guided" && (
           <Notice>
-            <b className="text-ink-2">Guided scenario disclosure.</b> This walkthrough plants an air leak in the Bedroom and uses
-            TRAINING seed 68, selected because it shows every workflow step. In a {scan.seeds}-seed scan of this exact fault, the
-            final diagnosis matched the hidden fault in <b className="text-ink-2">{scan.diagnosis_matched}</b>. Every number below is
-            computed live by the backend — nothing is scripted. Use Judge mode for unselected cases.
+            <b className="text-ink-2">Guided scenario disclosure.</b> This walkthrough ({GUIDED_FULL_ID}) is a curated TRAINING example,
+            selected because it shows every workflow step; it is not typical performance. The original Bedroom draft example (
+            {GUIDED_UNSURE_ID}) stays uncertain after the fan test. Every number below is computed live by the backend — nothing is
+            scripted. Use Judge mode for unselected cases.
           </Notice>
         )}
 
