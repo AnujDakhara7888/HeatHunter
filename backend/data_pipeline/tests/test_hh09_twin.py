@@ -37,6 +37,41 @@ def test_all_room_geometry_distinguishes_documented_from_assumed() -> None:
         assert "not a measured SMETER volume" in geometry["volume"]["assumption"]
 
 
+def test_shared_boundaries_follow_the_published_plan() -> None:
+    twin = load_hh09_twin_inputs()
+    boundaries = {
+        frozenset(boundary["source_room_ids"]): boundary for boundary in twin["shared_boundaries"]
+    }
+
+    # Page 9 shows Bedroom and Living Room sharing the chimney-breast wall.
+    assert set(boundaries) == {
+        frozenset({"living_room", "kitchen"}),
+        frozenset({"kitchen", "bedroom"}),
+        frozenset({"bedroom", "living_room"}),
+        frozenset({"living_room", "hall"}),
+        frozenset({"bedroom", "hall"}),
+    }
+    for boundary in boundaries.values():
+        assert boundary["length"]["status"] == "assumed"
+        assert "Derived from documented plan dimensions" in boundary["length"]["assumption"]
+        assert boundary["door_on_plan"]["status"] == "documented"
+    assert boundaries[frozenset({"bedroom", "living_room"})]["door_on_plan"]["value"] is False
+
+
+def test_twin_reader_rejects_boundaries_that_disagree_with_adjacency(tmp_path: Path) -> None:
+    import pytest
+
+    from backend.data_pipeline.twin_inputs import TwinInputDataError
+
+    twin = load_hh09_twin_inputs()
+    twin["shared_boundaries"] = twin["shared_boundaries"][:-1]
+    broken = tmp_path / "twin.json"
+    broken.write_text(json.dumps(twin), encoding="utf-8")
+
+    with pytest.raises(TwinInputDataError, match="adjacency"):
+        load_hh09_twin_inputs(broken)
+
+
 def test_whole_building_measurements_remain_reference_only() -> None:
     twin = load_hh09_twin_inputs()
     references = twin["whole_building_references"]
