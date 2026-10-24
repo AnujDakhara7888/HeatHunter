@@ -64,3 +64,6 @@ integration-owner review.
 - Scope change approved by Nikhil (2026-10-24): Three.js 3D twin and a
   Simple/Expert frontend view. Frontend-only; no API or science changes.
   Details in `docs/DEMO.md`.
+- Public site (2026-10-24, approved by Nikhil): `/` is now a homeowner
+  website with a realistic 3D house. The full research console moved
+  unchanged to `/#/lab`. Frontend only; the API and science are untouched.

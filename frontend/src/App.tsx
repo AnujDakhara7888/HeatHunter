@@ -108,6 +108,7 @@ export default function App() {
       <header className="sticky top-0 z-30 border-b border-line bg-[#06080c]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1680px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5 lg:px-6">
           <Logo />
+          <a href="#/" className="hidden text-[11px] text-ink-3 hover:text-ink lg:inline">← Back to the website</a>
           <nav className="flex items-center gap-1" aria-label="Main">
             {tabs.map(({ id, label, icon: Icon, badge }) => (
               <button

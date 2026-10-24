@@ -46,6 +46,41 @@ Any Docker host works (Render, Railway, Fly.io, a VM). Constraints:
   before presenting, or use a non-sleeping plan.
 - Keep the judged demo on a local run as well (offline requirement).
 
+## Public website vs. researcher console
+
+`/` is the homeowner website. It has a landing page, a "Tell us about your
+home" form, a home picker and the check itself.
+
+- **Intake form:** visibly marked *coming soon*. Analysing an uploaded home
+  needs new backend work, so the form is disabled and **Skip — use an example
+  home** is the only action. Nothing a visitor types is used or sent.
+- **Example homes:**
+  - **Guided** runs the same seeded scenario as before.
+  - **Mystery home** is a surprise scenario.
+  - **Set a challenge** is Judge mode in plain words: Mild/Moderate/Severe map
+    to excess multipliers 0.6/1.5/3.0.
+- **The check** runs as a sequence:
+  - Evening: heating on, warm windows.
+  - Night: heating off, the roof lifts, and the thermal view plays back the
+    simulated readings.
+  - The diagnosis runs automatically.
+  - The fan test and the fix each replay their night before the result
+    appears.
+- **On-screen effects:**
+  - Blue particles mean cold air coming in (a diagnosed draft).
+  - Orange particles mean heat escaping (diagnosed poor insulation).
+  - Both mean "not sure".
+  - The effects follow the public diagnosis, never the hidden truth.
+- **Illustration only:** the brick, roof tiles, garden, chimney placement and
+  furniture are decorative. Room sizes and windows come from the published
+  plan, and every temperature and result comes from the API.
+- **No developer terms** (BIC, provenance, codes) appear. Each result says in
+  plain words that the home is a simulation planted for the demo.
+
+The original console (Fault Lab, Real Homes, Evidence, Simple/Expert) stays
+at **`/#/lab`**, linked as "Researcher view" in the site footer. Use it for
+judging and scientific Q&A.
+
 ## Simple and Expert views (scope change approved 2026-10-24)
 
 The integration owner (Nikhil) explicitly approved a **Three.js 3D house**,
