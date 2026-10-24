@@ -77,18 +77,39 @@ Both were proposed by Kailash in `docs/PHYSICS.md`.
 
 ### Diagnostic thresholds
 
-Mihir owns final thresholds. Until he publishes them, the API builds the
-`DiagnosisController` from the provisional TRAINING-split Gate-2 values in
-`reports/poc/poc_loop_results.json`. `HEATHUNTER_THRESHOLDS_PATH` may point to a
-JSON file with `detection_bic`, `ambiguity_bic`, `adequacy_rmse`, `separation`,
-`measurement_noise` and `note`. Every diagnosis discloses the values as
-`ASSUMPTION` entries (`threshold_detection_bic`, `threshold_ambiguity_bic`,
-`threshold_adequacy_rmse`, `threshold_separation`, `measurement_noise`).
+The API uses `backend.simulation.runtime.build_runtime_components()` once per
+process. This is the same validated factory used by the simulator's offline
+workflow. It loads `backend/diagnosis/decision_settings.json` and selects
+`passive` rules for the initial night and `post_fan` rules for combined evidence.
+The public template, controller, fan policy, and disclosed settings all come
+from that one immutable configuration snapshot; no second settings read occurs.
 
-### Guided scenario seed
+`HEATHUNTER_THRESHOLDS_PATH` remains supported, but must now point to the complete
+versioned settings document (both profiles, provenance, asset fingerprints and
+fan policy). Old flat files and the historical PoC report are rejected, not used
+as a fallback. Missing/malformed/stale settings return HTTP 501 for scientific
+routes; health remains available. Changes to settings require process restart.
 
-A guided request without `seed` uses `GUIDED_DEMO_SEED = 68` (TRAINING split).
-See `docs/DEMO.md` for how it was selected and the disclosed outcome rates.
+Every initial/updated diagnosis discloses its `decision_phase` and the actual
+`threshold_detection_bic`, `threshold_ambiguity_bic`, `threshold_adequacy_rmse`,
+`threshold_separation`, `measurement_noise`, `confidence_enabled`, and
+`fan_max_wind_speed` as existing `ASSUMPTION` entries. The source labels these
+as TRAINING calibration, not held-out or real-home validation. Fan eligibility
+uses the existing calm-weather policy; this integration changes no coefficients.
+
+### Guided scenario defaults
+
+The API no longer injects a universal seed. Each guided ID uses its own manifest
+when `seed` is omitted:
+
+| Guided ID | Default seed | Purpose |
+|---|---|---|
+| `hh09-guided-insulation-v1` | 961029 | Curated TRAINING full loop: ambiguous → calm fan → identified wall heat loss → repair → no-fault recheck |
+| `hh09-guided-v1` (also `synthetic-guided-draft-01`) | 20261024 | Draft uncertainty example; no forced confident result or repair |
+
+An explicitly supplied `seed` is preserved. Such variations need not reproduce
+the curated outcome. No seed, planted fault or private physics parameters are
+passed to the diagnosis engine. See `docs/DEMO.md` for the exact API walkthrough.
 
 ## Python service interfaces
 

@@ -13,7 +13,7 @@ class PrivateScenario:
     faulty: House
     fault: Fault
     sensor_seed: int
-    experiment_night_id: str
+    experiment_night_id: str | None
 
 
 class TruthStore:
