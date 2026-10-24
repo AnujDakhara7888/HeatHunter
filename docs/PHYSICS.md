@@ -232,8 +232,11 @@ service = build_scenario_service()
 ```
 
 The six async methods match `backend/app/services.py`: create, observations,
-diagnose, experiment, repair, reveal. Nikhil must delegate the existing routes;
-no app files, endpoints, schemas or TypeScript types were changed here.
+diagnose, experiment, repair, reveal. The API now delegates through
+`build_runtime_components()`, which supplies the same service plus its exact
+public template, saved profiles and fan policy for accurate disclosures. The
+existing `build_scenario_service()` entry point remains compatible. Endpoints,
+request/response contracts and generated TypeScript schemas are unchanged.
 
 Numerical work is offloaded to threads to keep the event loop responsive.
 Per-instance locks serialize scenario mutation. Returned contracts are deep
@@ -266,9 +269,10 @@ initial conditions/weather/sensor streams give paired observations; public
 remeasurement fits only repaired nights, never mixes pre/post-repair parameters.
 Wrong-path and wrong-room repairs do not secretly restore another path.
 
-The canonical RepairRequest has no effectiveness field; the API default is 1.0.
-The service has an internal `effectiveness=` keyword in [0,1] for QA and future
-approved integration. A frontend slider needs Nikhil's contract approval.
+Nikhil's approved `RepairRequest.effectiveness` field is integrated; the API
+passes it to the service's `effectiveness=` keyword in [0,1], defaulting to 1.0.
+The existing slider can therefore test partial repairs without a schema change
+in this workstream.
 
 Optional financial adapter: `estimate(diagnosis) -> MoneyEstimate | None` and
 `remeasure(original_nights, repaired_nights, diagnosis) -> float | None` (annual
@@ -297,10 +301,16 @@ observations now validate. Kailash's fitter, calibrated public template,
 experiment predictor and money adapter are present and used by the offline
 factory. Separate decision settings are now saved and validated.
 
-Nikhil still owns route/UI wiring. Use `build_scenario_service()` once and share
-that instance across the six scenario routes. Add the labelled insulation guided
-ID alongside the existing uncertainty example; no endpoint/schema change is
-needed. The canonical repair request still has no effectiveness field.
+API integration is complete locally: `backend/app/runtime.py` shares the
+validated configuration across the existing routes, discloses phase-specific
+rules, and rejects missing/stale/legacy flat settings without a provisional
+fallback. Each guided ID now retains its manifest seed; explicit caller seeds
+are preserved. The approved effectiveness field is present.
+
+Nikhil still owns the user-facing selection of the labelled insulation example
+and replacement of historical provisional calibration/seed-scan copy. The UI
+has intentionally not been edited during this backend integration step. The
+existing default UI example remains the honest unresolved draft case.
 
 Anuj owns the independent >=60-case held-out benchmark. Use the frozen offline
 factory with `split=Split.HELDOUT`, judge/surprise cases and separate seeds; never

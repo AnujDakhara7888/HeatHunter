@@ -62,11 +62,18 @@ def load_settings(
         raise DecisionSettingsError("Decision settings file is unexpectedly large")
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-        if payload["schema_version"] != 1 or payload["template_id"] != template_id:
+        if type(payload["schema_version"]) is not int or payload["schema_version"] != 1:
+            raise DecisionSettingsError("Decision settings version/template mismatch")
+        if payload["template_id"] != template_id:
             raise DecisionSettingsError("Decision settings version/template mismatch")
         profiles = DecisionProfiles(
             **{name: Thresholds(**payload["profiles"][name]) for name in ("passive", "post_fan")}
         )
+        if any(
+            not isinstance(profile.calibration_note, str) or not profile.calibration_note.strip()
+            for profile in (profiles.passive, profiles.post_fan)
+        ):
+            raise DecisionSettingsError("Decision settings require nonempty calibration notes")
         if payload["training"]["training_only"] is not True:
             raise DecisionSettingsError("Settings do not declare training-only calibration")
         if verify_assets and payload["public_assets"] != fingerprints():
