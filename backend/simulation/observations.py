@@ -11,7 +11,7 @@ from datetime import UTC, datetime, timedelta
 
 from backend.app.contracts import NightObservations, Protocol, Provenance, Series, WeatherNight
 
-from .physics import House, checked_seed, derivative, finite
+from .physics import House, checked_seed, derivative, fan_shares, finite
 
 SAMPLE_SECONDS = 300
 # 50 cfm * 1.69901082 m3/h per cfm. Assumed delivered airflow, not HH09 measurement.
@@ -196,7 +196,7 @@ def integrate_trajectory(
     lower, upper = min(*state, *outdoor), max(*state, *outdoor)
     # A diagonal outflow bound protects tiny capacitances / large conductances.
     max_delta = max(abs(upper - min(outdoor)), abs(lower - max(outdoor)))
-    leakage_sum = sum(r.leakage for r in house.rooms)
+    shares = fan_shares(house)
     step = max_step_seconds
     for i, r in enumerate(house.rooms):
         ach = r.leakage * math.sqrt(
@@ -205,7 +205,7 @@ def integrate_trajectory(
         outflow = (
             r.window_h
             + r.air_mass_h
-            + 0.33 * (ach * r.volume + fan_flow * r.leakage / leakage_sum)
+            + 0.33 * (ach * r.volume + fan_flow * shares[i])
             + sum(h for a, b, h in house.couplings if i in (a, b))
         )
         step = min(step, 0.4 * r.air_capacity / outflow, 0.4 * r.mass_capacity / (r.air_mass_h + r.wall_h))

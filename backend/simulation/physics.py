@@ -76,6 +76,14 @@ class House:
             seen.add((a, b))
 
 
+# ASSUMPTION: HH09 partition construction is unpublished. ISO 6946 surface
+# resistances (2 x 0.13 m2K/W, horizontal flow) + two 12.5 mm plasterboard
+# leaves (ISO 10456 gypsum, 0.25 W/mK) + unventilated stud cavity (0.18 m2K/W)
+# give R = 0.54 m2K/W, U ~= 1.85 W/m2K. Closed doors are treated as partition;
+# door gaps/undercut airflow are neglected.
+PARTITION_U_W_PER_M2K = 1.85
+
+
 def build_house(seed: int, *, variation: float = 0.12) -> House:
     """Use documented mapping/adjacency and assumed volume and thermal values.
 
@@ -110,12 +118,12 @@ def build_house(seed: int, *, variation: float = 0.12) -> House:
             )
         )
     by_source = {r["source_room_id"]: i for i, r in enumerate(metadata["rooms"])}
-    pairs = set()
-    for i, entry in enumerate(metadata["rooms"]):
-        for source_id in entry["adjacent_source_rooms"]["value"]:
-            if source_id in by_source and by_source[source_id] != i:
-                pairs.add(tuple(sorted((i, by_source[source_id]))))
-    edges = tuple((a, b, vary(3.0)) for a, b in sorted(pairs))
+    areas = {}
+    for boundary in metadata["shared_boundaries"]:
+        a, b = sorted(by_source[source_id] for source_id in boundary["source_room_ids"])
+        ceiling = float(metadata["rooms"][a]["geometry"]["ceiling_height"]["value"])
+        areas[(a, b)] = float(boundary["length"]["value"]) * ceiling
+    edges = tuple((a, b, vary(PARTITION_U_W_PER_M2K * areas[(a, b)])) for a, b in sorted(areas))
     air = tuple(rng.uniform(20, 21) for _ in rooms)
     mass = tuple(t - rng.uniform(0.3, 1.0) for t in air)
     return House(tuple(rooms), edges, air, mass)
@@ -181,18 +189,29 @@ def repair_house(
     return replace(current, rooms=rooms)
 
 
+def fan_shares(house: House) -> tuple[float, ...]:
+    """Make-up air split proportional to natural leakage (L x volume).
+
+    The same convention the public model uses: a room's fan share equals its
+    share of natural infiltration conductance at equal weather.
+    """
+    weights = [r.leakage * r.volume for r in house.rooms]
+    total = sum(weights)
+    return tuple(w / total for w in weights)
+
+
 def derivative(
     house: House, state: tuple[float, ...], outdoor: float, wind: float, fan_flow: float = 0
 ) -> tuple[float, ...]:
     """Eight derivatives: four air nodes followed by four mass nodes."""
     air, mass = state[:4], state[4:]
-    total_leakage = sum(r.leakage for r in house.rooms)
+    shares = fan_shares(house)
     qa, qm = [], []
     for i, r in enumerate(house.rooms):
         ach = r.leakage * math.sqrt(
             house.stack_coefficient * abs(air[i] - outdoor) + house.wind_coefficient * wind**2
         )
-        infiltration_h = 0.33 * (ach * r.volume + fan_flow * r.leakage / total_leakage)
+        infiltration_h = 0.33 * (ach * r.volume + fan_flow * shares[i])
         air_mass = r.air_mass_h * (air[i] - mass[i])
         qa.append(-(r.window_h + infiltration_h) * (air[i] - outdoor) - air_mass)
         qm.append(air_mass - r.wall_h * (mass[i] - outdoor))

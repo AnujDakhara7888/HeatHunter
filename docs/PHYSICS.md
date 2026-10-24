@@ -25,7 +25,7 @@ Ca dTa/dt = -(Hwindow + Hinfiltration) (Ta-To) - Ham (Ta-Tm)
             + sum_j Hij (Tj-Ta)
 Cm dTm/dt = Ham (Ta-Tm) - Hwall (Tm-To)
 ACH = L sqrt(0.025 |Ta-To| + 0.06 wind^2)
-Hinfiltration = 0.33 [ACH volume + Qfan L / sum(L)]
+Hinfiltration = 0.33 [ACH volume + Qfan (L volume) / sum(L volume)]
 ```
 
 The coefficient units are chosen so ACH is h^-1 with temperatures in degC and
@@ -45,9 +45,17 @@ Base parameters, all **ASSUMPTIONs**, before independent uniform ±12% variation
 | Hwall (W/K) | 1.8 × documented room floor area (m²) |
 | Ham (W/K) | 12.0 × documented room floor area (m²) |
 | L | 1.0 |
-| Hij (W/K) | 3.0 per documented shared boundary |
+| Hij (W/K) | 1.85 W/m²K × shared boundary length × 2.4 m (plan-derived lengths) |
 | Initial Ta | independent uniform 20–21 degC |
 | Initial Tm | corresponding Ta minus uniform 0.3–1.0 degC |
+
+The partition U-value is an ASSUMPTION because HH09's partition construction is
+unpublished: ISO 6946 surface resistances (2 × 0.13 m²K/W), two 12.5 mm
+plasterboard leaves (ISO 10456 gypsum, 0.25 W/mK) and an unventilated stud cavity
+(0.18 m²K/W) give U ≈ 1.85 W/m²K. Boundaries come from Anuj's
+`shared_boundaries` (five edges, including the Bedroom–Living chimney-breast
+wall). That gives about 5–14 W/K per edge. Closed doors count as partition, and
+door-gap airflow is neglected.
 
 Volume retains Anuj's explicit 2.4 m ceiling-height assumption. These thermal
 rules are illustrative inputs, not sourced HH09 measurements, inferred U-values,
@@ -97,7 +105,8 @@ measurement. The scale is based on the intermittent bathroom exhaust example in
 [PNNL Building America](https://basc.pnnl.gov/resource-guides/bathroom-exhaust-fans).
 This American guidance is used only to choose a plausible hypothetical fan,
 not to establish UK installation compliance. The fan runs for two hours.
-Additional infiltration is split using actual scenario leakage coefficients.
+Additional infiltration is split in proportion to each room's natural leakage
+(leakage coefficient × volume), using actual scenario values.
 The simplifying pressure assumption is shared with the public predictor and is
 not independently validated by synthetic benchmark accuracy.
 

@@ -16,7 +16,14 @@ from backend.simulation.observations import (
     resample_forcing,
     simulate_night,
 )
-from backend.simulation.physics import Fault, build_house, derivative, inject_fault, repair_house
+from backend.simulation.physics import (
+    Fault,
+    build_house,
+    derivative,
+    fan_shares,
+    inject_fault,
+    repair_house,
+)
 from backend.simulation.tests.helpers import synthetic_weather
 
 
@@ -28,7 +35,12 @@ def test_hh09_mapping_and_symmetric_topology():
         ("bedroom_1", "Bedroom", 28.296),
         ("bedroom_2", "Hall", 6.528),
     ]
-    assert {(a, b) for a, b, _ in house.couplings} == {(0, 1), (0, 3), (1, 2), (2, 3)}
+    # Includes the Bedroom-Living chimney-breast wall (0, 2) from the floor plan.
+    assert {(a, b) for a, b, _ in house.couplings} == {(0, 1), (0, 2), (0, 3), (1, 2), (2, 3)}
+    conductance = {(a, b): h for a, b, h in house.couplings}
+    # Geometry-based: living-kitchen 3.14 m x 2.4 m x 1.85 W/m2K.
+    assert conductance[(0, 1)] == pytest.approx(1.85 * 3.14 * 2.4)
+    assert conductance[(0, 1)] > conductance[(2, 3)]
 
 
 def test_internal_exchange_cancels_and_external_energy_balance():
@@ -108,6 +120,18 @@ def test_fan_energy_is_conserved_across_leakage_shares():
     assert extra_loss == pytest.approx(0.33 * 85 * 20, abs=1e-9)
     room_loss = [r.air_capacity * (before[i] - after[i]) for i, r in enumerate(house.rooms)]
     assert room_loss[2] > max(room_loss[:2] + room_loss[3:])
+    weights = [r.leakage * r.volume for r in house.rooms]
+    for loss, weight in zip(room_loss, weights, strict=True):
+        assert loss == pytest.approx(0.33 * 85 * 20 * weight / sum(weights), abs=1e-9)
+
+
+def test_fan_share_scales_with_room_volume_not_only_leakage():
+    house = build_house(9, variation=0)
+    shares = fan_shares(house)
+    assert sum(shares) == pytest.approx(1)
+    # Equal leakage coefficients: the 6.5 m3 Hall gets far less than the 31 m3 Living Room.
+    assert shares[3] == pytest.approx(6.528 / sum(r.volume for r in house.rooms))
+    assert shares[0] > 4 * shares[3]
 
 
 def test_deterministic_sensors_independent_of_step_and_dropout():
