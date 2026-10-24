@@ -8,24 +8,28 @@ it is useful, and verifies the effect of the diagnosed repair.
 This is a preliminary diagnostic concept, not a certified building energy audit.
 Synthetic benchmark performance must not be presented as real-home accuracy.
 
-## Current foundation
+## Current state
 
-- Canonical Pydantic v2 contracts and complete FastAPI/OpenAPI route surface.
-- Schema-valid, clearly synthetic integration fixtures.
-- Eight cached NOAA cold-weather nights with offline readers.
-- Explicit ownership boundaries in `AGENTS.md`.
+- **Fault Lab** (approximate HH09 digital twin) and **Real Homes** (real SMETER
+  HH09 measurements) in one React app, served by FastAPI for offline demos.
+- Every API route is wired to the owners' services: Mihir's hidden-fault
+  simulator and diagnosis, Kailash's public engine and money model, and Anuj's
+  real-house reader. The held-out benchmark route returns 501 until its report
+  exists.
+- Canonical Pydantic contracts → OpenAPI → generated TypeScript types.
 
-## Backend setup
+## Run the demo
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
-.venv/bin/uvicorn backend.app.main:app --reload
+(cd frontend && npm install && npm run build)
+.venv/bin/uvicorn backend.app.main:app --port 8000   # http://127.0.0.1:8000
 ```
 
-OpenAPI is available at `http://127.0.0.1:8000/openapi.json`; interactive docs
-are at `/docs`. Only `/api/health` has real behavior in the foundation scaffold.
-Scientific endpoints return `501` until their owning services are integrated.
+Frontend development: run the API, then `cd frontend && npm run dev`
+(port 5173, proxied to the API). See `docs/DEMO.md` for the demo script and
+the guided-seed disclosure, and `docs/CONTRACTS.md` for the API.
 
 ## Verification
 

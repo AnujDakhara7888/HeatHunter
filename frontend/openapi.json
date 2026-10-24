@@ -3,7 +3,7 @@
   "info": {
     "title": "HeatHunter API",
     "description": "Physics-guided home thermal diagnostic prototype. This is a preliminary diagnostic concept, not a certified building energy audit.",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "paths": {
     "/api/health": {
@@ -55,8 +55,18 @@
               }
             }
           },
-          "501": {
-            "description": "The owning scientific or data service has not been integrated.",
+          "404": {
+            "description": "Unknown scenario, diagnosis or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid in the scenario's current state.",
             "content": {
               "application/json": {
                 "schema": {
@@ -66,11 +76,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "The request is invalid for this scenario.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -107,8 +127,18 @@
               }
             }
           },
-          "501": {
-            "description": "The owning scientific or data service has not been integrated.",
+          "404": {
+            "description": "Unknown scenario, diagnosis or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid in the scenario's current state.",
             "content": {
               "application/json": {
                 "schema": {
@@ -118,11 +148,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "The request is invalid for this scenario.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -169,8 +209,18 @@
               }
             }
           },
-          "501": {
-            "description": "The owning scientific or data service has not been integrated.",
+          "404": {
+            "description": "Unknown scenario, diagnosis or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid in the scenario's current state.",
             "content": {
               "application/json": {
                 "schema": {
@@ -180,11 +230,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "The request is invalid for this scenario.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -231,8 +291,18 @@
               }
             }
           },
-          "501": {
-            "description": "The owning scientific or data service has not been integrated.",
+          "404": {
+            "description": "Unknown scenario, diagnosis or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid in the scenario's current state.",
             "content": {
               "application/json": {
                 "schema": {
@@ -242,11 +312,104 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "The request is invalid for this scenario.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/{id}/money": {
+      "post": {
+        "tags": [
+          "fault-lab"
+        ],
+        "summary": "Estimate Money",
+        "description": "Re-price a diagnosis with user tariff/repair-cost overrides via the public engine.",
+        "operationId": "estimate_money_api_scenarios__id__money_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoneyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoneyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown scenario, diagnosis or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid in the scenario's current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid for this scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -293,8 +456,18 @@
               }
             }
           },
-          "501": {
-            "description": "The owning scientific or data service has not been integrated.",
+          "404": {
+            "description": "Unknown scenario, diagnosis or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid in the scenario's current state.",
             "content": {
               "application/json": {
                 "schema": {
@@ -304,11 +477,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "The request is invalid for this scenario.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -345,8 +528,18 @@
               }
             }
           },
-          "501": {
-            "description": "The owning scientific or data service has not been integrated.",
+          "404": {
+            "description": "Unknown scenario, diagnosis or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid in the scenario's current state.",
             "content": {
               "application/json": {
                 "schema": {
@@ -356,11 +549,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "The request is invalid for this scenario.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -387,7 +590,35 @@
             }
           },
           "501": {
-            "description": "The owning scientific or data service has not been integrated.",
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/real/house/floor-plan": {
+      "get": {
+        "tags": [
+          "real-homes"
+        ],
+        "summary": "Get Real House Floor Plan",
+        "description": "The original published floor-plan image referenced by ``RealHouse.floor_plan_asset_path``.",
+        "operationId": "get_real_house_floor_plan_api_real_house_floor_plan_get",
+        "responses": {
+          "200": {
+            "description": "Original floor plan",
+            "content": {
+              "image/png": {}
+            }
+          },
+          "404": {
+            "description": "Unknown scenario, diagnosis or asset.",
             "content": {
               "application/json": {
                 "schema": {
@@ -418,7 +649,7 @@
             }
           },
           "501": {
-            "description": "The owning scientific or data service has not been integrated.",
+            "description": "The owning scientific or data service is not available.",
             "content": {
               "application/json": {
                 "schema": {
@@ -963,19 +1194,6 @@
         ],
         "title": "GroundTruth"
       },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
       "HealthResponse": {
         "properties": {
           "status": {
@@ -1209,6 +1427,75 @@
           "assumptions"
         ],
         "title": "MoneyEstimate"
+      },
+      "MoneyRequest": {
+        "properties": {
+          "diagnosis_id": {
+            "type": "string",
+            "title": "Diagnosis Id"
+          },
+          "gas_price_pence_per_kwh": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gas Price Pence Per Kwh"
+          },
+          "repair_cost_gbp": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair Cost Gbp"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "diagnosis_id"
+        ],
+        "title": "MoneyRequest",
+        "description": "User what-if overrides for the screening money estimate of a confident diagnosis."
+      },
+      "MoneyResponse": {
+        "properties": {
+          "diagnosis_id": {
+            "type": "string",
+            "title": "Diagnosis Id"
+          },
+          "estimate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyEstimate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "diagnosis_id",
+          "estimate",
+          "explanation"
+        ],
+        "title": "MoneyResponse"
       },
       "NightObservations": {
         "properties": {
@@ -1444,6 +1731,13 @@
           "diagnosis_id": {
             "type": "string",
             "title": "Diagnosis Id"
+          },
+          "effectiveness": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Effectiveness",
+            "default": 1.0
           }
         },
         "additionalProperties": false,
@@ -1883,46 +2177,6 @@
           "end"
         ],
         "title": "UtcWindow"
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
-          }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
       },
       "WeatherNight": {
         "properties": {

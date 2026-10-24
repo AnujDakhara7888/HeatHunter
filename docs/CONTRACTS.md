@@ -10,6 +10,10 @@ does not duplicate every field.
 - Timestamps are timezone-aware ISO 8601 values serialized in UTC.
 - Temperature: °C (`degC`). Conductance: W/K. Capacity: J/K.
 - Energy: kWh. Wind: m/s. Volume: m³. Fan airflow: m³/h. Money: USD.
+- Currency for HH09: costs are computed in GBP (Ofgem tariff, UK repair prices)
+  and converted to the contract's USD fields with the `gbp_to_usd` assumption
+  carried in every `MoneyEstimate.assumptions`. The UI shows GBP first
+  (`usd / gbp_to_usd`) and USD second; it never presents Long Island dollar savings.
 - Missing measurements use `null`; absent optional results also use `null`.
 - `Location.latitude`/`longitude` are `null` when the source does not publish
   coordinates (the SMETER Phase 2 weather station). They are never approximated.
@@ -39,13 +43,52 @@ root-cause classification.
 | GET | `/api/scenarios/{id}/observations` | — | `ObservationResponse` | Mihir |
 | POST | `/api/scenarios/{id}/diagnose` | `DiagnoseRequest` | `Diagnosis` | Mihir using Kailash fits |
 | POST | `/api/scenarios/{id}/experiments` | `ExperimentRequest` | `ExperimentResponse` | Mihir |
+| POST | `/api/scenarios/{id}/money` | `MoneyRequest` | `MoneyResponse` | Kailash `estimate_money` |
 | POST | `/api/scenarios/{id}/repair` | `RepairRequest` | `RepairResult` | Mihir using Kailash savings |
 | GET | `/api/scenarios/{id}/reveal` | — | `GroundTruth` | Mihir private truth store |
 | GET | `/api/real/house` | — | `RealHouse` | Anuj data, Nikhil route |
+| GET | `/api/real/house/floor-plan` | — | `image/png` | Anuj asset, Nikhil route |
 | GET | `/api/evaluation/summary` | — | `EvaluationSummary` | Anuj data, Nikhil route |
 
-Until services are connected, the scaffold returns HTTP 501 with
-`SERVICE_NOT_INTEGRATED`; it never returns fake scientific results.
+All routes are wired to the owners' services (`backend/app/runtime.py`).
+`/api/evaluation/summary` returns HTTP 501 `SERVICE_NOT_INTEGRATED` until
+`reports/evaluation/summary.json` exists; it never returns fake results.
+
+### Contract changes approved by the integration owner (2026-10-24)
+
+Both were proposed by Kailash in `docs/PHYSICS.md`.
+
+- `RepairRequest.effectiveness` (0–1, default 1.0): drives the UI slider and is
+  passed to `HH09ScenarioService.apply_repair(..., effectiveness=)`.
+- `POST /api/scenarios/{id}/money` with `MoneyRequest {diagnosis_id,
+  gas_price_pence_per_kwh?, repair_cost_gbp?}` → `MoneyResponse {diagnosis_id,
+  estimate: MoneyEstimate | null, explanation}`. It re-prices a diagnosis this
+  API returned, through `backend.engine.estimate_money` with `MoneyOverrides`.
+  Non-confident diagnoses return `estimate: null` with an explanation.
+
+### Error mapping
+
+| Service exception | HTTP | `code` |
+|---|---|---|
+| `KeyError` (unknown scenario/diagnosis) | 404 | `NOT_FOUND` |
+| `ScenarioStateError` (stale/duplicate action) | 409 | `INVALID_SCENARIO_STATE` |
+| `ValueError` (invalid request for this scenario) | 422 | `INVALID_REQUEST` |
+| `EngineDependencyError`, `WeatherContractError`, missing thresholds/data | 501 | `SERVICE_NOT_INTEGRATED` |
+
+### Diagnostic thresholds
+
+Mihir owns final thresholds. Until he publishes them, the API builds the
+`DiagnosisController` from the provisional TRAINING-split Gate-2 values in
+`reports/poc/poc_loop_results.json`. `HEATHUNTER_THRESHOLDS_PATH` may point to a
+JSON file with `detection_bic`, `ambiguity_bic`, `adequacy_rmse`, `separation`,
+`measurement_noise` and `note`. Every diagnosis discloses the values as
+`ASSUMPTION` entries (`threshold_detection_bic`, `threshold_ambiguity_bic`,
+`threshold_adequacy_rmse`, `threshold_separation`, `measurement_noise`).
+
+### Guided scenario seed
+
+A guided request without `seed` uses `GUIDED_DEMO_SEED = 68` (TRAINING split).
+See `docs/DEMO.md` for how it was selected and the disclosed outcome rates.
 
 ## Python service interfaces
 
@@ -74,4 +117,5 @@ python -m backend.app.export_openapi --output frontend/openapi.json
 cd frontend && npm run generate:api
 ```
 
-Never create hand-written TypeScript copies of these interfaces.
+Never create hand-written TypeScript copies of these interfaces. The frontend
+imports types only from `frontend/src/api/schema.d.ts` via `frontend/src/lib/api.ts`.
