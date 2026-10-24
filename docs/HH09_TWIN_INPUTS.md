@@ -28,6 +28,15 @@ The 2.4 m ceiling height is a HeatHunter assumption. Derived volumes—31.416,
 13.800, 28.296, and 6.528 m³—are therefore also assumptions. Every geometry
 field carries `documented` or `assumed` status and a source reference.
 
+`shared_boundaries` lists the five internal boundaries visible on the plan:
+living↔kitchen (3.14 m), kitchen↔bedroom (1.82 m), bedroom↔living (1.98 m,
+the chimney-breast wall), living↔hall (2.38 m), and bedroom↔hall (1.14 m). The
+plan does not print boundary lengths, so each length is derived from the printed
+room dimensions and is labelled `assumed`. Whether a door is drawn on each
+boundary is `documented`. Partition construction and thermal conductance are
+not published. The reader rejects boundaries that disagree with the adjacency
+lists.
+
 ## Weather
 
 The default reader uses the SMETER Phase 2 central weather station, documented

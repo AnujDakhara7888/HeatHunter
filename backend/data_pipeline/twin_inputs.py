@@ -43,6 +43,28 @@ def load_hh09_twin_inputs(path: str | Path | None = None) -> dict[str, Any]:
                 raise TwinInputDataError(f"Room geometry {name} lacks documented/assumed status")
             if field.get("status") == "assumed" and not field.get("assumption"):
                 raise TwinInputDataError(f"Assumed room geometry {name} lacks an explanation")
+    adjacency = {
+        frozenset((room["source_room_id"], neighbour))
+        for room in rooms
+        for neighbour in room.get("adjacent_source_rooms", {}).get("value", [])
+        if neighbour in room_ids
+    }
+    boundaries = payload.get("shared_boundaries")
+    if not isinstance(boundaries, list):
+        raise TwinInputDataError("HH09 twin package must list shared internal boundaries")
+    boundary_pairs = set()
+    for boundary in boundaries:
+        pair = frozenset(boundary.get("source_room_ids", []))
+        length = boundary.get("length", {})
+        if len(pair) != 2 or not pair <= room_ids or pair in boundary_pairs:
+            raise TwinInputDataError("Shared boundaries must name two distinct mapped rooms once")
+        if not isinstance(length.get("value"), (int, float)) or length["value"] <= 0:
+            raise TwinInputDataError("Shared boundary length must be positive")
+        if length.get("status") != "assumed" or not length.get("assumption"):
+            raise TwinInputDataError("Derived boundary lengths must be labelled assumed and explained")
+        boundary_pairs.add(pair)
+    if boundary_pairs != adjacency:
+        raise TwinInputDataError("Shared boundaries must match the documented room adjacency")
     weather_ids = payload.get("weather_night_ids")
     if not isinstance(weather_ids, list) or len(weather_ids) < 8:
         raise TwinInputDataError("HH09 twin package must reference at least eight weather nights")

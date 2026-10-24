@@ -52,7 +52,7 @@ ROOMS = (
         "area_m2": 13.09,
         "length_m": 4.36,
         "width_m": 3.15,
-        "adjacent": ["kitchen", "hall"],
+        "adjacent": ["kitchen", "hall", "bedroom"],
         "window_column": "Living",
     },
     {
@@ -76,7 +76,7 @@ ROOMS = (
         "area_m2": 11.79,
         "length_m": 3.80,
         "width_m": 3.11,
-        "adjacent": ["kitchen", "hall"],
+        "adjacent": ["kitchen", "hall", "living_room"],
         "window_column": "Bed1 (Master)",
     },
     {
@@ -93,6 +93,41 @@ ROOMS = (
     },
 )
 ASSUMED_CEILING_HEIGHT_M = 2.4
+# Shared internal boundaries read from page 9 of the floor-plan PDF. Lengths are
+# derived from the documented room dimensions printed on the plan; the plan does
+# not print boundary lengths directly, so each is an approximate derivation.
+SHARED_BOUNDARIES = (
+    {
+        "source_room_ids": ["living_room", "kitchen"],
+        "length_m": 3.14,
+        "derivation": "Kitchen 3.14 m side along the 3.15 m Living Room side",
+        "door_on_plan": True,
+    },
+    {
+        "source_room_ids": ["kitchen", "bedroom"],
+        "length_m": 1.82,
+        "derivation": "Full 1.82 m Kitchen side along the Bedroom",
+        "door_on_plan": False,
+    },
+    {
+        "source_room_ids": ["bedroom", "living_room"],
+        "length_m": 1.98,
+        "derivation": "Bedroom 3.80 m side minus the 1.82 m Kitchen side; includes the chimney breast",
+        "door_on_plan": False,
+    },
+    {
+        "source_room_ids": ["living_room", "hall"],
+        "length_m": 2.38,
+        "derivation": "Living Room 4.36 m side minus the 1.98 m Bedroom boundary (Hall side is 2.39 m)",
+        "door_on_plan": True,
+    },
+    {
+        "source_room_ids": ["bedroom", "hall"],
+        "length_m": 1.14,
+        "derivation": "Full 1.14 m Hall width along the Bedroom",
+        "door_on_plan": True,
+    },
+)
 
 
 def _read_csv(payload: bytes, *, header_row: int = 0) -> list[dict[str, str]]:
@@ -412,6 +447,27 @@ def build_hh09_twin(
             "documented HH09 hall; it must be displayed as Hall in HH09 twin scenarios."
         ),
         "rooms": rooms,
+        "shared_boundaries": [
+            {
+                "source_room_ids": boundary["source_room_ids"],
+                "length": _field(
+                    boundary["length_m"],
+                    "m",
+                    "assumed",
+                    floorplan_ref,
+                    assumption=(
+                        f"{boundary['derivation']}. Derived from documented plan dimensions; "
+                        "not a printed or measured boundary length."
+                    ),
+                ),
+                "door_on_plan": _field(boundary["door_on_plan"], None, "documented", floorplan_ref),
+                "interpretation": (
+                    "Geometric shared boundary only; partition construction and thermal "
+                    "conductance are not published."
+                ),
+            }
+            for boundary in SHARED_BOUNDARIES
+        ],
         "excluded_observed_rooms": [
             {
                 "source_room_id": "bathroom",

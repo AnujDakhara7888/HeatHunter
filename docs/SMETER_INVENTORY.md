@@ -74,8 +74,9 @@ The existing simulator has four slots. The stable approximate-twin mapping is:
 
 The bathroom remains in the Real Homes data but is excluded from the four-slot
 simulator. Page 9 of `SMETER_P2_Floorplans.pdf` supports the shared-boundary
-adjacency mapping living↔kitchen, living↔hall, kitchen↔bedroom, and
-bedroom↔hall. This is layout evidence, not a measured thermal coupling.
+adjacency mapping living↔kitchen, living↔hall, kitchen↔bedroom,
+bedroom↔hall, and bedroom↔living (the chimney-breast wall). This is layout
+evidence, not a measured thermal coupling.
 
 The plan documents areas and horizontal dimensions but not ceiling heights.
 Twin volumes use an explicit 2.4 m modeling assumption and are marked `assumed`,

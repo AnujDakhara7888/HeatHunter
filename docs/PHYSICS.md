@@ -25,7 +25,7 @@ Ca dTa/dt = -(Hwindow + Hinfiltration) (Ta-To) - Ham (Ta-Tm)
             + sum_j Hij (Tj-Ta)
 Cm dTm/dt = Ham (Ta-Tm) - Hwall (Tm-To)
 ACH = L sqrt(0.025 |Ta-To| + 0.06 wind^2)
-Hinfiltration = 0.33 [ACH volume + Qfan L / sum(L)]
+Hinfiltration = 0.33 [ACH volume + Qfan (L volume) / sum(L volume)]
 ```
 
 The coefficient units are chosen so ACH is h^-1 with temperatures in degC and
@@ -45,9 +45,17 @@ Base parameters, all **ASSUMPTIONs**, before independent uniform ±12% variation
 | Hwall (W/K) | 1.8 × documented room floor area (m²) |
 | Ham (W/K) | 12.0 × documented room floor area (m²) |
 | L | 1.0 |
-| Hij (W/K) | 3.0 per documented shared boundary |
+| Hij (W/K) | 1.85 W/m²K × shared boundary length × 2.4 m (plan-derived lengths) |
 | Initial Ta | independent uniform 20–21 degC |
 | Initial Tm | corresponding Ta minus uniform 0.3–1.0 degC |
+
+The partition U-value is an ASSUMPTION because HH09's partition construction is
+unpublished: ISO 6946 surface resistances (2 × 0.13 m²K/W), two 12.5 mm
+plasterboard leaves (ISO 10456 gypsum, 0.25 W/mK) and an unventilated stud cavity
+(0.18 m²K/W) give U ≈ 1.85 W/m²K. Boundaries come from Anuj's
+`shared_boundaries` (five edges, including the Bedroom–Living chimney-breast
+wall). That gives about 5–14 W/K per edge. Closed doors count as partition, and
+door-gap airflow is neglected.
 
 Volume retains Anuj's explicit 2.4 m ceiling-height assumption. These thermal
 rules are illustrative inputs, not sourced HH09 measurements, inferred U-values,
@@ -97,7 +105,8 @@ measurement. The scale is based on the intermittent bathroom exhaust example in
 [PNNL Building America](https://basc.pnnl.gov/resource-guides/bathroom-exhaust-fans).
 This American guidance is used only to choose a plausible hypothetical fan,
 not to establish UK installation compliance. The fan runs for two hours.
-Additional infiltration is split using actual scenario leakage coefficients.
+Additional infiltration is split in proportion to each room's natural leakage
+(leakage coefficient × volume), using actual scenario values.
 The simplifying pressure assumption is shared with the public predictor and is
 not independently validated by synthetic benchmark accuracy.
 
@@ -247,3 +256,173 @@ After engine/contract integration, call
 fitter PoC. It reports the observed outcomes without forcing success. Then run
 Anuj's independent held-out benchmark. Never present the present scripted-engine
 tests or truth-physics sweep as a successful diagnostic PoC.
+
+---
+
+# Kailash: public diagnostic engine (`backend/engine/`)
+
+This section documents the public model that diagnosis fits. It reads public
+inputs only: the public template, observed temperatures, weather, protocol and
+the sourced assumptions in `config/assumptions.json`. It never imports
+`backend.simulation`, `backend.diagnosis` or the truth store, and
+`backend/engine/tests/test_isolation.py` enforces that.
+
+Update to the blockers listed above: the null-coordinate contract change (item 1)
+is in commit `[contract fix for Nikhil review]`. Item 2 is resolved by this
+engine.
+
+## Model
+
+Each room has **one dynamic temperature**, its fabric (walls, furniture, mass)
+`T_f`. The measured room air is a quasi-steady layer between the fabric and the
+incoming outdoor air (SI units):
+
+```
+H_air(t)   = m_l H_inf0 f(w, dT) + fan(t) 0.33 Q share
+H_ser      = H_af H_air / (H_af + H_air)                 (air path in series)
+C dT_f/dt  = -[m_c H_cond + H_ser] (T_f - T_out) + sum_j H_ij (T_f,j - T_f)
+T_air      = T_f - H_air/(H_af + H_air) (T_f - T_out)     (what sensors read)
+share_i    = m_l,i s_i / sum_j m_l,j s_j                  (spec's leakage-share rule)
+f(w, dT)   = sqrt((dT + (Cw/Cs) w^2) / dT_ref)           (ASHRAE/LBL stack + wind)
+```
+
+Without the engine extension (`H_af = inf`, linear `f = 1 + beta w`) this is
+exactly the specification's single-node model, and tests check that limit. Two
+evidence-driven extensions were agreed with Kailash:
+
+1. **Quick-settling air layer.** In the simulator, the fan dips room air by
+   about 1 °C within minutes and the air rebounds when the fan stops, while the
+   fabric barely moves. A single-node model cannot represent this, and every
+   post-test fit was "unexplained". `H_af` is calibrated on healthy TRAINING
+   fan nights.
+2. **Stack effect.** Leakage also depends on the indoor-outdoor difference.
+   This uses the published ASHRAE/LBL coefficients (one-storey, shelter class
+   3), deliberately not the simulator's. The stack term uses the room's own
+   measured temperature, so fitting stays linear and fast.
+
+Both live in the engine-owned `templates/hh09_model_extension.json`, keyed by
+`template_id`, because the canonical `PublicTemplate` contract has no fields for
+them. Engine functions load it automatically when the template ID matches.
+
+## Calibration (`calibrate_public_template`)
+
+- **Inputs:** healthy, simulated, TRAINING-split observations only. 40 houses
+  (seeds 910000–910039), each with four passive nights and two fan nights (one
+  calm, one windy). Held-out weather, real measurements and missing fan nights
+  are rejected.
+- **Absolute-scale anchor:** C = SAP 2012 Table 1f "medium" TMP 250 kJ/m²K ×
+  documented floor area + air capacity. Cooling data only reveals loss/capacity,
+  so this anchor fixes the W/K units.
+- **Per-house joint fit:** H_cond and H_inf0 per room, one air-fabric
+  coefficient per house, plus nuisance start temperatures and sensor offsets.
+  The nominal template is the median over houses.
+- **Inter-room coupling is fixed, not fitted:** U = 2.5 W/m²K (ISO 6946
+  plastered dense blockwork) × plan-derived wall area. Passive cooling cannot
+  identify coupling (free fits swung from 0.05 to 225 W/K), and the exterior
+  estimates barely change for U between 1.2 and 2.5. The value deliberately
+  differs from the simulator's 1.85 to avoid the inverse crime.
+- **Result:** per-house RMSE is 0.158 °C (noise is 0.15) and all 40 houses
+  converged. The air-fabric coefficient is 15.4 W/m²K (IQR 14.9–15.8). The
+  four-room total at season-mean wind is 136 W/K, against HH09's measured
+  172 W/K for the whole dwelling including the bathroom; that is a reference
+  check only.
+- **Reproduce:** `python -m scripts.calibrate_public_template --houses 40`, about
+  2 minutes. Report: `templates/hh09_calibration_report.json`.
+
+## Hypothesis fitting (`fit_hypothesis`)
+
+- **Per-room fit:** each room is fitted separately with SciPy bounded
+  `least_squares`. Neighbours enter through their *measured* temperatures.
+- **Hypotheses:** normal (all multipliers exactly 1), draft (`m_l` in [0.3, 6])
+  and envelope conduction (`m_c` in [0.3, 6]). The bounds are agreed with the
+  controller.
+- **Shared nuisance parameters:** every hypothesis also fits one start
+  temperature per night and one sensor offset (±0.5 °C) per room, so BIC
+  values are comparable.
+- **BIC:** `n ln(SSE/n) + k ln n`. It is a fit score, not a probability.
+- **Skipped readings:** the first 15 minutes of each night (start transient) and
+  10 minutes after each fan switch (air settling). Missing readings are
+  skipped, with warnings.
+- **Speed:** about 0.1 s for the 12 fits of one diagnosis.
+- **Detailed variant:** `fit_hypothesis_detailed` also returns warnings,
+  observation and parameter counts, the fitted offset and start temperatures.
+
+## Experiment prediction (`predict_experiment`)
+
+All rooms are forward-simulated together under each competing fit, starting
+from the observed first readings. The output is `MODEL_ESTIMATE` series on the
+experiment weather timestamps. The signature matches the controller's adapter
+protocol (`PublicModelEngine`).
+
+## Money (`estimate_money`, `PublicMoneyEstimator`)
+
+Excess conductance is `(m − 1) H_cond` for conduction. For a draft it is the
+series air-path increase at the season-mean wind (2.97 m/s, SMETER station)
+and dT_ref. Then:
+
+```
+gas_kWh  = excess x HDD x 24 / 1000 / efficiency
+cost_USD = gas_kWh x price x GBP->USD
+payback  = repair_cost / annual cost
+```
+
+Inputs (all in `config/assumptions.json`):
+
+| Input | Value | Source |
+|---|---|---|
+| Heating degree days | 1,722 K·day | Base 15.5 °C, computed from the SMETER station's real 2020 data |
+| Boiler efficiency | 86.7% | HH09's documented winter seasonal value |
+| Gas price | 7.97 p/kWh | Ofgem price cap, Oct–Dec 2026 |
+| Exchange rate | 1.3363 USD/GBP | Bank of England, 22 Oct 2026 |
+| Repair costs | illustrative | **UNVERIFIED**, user-adjustable; flagged in every returned assumption |
+
+`MoneyOverrides` supports the tariff and repair-price controls. Ambiguous,
+unexplained or non-excess results return `None`. Re-measured savings come only
+from refitting the public before/after observations.
+
+## Gate-2 proof of concept (`scripts/poc_loop.py`)
+
+The PoC runs on the TRAINING split; the held-out benchmark is Anuj's. Its
+thresholds are **provisional PoC tuning**, and Mihir owns the final values:
+
+| Threshold | How it was set | Value |
+|---|---|---|
+| Detection | Healthy passive cases, 95th percentile | 114 |
+| Fit quality | Larger of healthy p95 (0.177) and correct-model p95 on faulty training (0.264) | 0.264 °C |
+| Ambiguity | Smallest passive BIC gap with ≥95% precision on 48 faulty training scenarios | 51.6 |
+
+Scenario, tuning and calibration seeds are disjoint.
+
+Findings (actual numbers, `reports/poc/poc_loop_results.json`):
+
+- **Conduction faults** are identified correctly on a passive night: 24/24 end
+  to end. A draft cannot mimic a fabric conduction loss.
+- **Drafts are genuinely ambiguous on a passive night.** A conduction
+  multiplier reproduces the draft curve, and the ±12% house variation looks
+  conduction-like. With a lenient ambiguity threshold, this produced confident
+  wrong "conduction" answers.
+- **GO, with a condition.** The fan test discriminates draft vs conduction
+  under some conditions but not others. Draft ranked first after passive + fan:
+  - 7/8 with the calm 2020-12-06 fan night;
+  - 4/8 with the calm 2019-12-01 fan night;
+  - 4–7/8 with windy fan nights. The windy fan night on its own ranks the draft
+    first in only 0–2/8, because the published wind coefficients differ from
+    the simulator's.
+  - Overall: 32/48 across all pairings.
+- **End to end:** drafts are 6/24 correct, healthy false alarms 3/8, and
+  repairs address the true cause in 25/37.
+- **Proposal for Mihir:** run E1 only on calm nights. ISO 9972 fan-pressurisation
+  practice limits meteorological wind to about 6 m/s (3 m/s at ground level).
+  Use per-context thresholds (passive vs passive + fan) and tune ambiguity on
+  faulty training scenarios.
+
+## Proposed contract changes (for Nikhil; not implemented)
+
+- `RepairRequest.effectiveness` (0–1), so the UI slider works. The service
+  currently takes it only as a keyword argument.
+- Optional `gas_price_pence_per_kwh` / `repair_cost` overrides on diagnose and
+  repair, so the money controls reach `MoneyOverrides`.
+- `RoomTemplate.air_fabric_conductance_w_per_k` and a leakage-law field, to
+  replace the engine-side extension file.
+- Replace the stale `shared/fixtures/public_template.json` with the calibrated
+  HH09 template.

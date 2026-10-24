@@ -75,7 +75,8 @@
       "adjacent_source_rooms": {
         "value": [
           "kitchen",
-          "hall"
+          "hall",
+          "bedroom"
         ],
         "unit": null,
         "status": "documented",
@@ -229,7 +230,8 @@
       "adjacent_source_rooms": {
         "value": [
           "kitchen",
-          "hall"
+          "hall",
+          "living_room"
         ],
         "unit": null,
         "status": "documented",
@@ -327,6 +329,108 @@
         "wind_sensitivity",
         "inter_room_conductance_w_per_k"
       ]
+    }
+  ],
+  "shared_boundaries": [
+    {
+      "source_room_ids": [
+        "living_room",
+        "kitchen"
+      ],
+      "length": {
+        "value": 3.14,
+        "unit": "m",
+        "status": "assumed",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)",
+        "assumption": "Kitchen 3.14 m side along the 3.15 m Living Room side. Derived from documented plan dimensions; not a printed or measured boundary length."
+      },
+      "door_on_plan": {
+        "value": true,
+        "unit": null,
+        "status": "documented",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)"
+      },
+      "interpretation": "Geometric shared boundary only; partition construction and thermal conductance are not published."
+    },
+    {
+      "source_room_ids": [
+        "kitchen",
+        "bedroom"
+      ],
+      "length": {
+        "value": 1.82,
+        "unit": "m",
+        "status": "assumed",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)",
+        "assumption": "Full 1.82 m Kitchen side along the Bedroom. Derived from documented plan dimensions; not a printed or measured boundary length."
+      },
+      "door_on_plan": {
+        "value": false,
+        "unit": null,
+        "status": "documented",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)"
+      },
+      "interpretation": "Geometric shared boundary only; partition construction and thermal conductance are not published."
+    },
+    {
+      "source_room_ids": [
+        "bedroom",
+        "living_room"
+      ],
+      "length": {
+        "value": 1.98,
+        "unit": "m",
+        "status": "assumed",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)",
+        "assumption": "Bedroom 3.80 m side minus the 1.82 m Kitchen side; includes the chimney breast. Derived from documented plan dimensions; not a printed or measured boundary length."
+      },
+      "door_on_plan": {
+        "value": false,
+        "unit": null,
+        "status": "documented",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)"
+      },
+      "interpretation": "Geometric shared boundary only; partition construction and thermal conductance are not published."
+    },
+    {
+      "source_room_ids": [
+        "living_room",
+        "hall"
+      ],
+      "length": {
+        "value": 2.38,
+        "unit": "m",
+        "status": "assumed",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)",
+        "assumption": "Living Room 4.36 m side minus the 1.98 m Bedroom boundary (Hall side is 2.39 m). Derived from documented plan dimensions; not a printed or measured boundary length."
+      },
+      "door_on_plan": {
+        "value": true,
+        "unit": null,
+        "status": "documented",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)"
+      },
+      "interpretation": "Geometric shared boundary only; partition construction and thermal conductance are not published."
+    },
+    {
+      "source_room_ids": [
+        "bedroom",
+        "hall"
+      ],
+      "length": {
+        "value": 1.14,
+        "unit": "m",
+        "status": "assumed",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)",
+        "assumption": "Full 1.14 m Hall width along the Bedroom. Derived from documented plan dimensions; not a printed or measured boundary length."
+      },
+      "door_on_plan": {
+        "value": true,
+        "unit": null,
+        "status": "documented",
+        "source_reference": "SMETER_P2_Floorplans.pdf page 9 (published page labeled HH09)"
+      },
+      "interpretation": "Geometric shared boundary only; partition construction and thermal conductance are not published."
     }
   ],
   "excluded_observed_rooms": [

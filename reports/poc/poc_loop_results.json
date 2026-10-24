@@ -1,0 +1,2837 @@
+{
+  "title": "HeatHunter Gate-2 proof of concept (TRAINING split, not the held-out benchmark)",
+  "summary": {
+    "thresholds": {
+      "detection_bic": 114.0463165107189,
+      "ambiguity_bic (provisional)": 51.627363293949884,
+      "adequacy_rmse_deg_c": 0.2636654375611179,
+      "separation": 2,
+      "measurement_noise_deg_c": 0.15,
+      "note": "PROVISIONAL PoC tuning (Mihir owns final thresholds): detection = 95th-percentile healthy TRAINING maxima over 40 passive cases; adequacy = max(healthy p95 over 80 passive and passive+fan cases, correct-model p95 on faulty TRAINING tuning); ambiguity = smallest passive BIC gap with >= 95% leading-cause precision on 48 faulty TRAINING tuning scenarios."
+    },
+    "counts": {
+      "faulty": 48,
+      "healthy": 8
+    },
+    "passive_status_faulty": {
+      "ambiguous": 17,
+      "confident": 25,
+      "no_fault": 6
+    },
+    "passive_status_healthy": {
+      "no_fault": 5,
+      "ambiguous": 3
+    },
+    "healthy_false_alarms(confident or ambiguous)": "3/8",
+    "passive_room_correct(faulty)": "42/48",
+    "by_severity": {
+      "1.0": {
+        "passive_status": {
+          "ambiguous": 7,
+          "no_fault": 3,
+          "confident": 6
+        },
+        "passive_room_correct": "13/16",
+        "final_matched_truth": "8/16"
+      },
+      "2.0": {
+        "passive_status": {
+          "confident": 9,
+          "ambiguous": 4,
+          "no_fault": 3
+        },
+        "passive_room_correct": "13/16",
+        "final_matched_truth": "9/16"
+      },
+      "3.0": {
+        "passive_status": {
+          "ambiguous": 6,
+          "confident": 10
+        },
+        "passive_room_correct": "16/16",
+        "final_matched_truth": "8/16"
+      }
+    },
+    "ambiguous_cases": 17,
+    "ambiguous_with_correct_room": 17,
+    "fan_test_recommended": "10/17",
+    "separation_scores_ambiguous": [
+      1.022,
+      1.279,
+      1.363,
+      1.374,
+      1.413,
+      1.882,
+      1.9,
+      2.412,
+      2.529,
+      2.803,
+      3.008,
+      3.306,
+      3.801,
+      3.868,
+      4.091,
+      5.349,
+      5.662
+    ],
+    "passive_top_cause_correct(ambiguous, right room)": "2/17",
+    "after_test_top_cause_correct(ambiguous, right room)": "8/17",
+    "after_test_status(ambiguous, right room)": {
+      "ambiguous": 8,
+      "confident": 9
+    },
+    "after_recommended_test_correct": "4/10",
+    "passive_cause_gap_bic_ambiguous_median": 7.04,
+    "passive_cause_gap_at_least(threshold) among right-room fault cases": {
+      "2.0": "38/42",
+      "6.0": "35/42",
+      "10.0": "31/42",
+      "20.0": "27/42"
+    },
+    "final_diagnosis_matched_truth": "30/56",
+    "repairs_addressing_cause": "25/37",
+    "ambiguity_tuning": {
+      "tuning_scenarios": 48,
+      "precision_target": 0.95,
+      "confident_fraction": 0.438,
+      "confident_precision": 0.952,
+      "wrong_leader_gaps": [
+        0.1,
+        0.5,
+        0.7,
+        0.7,
+        0.9,
+        1.0,
+        1.6,
+        1.6,
+        1.8,
+        2.1,
+        3.8,
+        4.1,
+        5.9,
+        6.2,
+        8.6,
+        9.5,
+        25.5,
+        42.7,
+        44.4,
+        51.6
+      ],
+      "correct_model_rmse_p95_deg_c": 0.2637,
+      "healthy_adequacy_p95_deg_c": 0.1768
+    },
+    "runtime_seconds": 87.0
+  },
+  "scenarios": [
+    {
+      "seed": 930001,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.424,
+            "bic": -342.16,
+            "rmse": 0.1477
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.908,
+            "bic": -340.71,
+            "rmse": 0.1488
+          }
+        ],
+        "cause_gap_bic": 1.45,
+        "evidence": [
+          "Best fault improves BIC over normal by 148.70; leading cause gap is 1.45."
+        ],
+        "test_recommended": false,
+        "separation_score": 1.374,
+        "test_explanation": "Predicted responses are too similar; seek additional evidence.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": true,
+        "night_id": "smeter-hh09-2020-01-28"
+      },
+      "after_test": {
+        "status": "ambiguous",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.268,
+            "bic": -608.85,
+            "rmse": 0.1807
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.329,
+            "bic": -607.28,
+            "rmse": 0.1814
+          }
+        ],
+        "cause_gap_bic": 1.57,
+        "evidence": [
+          "Best fault improves BIC over normal by 233.80; leading cause gap is 1.57."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No unused experiment weather/protocol supplied.",
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "living_room",
+        "severity": 1.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930002,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.485,
+            "bic": -345.4,
+            "rmse": 0.1481
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.907,
+            "bic": -290.51,
+            "rmse": 0.1983
+          }
+        ],
+        "cause_gap_bic": 54.89,
+        "evidence": [
+          "Best fault improves BIC over normal by 264.85; leading cause gap is 54.90."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 96.39
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 96.39,
+        "payback_years": 16.8
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "living_room",
+        "severity": 2.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930003,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.662,
+            "bic": -314.39,
+            "rmse": 0.1715
+          },
+          {
+            "cause": "draft",
+            "multiplier": 3.022,
+            "bic": -279.73,
+            "rmse": 0.2066
+          }
+        ],
+        "cause_gap_bic": 34.66,
+        "evidence": [
+          "Best fault improves BIC over normal by 220.76; leading cause gap is 34.66."
+        ],
+        "test_recommended": false,
+        "separation_score": 1.9,
+        "test_explanation": "Predicted responses are too similar; seek additional evidence.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": true,
+        "night_id": "smeter-hh09-2020-12-06"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.406,
+            "bic": -660.57,
+            "rmse": 0.1554
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.856,
+            "bic": -576.46,
+            "rmse": 0.1955
+          }
+        ],
+        "cause_gap_bic": 84.11,
+        "evidence": [
+          "Best fault improves BIC over normal by 323.54; leading cause gap is 84.11."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 34.17
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 34.17,
+        "payback_years": 34.0
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "living_room",
+        "severity": 3.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930004,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.279,
+            "bic": -319.34,
+            "rmse": 0.1701
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.786,
+            "bic": -314.75,
+            "rmse": 0.1743
+          }
+        ],
+        "cause_gap_bic": 4.59,
+        "evidence": [
+          "Best fault improves BIC over normal by 114.73; leading cause gap is 4.59."
+        ],
+        "test_recommended": true,
+        "separation_score": 3.801,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2020-02-10"
+      },
+      "after_test": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.363,
+            "bic": -552.75,
+            "rmse": 0.2122
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.404,
+            "bic": -502.25,
+            "rmse": 0.2432
+          }
+        ],
+        "cause_gap_bic": 50.5,
+        "evidence": [
+          "Best fault improves BIC over normal by 211.08; leading cause gap is 50.49."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No unused experiment weather/protocol supplied.",
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "kitchen",
+        "severity": 1.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930005,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.448,
+            "bic": -333.31,
+            "rmse": 0.158
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.088,
+            "bic": -326.27,
+            "rmse": 0.164
+          }
+        ],
+        "cause_gap_bic": 7.04,
+        "evidence": [
+          "Best fault improves BIC over normal by 206.36; leading cause gap is 7.04."
+        ],
+        "test_recommended": false,
+        "separation_score": 1.882,
+        "test_explanation": "Predicted responses are too similar; seek additional evidence.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": true,
+        "night_id": "smeter-hh09-2020-12-06"
+      },
+      "after_test": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "draft",
+            "multiplier": 2.23,
+            "bic": -636.86,
+            "rmse": 0.1674
+          },
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.533,
+            "bic": -594.31,
+            "rmse": 0.1879
+          }
+        ],
+        "cause_gap_bic": 42.55,
+        "evidence": [
+          "Best fault improves BIC over normal by 322.26; leading cause gap is 42.55."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No unused experiment weather/protocol supplied.",
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "kitchen",
+        "severity": 2.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930006,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.702,
+            "bic": -323.57,
+            "rmse": 0.1632
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.538,
+            "bic": -317.98,
+            "rmse": 0.1682
+          }
+        ],
+        "cause_gap_bic": 5.59,
+        "evidence": [
+          "Best fault improves BIC over normal by 159.93; leading cause gap is 5.59."
+        ],
+        "test_recommended": true,
+        "separation_score": 3.306,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2020-01-28"
+      },
+      "after_test": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "draft",
+            "multiplier": 1.934,
+            "bic": -518.65,
+            "rmse": 0.2327
+          },
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.493,
+            "bic": -501.08,
+            "rmse": 0.244
+          }
+        ],
+        "cause_gap_bic": 17.57,
+        "evidence": [
+          "Best fault improves BIC over normal by 263.65; leading cause gap is 17.58."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No unused experiment weather/protocol supplied.",
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "kitchen",
+        "severity": 3.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930007,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.417,
+            "bic": -347.44,
+            "rmse": 0.1436
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.242,
+            "bic": -334.32,
+            "rmse": 0.154
+          }
+        ],
+        "cause_gap_bic": 13.12,
+        "evidence": [
+          "Best fault improves BIC over normal by 196.23; leading cause gap is 13.12."
+        ],
+        "test_recommended": false,
+        "separation_score": 1.413,
+        "test_explanation": "Predicted responses are too similar; seek additional evidence.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": true,
+        "night_id": "smeter-hh09-2020-12-06"
+      },
+      "after_test": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "draft",
+            "multiplier": 2.091,
+            "bic": -665.34,
+            "rmse": 0.1565
+          },
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.397,
+            "bic": -655.16,
+            "rmse": 0.1609
+          }
+        ],
+        "cause_gap_bic": 10.18,
+        "evidence": [
+          "Best fault improves BIC over normal by 303.43; leading cause gap is 10.18."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No unused experiment weather/protocol supplied.",
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_1",
+        "severity": 1.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930008,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_1",
+        "severity": 2.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930009,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.919,
+            "bic": -344.48,
+            "rmse": 0.1488
+          },
+          {
+            "cause": "draft",
+            "multiplier": 3.455,
+            "bic": -190.13,
+            "rmse": 0.3383
+          }
+        ],
+        "cause_gap_bic": 154.35,
+        "evidence": [
+          "Best fault improves BIC over normal by 324.94; leading cause gap is 154.34."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 168.81
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 168.81,
+        "payback_years": 8.7
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_1",
+        "severity": 3.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930010,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_2",
+        "severity": 1.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930011,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_2",
+        "severity": 2.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930012,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.67,
+            "bic": -339.71,
+            "rmse": 0.1496
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.418,
+            "bic": -333.68,
+            "rmse": 0.1546
+          }
+        ],
+        "cause_gap_bic": 6.03,
+        "evidence": [
+          "Best fault improves BIC over normal by 244.45; leading cause gap is 6.03."
+        ],
+        "test_recommended": true,
+        "separation_score": 5.349,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2020-01-28"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.767,
+            "bic": -573.53,
+            "rmse": 0.2006
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.835,
+            "bic": -452.27,
+            "rmse": 0.2784
+          }
+        ],
+        "cause_gap_bic": 121.26,
+        "evidence": [
+          "Best fault improves BIC over normal by 385.63; leading cause gap is 121.26."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 25.98
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 25.98,
+        "payback_years": 11.3
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_2",
+        "severity": 3.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930013,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.245,
+            "bic": -341.04,
+            "rmse": 0.1486
+          },
+          {
+            "cause": "draft",
+            "multiplier": 4.484,
+            "bic": -192.63,
+            "rmse": 0.33
+          }
+        ],
+        "cause_gap_bic": 148.41,
+        "evidence": [
+          "Best fault improves BIC over normal by 334.07; leading cause gap is 148.41."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 247.55
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.265 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 1766.5484856349592,
+        "estimated_annual_cost_usd": 247.55,
+        "payback_years": 6.6
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "living_room",
+        "severity": 1.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930014,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.406,
+            "bic": -344.47,
+            "rmse": 0.1489
+          },
+          {
+            "cause": "draft",
+            "multiplier": 3.362,
+            "bic": 0.64,
+            "rmse": 0.9333
+          }
+        ],
+        "cause_gap_bic": 345.11,
+        "evidence": [
+          "Best fault improves BIC over normal by 441.48; leading cause gap is 345.12."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 279.51
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +2.799 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 2688.951668006125,
+        "estimated_annual_cost_usd": 279.51,
+        "payback_years": 5.8
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "living_room",
+        "severity": 2.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930015,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 4.117,
+            "bic": -351.98,
+            "rmse": 0.1372
+          },
+          {
+            "cause": "draft",
+            "multiplier": 6.0,
+            "bic": 47.99,
+            "rmse": 1.2057
+          }
+        ],
+        "cause_gap_bic": 399.97,
+        "evidence": [
+          "Best fault improves BIC over normal by 486.67; leading cause gap is 399.97."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 619.68
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +3.080 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 5272.269404621083,
+        "estimated_annual_cost_usd": 619.68,
+        "payback_years": 2.6
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "living_room",
+        "severity": 3.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930016,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.697,
+            "bic": -338.85,
+            "rmse": 0.1473
+          },
+          {
+            "cause": "draft",
+            "multiplier": 3.289,
+            "bic": -324.79,
+            "rmse": 0.159
+          }
+        ],
+        "cause_gap_bic": 14.06,
+        "evidence": [
+          "Best fault improves BIC over normal by 274.04; leading cause gap is 14.05."
+        ],
+        "test_recommended": true,
+        "separation_score": 5.662,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2019-12-01"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.824,
+            "bic": -628.68,
+            "rmse": 0.1695
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.989,
+            "bic": -198.16,
+            "rmse": 0.5497
+          }
+        ],
+        "cause_gap_bic": 430.52,
+        "evidence": [
+          "Best fault improves BIC over normal by 563.18; leading cause gap is 430.52."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 69.24
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.175 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 617.0440044109585,
+        "estimated_annual_cost_usd": 69.24,
+        "payback_years": 16.8
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "kitchen",
+        "severity": 1.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930017,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.137,
+            "bic": -337.41,
+            "rmse": 0.1546
+          },
+          {
+            "cause": "draft",
+            "multiplier": 3.62,
+            "bic": -189.85,
+            "rmse": 0.3388
+          }
+        ],
+        "cause_gap_bic": 147.56,
+        "evidence": [
+          "Best fault improves BIC over normal by 343.63; leading cause gap is 147.56."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 95.6
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.732 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 869.0182320893576,
+        "estimated_annual_cost_usd": 95.6,
+        "payback_years": 12.1
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "kitchen",
+        "severity": 2.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930018,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 3.672,
+            "bic": -300.79,
+            "rmse": 0.1778
+          },
+          {
+            "cause": "draft",
+            "multiplier": 6.0,
+            "bic": -13.61,
+            "rmse": 0.8615
+          }
+        ],
+        "cause_gap_bic": 287.18,
+        "evidence": [
+          "Best fault improves BIC over normal by 418.43; leading cause gap is 287.18."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 224.6
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +2.865 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 1905.3231837431072,
+        "estimated_annual_cost_usd": 224.6,
+        "payback_years": 5.2
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "kitchen",
+        "severity": 3.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930019,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.84,
+            "bic": -351.5,
+            "rmse": 0.1434
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.962,
+            "bic": -118.28,
+            "rmse": 0.4958
+          }
+        ],
+        "cause_gap_bic": 233.22,
+        "evidence": [
+          "Best fault improves BIC over normal by 360.05; leading cause gap is 233.21."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 154.31
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.641 degC; post-repair public-model status: ambiguous. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 1397.9759807444354,
+        "estimated_annual_cost_usd": 154.31,
+        "payback_years": 9.5
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_1",
+        "severity": 1.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930020,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.962,
+            "bic": -332.72,
+            "rmse": 0.1523
+          },
+          {
+            "cause": "draft",
+            "multiplier": 4.347,
+            "bic": 43.58,
+            "rmse": 1.1772
+          }
+        ],
+        "cause_gap_bic": 376.3,
+        "evidence": [
+          "Best fault improves BIC over normal by 461.47; leading cause gap is 376.31."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 360.41
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +3.009 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 3023.507441307509,
+        "estimated_annual_cost_usd": 360.41,
+        "payback_years": 4.1
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_1",
+        "severity": 2.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930021,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 3.658,
+            "bic": -333.01,
+            "rmse": 0.1551
+          },
+          {
+            "cause": "draft",
+            "multiplier": 6.0,
+            "bic": 36.32,
+            "rmse": 1.1299
+          }
+        ],
+        "cause_gap_bic": 369.33,
+        "evidence": [
+          "Best fault improves BIC over normal by 462.13; leading cause gap is 369.33."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 488.28
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +3.327 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 4695.256681625151,
+        "estimated_annual_cost_usd": 488.28,
+        "payback_years": 3.0
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_1",
+        "severity": 3.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930022,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.789,
+            "bic": -326.44,
+            "rmse": 0.1576
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.329,
+            "bic": -314.77,
+            "rmse": 0.1679
+          }
+        ],
+        "cause_gap_bic": 11.67,
+        "evidence": [
+          "Best fault improves BIC over normal by 228.81; leading cause gap is 11.67."
+        ],
+        "test_recommended": true,
+        "separation_score": 3.868,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2019-12-01"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.919,
+            "bic": -637.69,
+            "rmse": 0.1638
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.593,
+            "bic": -256.75,
+            "rmse": 0.4665
+          }
+        ],
+        "cause_gap_bic": 380.94,
+        "evidence": [
+          "Best fault improves BIC over normal by 505.24; leading cause gap is 380.94."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 31.13
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.076 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 269.6077063553103,
+        "estimated_annual_cost_usd": 31.13,
+        "payback_years": 9.4
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_2",
+        "severity": 1.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930023,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.295,
+            "bic": -333.65,
+            "rmse": 0.1577
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.518,
+            "bic": -66.3,
+            "rmse": 0.6537
+          }
+        ],
+        "cause_gap_bic": 267.35,
+        "evidence": [
+          "Best fault improves BIC over normal by 395.87; leading cause gap is 267.35."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 43.85
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +2.066 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 465.99290662298506,
+        "estimated_annual_cost_usd": 43.85,
+        "payback_years": 6.7
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_2",
+        "severity": 2.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930024,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 4.197,
+            "bic": -329.03,
+            "rmse": 0.1616
+          },
+          {
+            "cause": "draft",
+            "multiplier": 4.195,
+            "bic": 42.69,
+            "rmse": 1.1672
+          }
+        ],
+        "cause_gap_bic": 371.72,
+        "evidence": [
+          "Best fault improves BIC over normal by 489.18; leading cause gap is 371.72."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 108.24
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +3.201 degC; post-repair public-model status: ambiguous. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 885.3682948269796,
+        "estimated_annual_cost_usd": 108.24,
+        "payback_years": 2.7
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_2",
+        "severity": 3.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930025,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "none",
+        "room": null,
+        "severity": 0.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930026,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "none",
+        "room": null,
+        "severity": 0.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930027,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.214,
+            "bic": -328.16,
+            "rmse": 0.1592
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.614,
+            "bic": -326.87,
+            "rmse": 0.1603
+          }
+        ],
+        "cause_gap_bic": 1.29,
+        "evidence": [
+          "Best fault improves BIC over normal by 129.02; leading cause gap is 1.29."
+        ],
+        "test_recommended": true,
+        "separation_score": 3.154,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2020-02-10"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.25,
+            "bic": -678.27,
+            "rmse": 0.1496
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.092,
+            "bic": -497.49,
+            "rmse": 0.2445
+          }
+        ],
+        "cause_gap_bic": 180.78,
+        "evidence": [
+          "Best fault improves BIC over normal by 214.20; leading cause gap is 180.78."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 21.03
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 21.03,
+        "payback_years": 55.2
+      },
+      "truth": {
+        "fault": "none",
+        "room": null,
+        "severity": 0.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930028,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "none",
+        "room": null,
+        "severity": 0.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930029,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.394,
+            "bic": -343.08,
+            "rmse": 0.147
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.762,
+            "bic": -339.34,
+            "rmse": 0.1499
+          }
+        ],
+        "cause_gap_bic": 3.74,
+        "evidence": [
+          "Best fault improves BIC over normal by 154.09; leading cause gap is 3.74."
+        ],
+        "test_recommended": false,
+        "separation_score": 1.022,
+        "test_explanation": "Predicted responses are too similar; seek additional evidence.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": true,
+        "night_id": "smeter-hh09-2020-01-28"
+      },
+      "after_test": {
+        "status": "ambiguous",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.263,
+            "bic": -644.64,
+            "rmse": 0.1639
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.33,
+            "bic": -624.63,
+            "rmse": 0.1731
+          }
+        ],
+        "cause_gap_bic": 20.01,
+        "evidence": [
+          "Best fault improves BIC over normal by 265.49; leading cause gap is 20.02."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No unused experiment weather/protocol supplied.",
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "living_room",
+        "severity": 1.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930030,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.419,
+            "bic": -335.97,
+            "rmse": 0.1557
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.008,
+            "bic": -334.27,
+            "rmse": 0.1572
+          }
+        ],
+        "cause_gap_bic": 1.7,
+        "evidence": [
+          "Best fault improves BIC over normal by 175.60; leading cause gap is 1.70."
+        ],
+        "test_recommended": false,
+        "separation_score": 1.279,
+        "test_explanation": "Predicted responses are too similar; seek additional evidence.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": true,
+        "night_id": "smeter-hh09-2020-12-06"
+      },
+      "after_test": {
+        "status": "ambiguous",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "draft",
+            "multiplier": 2.306,
+            "bic": -619.27,
+            "rmse": 0.1773
+          },
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.438,
+            "bic": -595.47,
+            "rmse": 0.189
+          }
+        ],
+        "cause_gap_bic": 23.8,
+        "evidence": [
+          "Best fault improves BIC over normal by 243.04; leading cause gap is 23.80."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No unused experiment weather/protocol supplied.",
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "living_room",
+        "severity": 2.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930031,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.527,
+            "bic": -313.0,
+            "rmse": 0.1695
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.721,
+            "bic": -311.07,
+            "rmse": 0.1713
+          }
+        ],
+        "cause_gap_bic": 1.93,
+        "evidence": [
+          "Best fault improves BIC over normal by 189.63; leading cause gap is 1.93."
+        ],
+        "test_recommended": true,
+        "separation_score": 2.803,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2019-12-01"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.392,
+            "bic": -582.11,
+            "rmse": 0.1926
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.791,
+            "bic": -441.81,
+            "rmse": 0.2825
+          }
+        ],
+        "cause_gap_bic": 140.3,
+        "evidence": [
+          "Best fault improves BIC over normal by 317.64; leading cause gap is 140.29."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 77.91
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 77.91,
+        "payback_years": 20.8
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "living_room",
+        "severity": 3.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930032,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "kitchen",
+        "severity": 1.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930033,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.48,
+            "bic": -321.38,
+            "rmse": 0.1683
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.37,
+            "bic": -274.21,
+            "rmse": 0.2163
+          }
+        ],
+        "cause_gap_bic": 47.17,
+        "evidence": [
+          "Best fault improves BIC over normal by 229.87; leading cause gap is 47.18."
+        ],
+        "test_recommended": true,
+        "separation_score": 4.091,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2020-01-28"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.518,
+            "bic": -587.69,
+            "rmse": 0.1896
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.911,
+            "bic": -491.45,
+            "rmse": 0.2467
+          }
+        ],
+        "cause_gap_bic": 96.24,
+        "evidence": [
+          "Best fault improves BIC over normal by 376.81; leading cause gap is 96.24."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 43.51
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 43.51,
+        "payback_years": 26.7
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "kitchen",
+        "severity": 2.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930034,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.845,
+            "bic": -358.27,
+            "rmse": 0.1383
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.879,
+            "bic": -298.07,
+            "rmse": 0.1905
+          }
+        ],
+        "cause_gap_bic": 60.2,
+        "evidence": [
+          "Best fault improves BIC over normal by 283.05; leading cause gap is 60.21."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 71.04
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 71.04,
+        "payback_years": 16.3
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "kitchen",
+        "severity": 3.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930035,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.508,
+            "bic": -348.69,
+            "rmse": 0.1456
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.645,
+            "bic": -340.14,
+            "rmse": 0.1523
+          }
+        ],
+        "cause_gap_bic": 8.55,
+        "evidence": [
+          "Best fault improves BIC over normal by 144.15; leading cause gap is 8.55."
+        ],
+        "test_recommended": true,
+        "separation_score": 2.529,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2019-12-01"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.254,
+            "bic": -652.72,
+            "rmse": 0.1635
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.647,
+            "bic": -566.49,
+            "rmse": 0.2062
+          }
+        ],
+        "cause_gap_bic": 86.23,
+        "evidence": [
+          "Best fault improves BIC over normal by 262.75; leading cause gap is 86.23."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 46.66
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 46.66,
+        "payback_years": 31.6
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_1",
+        "severity": 1.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930036,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_1",
+        "severity": 2.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930037,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.823,
+            "bic": -322.77,
+            "rmse": 0.1607
+          },
+          {
+            "cause": "draft",
+            "multiplier": 3.321,
+            "bic": -310.43,
+            "rmse": 0.1719
+          }
+        ],
+        "cause_gap_bic": 12.34,
+        "evidence": [
+          "Best fault improves BIC over normal by 217.13; leading cause gap is 12.34."
+        ],
+        "test_recommended": true,
+        "separation_score": 3.008,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2019-12-01"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.48,
+            "bic": -577.21,
+            "rmse": 0.1934
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.284,
+            "bic": -432.41,
+            "rmse": 0.2879
+          }
+        ],
+        "cause_gap_bic": 144.8,
+        "evidence": [
+          "Best fault improves BIC over normal by 369.51; leading cause gap is 144.80."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 88.15
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 88.15,
+        "payback_years": 16.7
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_1",
+        "severity": 3.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930038,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_2",
+        "severity": 1.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930039,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.417,
+            "bic": -349.31,
+            "rmse": 0.1421
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.466,
+            "bic": -347.82,
+            "rmse": 0.1433
+          }
+        ],
+        "cause_gap_bic": 1.49,
+        "evidence": [
+          "Best fault improves BIC over normal by 131.16; leading cause gap is 1.49."
+        ],
+        "test_recommended": false,
+        "separation_score": 1.363,
+        "test_explanation": "Predicted responses are too similar; seek additional evidence.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": true,
+        "night_id": "smeter-hh09-2020-12-06"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "draft",
+            "multiplier": 2.14,
+            "bic": -648.83,
+            "rmse": 0.1621
+          },
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.514,
+            "bic": -560.76,
+            "rmse": 0.2059
+          }
+        ],
+        "cause_gap_bic": 88.07,
+        "evidence": [
+          "Best fault improves BIC over normal by 166.51; leading cause gap is 88.08."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 16.39
+      },
+      "repair": {
+        "repair_type": "draft",
+        "summary": "Paired synthetic mean temperature change +1.138 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 127.8549747998846,
+        "estimated_annual_cost_usd": 16.39,
+        "payback_years": 18.3
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_2",
+        "severity": 2.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930040,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.978,
+            "bic": -325.4,
+            "rmse": 0.1616
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.171,
+            "bic": -318.36,
+            "rmse": 0.1678
+          }
+        ],
+        "cause_gap_bic": 7.04,
+        "evidence": [
+          "Best fault improves BIC over normal by 203.61; leading cause gap is 7.04."
+        ],
+        "test_recommended": true,
+        "separation_score": 2.412,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2020-01-28"
+      },
+      "after_test": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "draft",
+            "multiplier": 1.955,
+            "bic": -501.25,
+            "rmse": 0.2439
+          },
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.728,
+            "bic": -499.65,
+            "rmse": 0.2449
+          }
+        ],
+        "cause_gap_bic": 1.6,
+        "evidence": [
+          "Best fault improves BIC over normal by 309.92; leading cause gap is 1.60."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No unused experiment weather/protocol supplied.",
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "draft",
+        "room": "bedroom_2",
+        "severity": 3.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930041,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.058,
+            "bic": -320.24,
+            "rmse": 0.1662
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.829,
+            "bic": -121.8,
+            "rmse": 0.4829
+          }
+        ],
+        "cause_gap_bic": 198.44,
+        "evidence": [
+          "Best fault improves BIC over normal by 339.09; leading cause gap is 198.43."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 210.26
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.486 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 1561.6686579535121,
+        "estimated_annual_cost_usd": 210.26,
+        "payback_years": 7.7
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "living_room",
+        "severity": 1.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930042,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.614,
+            "bic": -337.39,
+            "rmse": 0.1515
+          },
+          {
+            "cause": "draft",
+            "multiplier": 4.2,
+            "bic": -73.52,
+            "rmse": 0.626
+          }
+        ],
+        "cause_gap_bic": 263.87,
+        "evidence": [
+          "Best fault improves BIC over normal by 400.85; leading cause gap is 263.87."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 320.84
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +2.190 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 2747.9232747034794,
+        "estimated_annual_cost_usd": 320.84,
+        "payback_years": 5.1
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "living_room",
+        "severity": 2.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930043,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "living_room",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 3.399,
+            "bic": -332.08,
+            "rmse": 0.1559
+          },
+          {
+            "cause": "draft",
+            "multiplier": 5.685,
+            "bic": -22.08,
+            "rmse": 0.8255
+          }
+        ],
+        "cause_gap_bic": 310.0,
+        "evidence": [
+          "Best fault improves BIC over normal by 435.78; leading cause gap is 310.01."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 476.88
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +2.863 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 4306.8373195246695,
+        "estimated_annual_cost_usd": 476.88,
+        "payback_years": 3.4
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "living_room",
+        "severity": 3.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930044,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.072,
+            "bic": -346.24,
+            "rmse": 0.1415
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.719,
+            "bic": -84.67,
+            "rmse": 0.5863
+          }
+        ],
+        "cause_gap_bic": 261.57,
+        "evidence": [
+          "Best fault improves BIC over normal by 387.49; leading cause gap is 261.57."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 90.11
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.462 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 642.8667876510704,
+        "estimated_annual_cost_usd": 90.11,
+        "payback_years": 12.9
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "kitchen",
+        "severity": 1.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930045,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.492,
+            "bic": -342.74,
+            "rmse": 0.1502
+          },
+          {
+            "cause": "draft",
+            "multiplier": 4.288,
+            "bic": -109.87,
+            "rmse": 0.5184
+          }
+        ],
+        "cause_gap_bic": 232.87,
+        "evidence": [
+          "Best fault improves BIC over normal by 399.48; leading cause gap is 232.86."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 125.38
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.904 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 1119.8075656893675,
+        "estimated_annual_cost_usd": 125.38,
+        "payback_years": 9.3
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "kitchen",
+        "severity": 2.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930046,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 3.403,
+            "bic": -359.88,
+            "rmse": 0.1371
+          },
+          {
+            "cause": "draft",
+            "multiplier": 5.878,
+            "bic": -16.95,
+            "rmse": 0.8499
+          }
+        ],
+        "cause_gap_bic": 342.93,
+        "evidence": [
+          "Best fault improves BIC over normal by 480.56; leading cause gap is 342.93."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 202.01
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +2.660 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 1757.3893042990762,
+        "estimated_annual_cost_usd": 202.01,
+        "payback_years": 5.7
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "kitchen",
+        "severity": 3.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930047,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.967,
+            "bic": -349.01,
+            "rmse": 0.1394
+          },
+          {
+            "cause": "draft",
+            "multiplier": 4.899,
+            "bic": -156.53,
+            "rmse": 0.3968
+          }
+        ],
+        "cause_gap_bic": 192.48,
+        "evidence": [
+          "Best fault improves BIC over normal by 357.85; leading cause gap is 192.47."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 177.55
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.354 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 1478.5335814139387,
+        "estimated_annual_cost_usd": 177.55,
+        "payback_years": 8.3
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_1",
+        "severity": 1.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930048,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.591,
+            "bic": -347.8,
+            "rmse": 0.1462
+          },
+          {
+            "cause": "draft",
+            "multiplier": 5.102,
+            "bic": -59.94,
+            "rmse": 0.6762
+          }
+        ],
+        "cause_gap_bic": 287.86,
+        "evidence": [
+          "Best fault improves BIC over normal by 422.19; leading cause gap is 287.86."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 292.22
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +2.216 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 2408.2071475378234,
+        "estimated_annual_cost_usd": 292.22,
+        "payback_years": 5.0
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_1",
+        "severity": 2.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930049,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 4.026,
+            "bic": -319.75,
+            "rmse": 0.1666
+          },
+          {
+            "cause": "draft",
+            "multiplier": 6.0,
+            "bic": 124.83,
+            "rmse": 1.8185
+          }
+        ],
+        "cause_gap_bic": 444.58,
+        "evidence": [
+          "Best fault improves BIC over normal by 523.83; leading cause gap is 444.58."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 555.7
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +4.386 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 4804.198018597994,
+        "estimated_annual_cost_usd": 555.7,
+        "payback_years": 2.7
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_1",
+        "severity": 3.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930050,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.564,
+            "bic": -337.7,
+            "rmse": 0.1543
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.681,
+            "bic": -207.97,
+            "rmse": 0.3077
+          }
+        ],
+        "cause_gap_bic": 129.73,
+        "evidence": [
+          "Best fault improves BIC over normal by 262.86; leading cause gap is 129.73."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 19.08
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +1.175 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 236.64345190788148,
+        "estimated_annual_cost_usd": 19.08,
+        "payback_years": 15.3
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_2",
+        "severity": 1.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930051,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 2.599,
+            "bic": -324.94,
+            "rmse": 0.1651
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.967,
+            "bic": -35.93,
+            "rmse": 0.7683
+          }
+        ],
+        "cause_gap_bic": 289.01,
+        "evidence": [
+          "Best fault improves BIC over normal by 419.25; leading cause gap is 289.01."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 54.16
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +2.299 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 469.0958357870441,
+        "estimated_annual_cost_usd": 54.16,
+        "payback_years": 5.4
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_2",
+        "severity": 2.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930052,
+      "passive": {
+        "status": "confident",
+        "flagged_room": "bedroom_2",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 3.597,
+            "bic": -351.92,
+            "rmse": 0.1431
+          },
+          {
+            "cause": "draft",
+            "multiplier": 4.659,
+            "bic": -37.11,
+            "rmse": 0.7635
+          }
+        ],
+        "cause_gap_bic": 314.81,
+        "evidence": [
+          "Best fault improves BIC over normal by 464.99; leading cause gap is 314.81."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 87.95
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +2.495 degC; post-repair public-model status: no_fault. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 754.7141566966559,
+        "estimated_annual_cost_usd": 87.95,
+        "payback_years": 3.3
+      },
+      "truth": {
+        "fault": "envelope_conduction",
+        "room": "bedroom_2",
+        "severity": 3.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": true
+      }
+    },
+    {
+      "seed": 930053,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.337,
+            "bic": -341.34,
+            "rmse": 0.1514
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.869,
+            "bic": -336.59,
+            "rmse": 0.1552
+          }
+        ],
+        "cause_gap_bic": 4.75,
+        "evidence": [
+          "Best fault improves BIC over normal by 125.55; leading cause gap is 4.74."
+        ],
+        "test_recommended": false,
+        "separation_score": 1.669,
+        "test_explanation": "Predicted responses are too similar; seek additional evidence.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": true,
+        "night_id": "smeter-hh09-2020-01-28"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "bedroom_1",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.194,
+            "bic": -667.29,
+            "rmse": 0.1541
+          },
+          {
+            "cause": "draft",
+            "multiplier": 2.029,
+            "bic": -600.8,
+            "rmse": 0.1846
+          }
+        ],
+        "cause_gap_bic": 66.49,
+        "evidence": [
+          "Best fault improves BIC over normal by 219.32; leading cause gap is 66.49."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 35.69
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 35.69,
+        "payback_years": 41.3
+      },
+      "truth": {
+        "fault": "none",
+        "room": null,
+        "severity": 0.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    },
+    {
+      "seed": 930054,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "none",
+        "room": null,
+        "severity": 0.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930055,
+      "passive": {
+        "status": "no_fault",
+        "flagged_room": null,
+        "ranked_causes": [],
+        "cause_gap_bic": null,
+        "evidence": [],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": null,
+        "money_usd_per_year": null
+      },
+      "truth": {
+        "fault": "none",
+        "room": null,
+        "severity": 0.0,
+        "diagnosis_matched": true,
+        "repair_addressed_cause": null
+      }
+    },
+    {
+      "seed": 930056,
+      "passive": {
+        "status": "ambiguous",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.314,
+            "bic": -310.07,
+            "rmse": 0.169
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.697,
+            "bic": -305.84,
+            "rmse": 0.1729
+          }
+        ],
+        "cause_gap_bic": 4.23,
+        "evidence": [
+          "Best fault improves BIC over normal by 133.22; leading cause gap is 4.23."
+        ],
+        "test_recommended": true,
+        "separation_score": 2.896,
+        "test_explanation": "Predicted responses differ enough to justify this simulated test.",
+        "money_usd_per_year": null
+      },
+      "experiment": {
+        "forced": false,
+        "night_id": "smeter-hh09-2020-02-10"
+      },
+      "after_test": {
+        "status": "confident",
+        "flagged_room": "kitchen",
+        "ranked_causes": [
+          {
+            "cause": "envelope_conduction",
+            "multiplier": 1.284,
+            "bic": -635.4,
+            "rmse": 0.1648
+          },
+          {
+            "cause": "draft",
+            "multiplier": 1.121,
+            "bic": -443.27,
+            "rmse": 0.2794
+          }
+        ],
+        "cause_gap_bic": 192.13,
+        "evidence": [
+          "Best fault improves BIC over normal by 234.86; leading cause gap is 192.13."
+        ],
+        "test_recommended": false,
+        "separation_score": null,
+        "test_explanation": "No additional test is indicated by this ranking.",
+        "money_usd_per_year": 23.86
+      },
+      "repair": {
+        "repair_type": "envelope_conduction",
+        "summary": "Paired synthetic mean temperature change +0.000 degC; post-repair public-model status: confident. This is not measured annual energy savings.",
+        "remeasured_savings_kwh": 0.0,
+        "estimated_annual_cost_usd": 23.86,
+        "payback_years": 48.7
+      },
+      "truth": {
+        "fault": "none",
+        "room": null,
+        "severity": 0.0,
+        "diagnosis_matched": false,
+        "repair_addressed_cause": false
+      }
+    }
+  ]
+}
