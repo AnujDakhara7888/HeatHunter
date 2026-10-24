@@ -89,6 +89,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scenarios/{id}/money": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Estimate Money
+         * @description Re-price a diagnosis with user tariff/repair-cost overrides via the public engine.
+         */
+        post: operations["estimate_money_api_scenarios__id__money_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/scenarios/{id}/repair": {
         parameters: {
             query?: never;
@@ -132,6 +152,26 @@ export interface paths {
         };
         /** Get Real House */
         get: operations["get_real_house_api_real_house_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/real/house/floor-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Real House Floor Plan
+         * @description The original published floor-plan image referenced by ``RealHouse.floor_plan_asset_path``.
+         */
+        get: operations["get_real_house_floor_plan_api_real_house_floor_plan_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -328,11 +368,6 @@ export interface components {
              */
             provenance: "SIMULATED_GROUND_TRUTH";
         };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
         /** HealthResponse */
         HealthResponse: {
             /**
@@ -421,6 +456,26 @@ export interface components {
              */
             provenance: "MODEL_ESTIMATE";
         };
+        /**
+         * MoneyRequest
+         * @description User what-if overrides for the screening money estimate of a confident diagnosis.
+         */
+        MoneyRequest: {
+            /** Diagnosis Id */
+            diagnosis_id: string;
+            /** Gas Price Pence Per Kwh */
+            gas_price_pence_per_kwh?: number | null;
+            /** Repair Cost Gbp */
+            repair_cost_gbp?: number | null;
+        };
+        /** MoneyResponse */
+        MoneyResponse: {
+            /** Diagnosis Id */
+            diagnosis_id: string;
+            estimate: components["schemas"]["MoneyEstimate"] | null;
+            /** Explanation */
+            explanation: string;
+        };
         /** NightObservations */
         NightObservations: {
             /** Night Id */
@@ -502,6 +557,11 @@ export interface components {
         RepairRequest: {
             /** Diagnosis Id */
             diagnosis_id: string;
+            /**
+             * Effectiveness
+             * @default 1
+             */
+            effectiveness: number;
         };
         /** RepairResult */
         RepairResult: {
@@ -625,19 +685,6 @@ export interface components {
             /** Note */
             note?: string | null;
         };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
-        };
         /** WeatherNight */
         WeatherNight: {
             /**
@@ -727,16 +774,34 @@ export interface operations {
                     "application/json": components["schemas"]["ScenarioCreated"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The owning scientific or data service has not been integrated. */
+            /** @description The owning scientific or data service is not available. */
             501: {
                 headers: {
                     [name: string]: unknown;
@@ -767,16 +832,34 @@ export interface operations {
                     "application/json": components["schemas"]["ObservationResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The owning scientific or data service has not been integrated. */
+            /** @description The owning scientific or data service is not available. */
             501: {
                 headers: {
                     [name: string]: unknown;
@@ -811,16 +894,34 @@ export interface operations {
                     "application/json": components["schemas"]["Diagnosis"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The owning scientific or data service has not been integrated. */
+            /** @description The owning scientific or data service is not available. */
             501: {
                 headers: {
                     [name: string]: unknown;
@@ -855,16 +956,96 @@ export interface operations {
                     "application/json": components["schemas"]["ExperimentResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The owning scientific or data service has not been integrated. */
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    estimate_money_api_scenarios__id__money_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoneyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoneyResponse"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
             501: {
                 headers: {
                     [name: string]: unknown;
@@ -899,16 +1080,34 @@ export interface operations {
                     "application/json": components["schemas"]["RepairResult"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The owning scientific or data service has not been integrated. */
+            /** @description The owning scientific or data service is not available. */
             501: {
                 headers: {
                     [name: string]: unknown;
@@ -939,16 +1138,34 @@ export interface operations {
                     "application/json": components["schemas"]["GroundTruth"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The owning scientific or data service has not been integrated. */
+            /** @description The owning scientific or data service is not available. */
             501: {
                 headers: {
                     [name: string]: unknown;
@@ -977,8 +1194,37 @@ export interface operations {
                     "application/json": components["schemas"]["RealHouse"];
                 };
             };
-            /** @description The owning scientific or data service has not been integrated. */
+            /** @description The owning scientific or data service is not available. */
             501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    get_real_house_floor_plan_api_real_house_floor_plan_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Original floor plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1006,7 +1252,7 @@ export interface operations {
                     "application/json": components["schemas"]["EvaluationSummary"];
                 };
             };
-            /** @description The owning scientific or data service has not been integrated. */
+            /** @description The owning scientific or data service is not available. */
             501: {
                 headers: {
                     [name: string]: unknown;
