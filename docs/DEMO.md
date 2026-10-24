@@ -17,6 +17,27 @@ citations in the Evidence drawer.
 For frontend development, run the API as above and `npm run dev` in
 `frontend/` (Vite proxies `/api` to port 8000).
 
+## Put it on the web (one container)
+
+HeatHunter needs its Python backend (simulator, fitting, in-memory scenarios),
+so static hosting alone (GitHub Pages, plain Netlify/Vercel) cannot run it. The
+root `Dockerfile` builds the frontend and serves everything from one FastAPI
+process on `$PORT`.
+
+```bash
+docker build -t heathunter .
+docker run -p 8000:8000 heathunter        # or -e PORT=... ; open http://localhost:8000
+```
+
+Any Docker host works (Render, Railway, Fly.io, a VM). Constraints:
+
+- **Exactly one instance and one worker.** Scenarios and hidden truth live in
+  process memory; a second instance would not know another's scenario IDs.
+- A restart clears all scenarios, so users simply start a new one.
+- Free tiers that sleep add a cold start of about a minute. Open the site
+  before presenting, or use a non-sleeping plan.
+- Keep the judged demo on a local run as well (offline requirement).
+
 ## What each tab is
 
 | Tab | Data | Label shown |
