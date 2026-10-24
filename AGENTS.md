@@ -26,3 +26,21 @@ integration-owner review.
 5. Do not present synthetic evaluation as field validation.
 6. Keep the judge demo free of live network dependencies.
 7. Regenerate TypeScript types from OpenAPI; do not create parallel interfaces.
+
+## Mihir integration status — 2026-10-24
+
+- Ready: `backend.simulation.HH09ScenarioService` implements the six canonical
+  async service methods; API routes are intentionally untouched. Truth physics,
+  hidden faults, sensor generation, E1, diagnosed repair, reveal and public-only
+  diagnosis orchestration are implemented. See `docs/PHYSICS.md` for signatures.
+- QA: 110 repository tests passed; Ruff passed. Real-weather physics sweep:
+  128 cases, 768 checks, zero failures. This is not diagnosis accuracy.
+- Blocker for Nikhil: canonical Location requires station coordinates that HH09
+  does not publish. Please approve nullable latitude/longitude, regenerate types,
+  and wire the existing routes. No coordinates were fabricated or schemas changed.
+- Blocker for Kailash: inject the actual public fitter, coupled experiment
+  predictor, HH09 public template and trained thresholds into DiagnosisController.
+  Financial adapter is optional; unavailable money remains null. The genuine
+  diagnostic PoC and classification benchmark have not run without this engine.
+- Guided ID: `hh09-guided-v1`; old fixture ID retained as compatibility alias.
+  Demo ambiguity/success is not hardcoded and remains numerically unverified.
