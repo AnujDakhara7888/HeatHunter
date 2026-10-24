@@ -32,10 +32,8 @@ from .contracts import (
     RepairResult,
     ScenarioCreated,
     ScenarioCreateRequest,
-    ScenarioMode,
 )
 from .runtime import (
-    GUIDED_DEMO_SEED,
     REPOSITORY_ROOT,
     ThresholdsUnavailableError,
     get_runtime,
@@ -135,8 +133,6 @@ async def health() -> HealthResponse:
 )
 async def create_scenario(request: ScenarioCreateRequest) -> ScenarioCreated:
     runtime = _runtime()
-    if request.mode == ScenarioMode.GUIDED and request.seed is None:
-        request = request.model_copy(update={"seed": GUIDED_DEMO_SEED})
     created = await _call(runtime.scenarios.create_scenario(request))
     runtime.track_scenario(created.scenario_id)
     return created

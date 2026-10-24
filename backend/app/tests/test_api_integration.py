@@ -15,7 +15,7 @@ from backend.app.contracts import (
     RepairResult,
 )
 from backend.app.main import app
-from backend.app.runtime import load_threshold_config
+from backend.app.runtime import Runtime
 
 TRUTH_MARKERS = (
     "actual_room_id",
@@ -168,6 +168,6 @@ def test_missing_benchmark_is_reported_not_fabricated(client: TestClient, tmp_pa
 
 
 def test_thresholds_come_from_a_recorded_training_source() -> None:
-    config = load_threshold_config()
-    assert config.source_path.endswith(".json")
-    assert config.ambiguity_bic > 0 and config.separation > 0
+    config = Runtime().thresholds
+    assert config.passive.ambiguity_bic > 0 and config.post_fan.separation > 0
+    assert config.passive.detection_bic != config.post_fan.detection_bic

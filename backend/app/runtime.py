@@ -9,24 +9,21 @@ which configured instances to build and keeps the API-side bookkeeping
 
 from __future__ import annotations
 
-import json
 import os
 import threading
 from collections import OrderedDict
-from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+
+from backend.diagnosis import Thresholds
+from backend.diagnosis.settings import DecisionSettingsError
+from backend.simulation.runtime import build_runtime_components
 
 from .contracts import Assumption, Diagnosis, EvaluationSummary, SourceMetadata
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-POC_REPORT = REPOSITORY_ROOT / "reports" / "poc" / "poc_loop_results.json"
 EVALUATION_SUMMARY = REPOSITORY_ROOT / "reports" / "evaluation" / "summary.json"
 THRESHOLDS_ENV = "HEATHUNTER_THRESHOLDS_PATH"
-
-# Reproducible guided scenario seed (training split). How it was selected, and
-# how often the full workflow occurs across seeds, is disclosed in docs/DEMO.md.
-GUIDED_DEMO_SEED = 68
 
 # Keep well below the service's 128-scenario capacity; oldest are discarded.
 MAX_LIVE_SCENARIOS = 96
@@ -36,51 +33,17 @@ class ThresholdsUnavailableError(RuntimeError):
     """No calibrated diagnostic thresholds exist; diagnosis must not run."""
 
 
-@dataclass(frozen=True)
-class ThresholdConfig:
-    detection_bic: float
-    ambiguity_bic: float
-    adequacy_rmse: float
-    separation: float
-    measurement_noise: float
-    note: str
-    source_path: str
-
-
-def load_threshold_config(path: Path | None = None) -> ThresholdConfig:
-    """Thresholds from an explicit file (env override) or the provisional Gate-2 PoC report.
-
-    Mihir owns final threshold tuning. Until he publishes final values, the API
-    uses the provisional TRAINING-split PoC values and says so in every diagnosis.
-    """
-
-    override = os.environ.get(THRESHOLDS_ENV)
-    path = path or (Path(override) if override else POC_REPORT)
-    if not path.exists():
-        raise ThresholdsUnavailableError(f"diagnostic thresholds not found at {path}")
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    raw = payload.get("summary", {}).get("thresholds", payload)
-    try:
-        return ThresholdConfig(
-            detection_bic=float(raw["detection_bic"]),
-            ambiguity_bic=float(raw.get("ambiguity_bic", raw.get("ambiguity_bic (provisional)"))),
-            adequacy_rmse=float(raw.get("adequacy_rmse", raw.get("adequacy_rmse_deg_c"))),
-            separation=float(raw["separation"]),
-            measurement_noise=float(raw.get("measurement_noise", raw.get("measurement_noise_deg_c"))),
-            note=str(raw.get("note", raw.get("calibration_note", "Threshold source note missing"))),
-            source_path=str(
-                path.relative_to(REPOSITORY_ROOT) if path.is_relative_to(REPOSITORY_ROOT) else path
-            ),
-        )
-    except (KeyError, TypeError, ValueError) as exc:
-        raise ThresholdsUnavailableError(f"diagnostic thresholds at {path} are malformed: {exc}") from exc
-
-
-def threshold_assumptions(config: ThresholdConfig) -> list[Assumption]:
+def threshold_assumptions(
+    config: Thresholds, *, phase: str, settings_path: Path, max_wind_m_s: float
+) -> list[Assumption]:
     source = SourceMetadata(
-        provider="HeatHunter Gate-2 proof of concept (TRAINING split)",
-        dataset=config.source_path,
-        notes=config.note,
+        provider="HeatHunter conservative calibration (TRAINING split)",
+        dataset=str(
+            settings_path.relative_to(REPOSITORY_ROOT)
+            if settings_path.is_relative_to(REPOSITORY_ROOT)
+            else settings_path
+        ),
+        notes=f"{config.calibration_note} Decision phase: {phase}. Not held-out or real-home validation.",
     )
     return [
         Assumption(name="threshold_detection_bic", value=config.detection_bic, unit="BIC", source=source),
@@ -90,6 +53,8 @@ def threshold_assumptions(config: ThresholdConfig) -> list[Assumption]:
             name="threshold_separation", value=config.separation, unit="noise-normalized RMS", source=source
         ),
         Assumption(name="measurement_noise", value=config.measurement_noise, unit="degC", source=source),
+        Assumption(name="confidence_enabled", value=config.confidence_enabled, source=source),
+        Assumption(name="fan_max_wind_speed", value=max_wind_m_s, unit="m/s", source=source),
     ]
 
 
@@ -97,28 +62,15 @@ class Runtime:
     """Process-wide service instances plus API bookkeeping."""
 
     def __init__(self) -> None:
-        from backend.diagnosis import DiagnosisController, Thresholds
-        from backend.engine import PublicModelEngine, PublicMoneyEstimator, load_public_template
-        from backend.simulation import HH09ScenarioService
-
-        self.template = load_public_template()
-        self.thresholds = load_threshold_config()
-        controller = DiagnosisController(
-            PublicModelEngine(),
-            self.template,
-            Thresholds(
-                detection_bic=self.thresholds.detection_bic,
-                ambiguity_bic=self.thresholds.ambiguity_bic,
-                adequacy_rmse=self.thresholds.adequacy_rmse,
-                separation=self.thresholds.separation,
-                measurement_noise=self.thresholds.measurement_noise,
-                calibration_note=self.thresholds.note,
-            ),
-        )
-        self.scenarios = HH09ScenarioService(
-            controller, financial_estimator=PublicMoneyEstimator(self.template)
-        )
-        self._threshold_assumptions = threshold_assumptions(self.thresholds)
+        try:
+            components = build_runtime_components(settings_path=os.environ.get(THRESHOLDS_ENV))
+        except (DecisionSettingsError, OSError) as exc:
+            raise ThresholdsUnavailableError(f"validated decision configuration unavailable: {exc}") from exc
+        self.template = components.template.model_copy(deep=True)
+        self.scenarios = components.scenarios
+        self.thresholds = components.profiles
+        self._settings_path = components.settings_path
+        self._max_wind_m_s = components.fan_policy.max_wind_m_s
         self._lock = threading.Lock()
         self._live: OrderedDict[str, None] = OrderedDict()
         self._diagnoses: dict[str, tuple[str, Diagnosis]] = {}
@@ -134,9 +86,17 @@ class Runtime:
     def disclose(self, scenario_id: str, diagnosis: Diagnosis) -> Diagnosis:
         """Attach the thresholds the API configured, and remember the diagnosis for money what-ifs."""
 
-        names = {a.name for a in diagnosis.assumptions}
-        extra = [a for a in self._threshold_assumptions if a.name not in names]
-        diagnosis = diagnosis.model_copy(update={"assumptions": [*diagnosis.assumptions, *extra]})
+        phase = next((a.value for a in diagnosis.assumptions if a.name == "decision_phase"), None)
+        if phase not in {"passive", "post_fan"}:
+            raise RuntimeError("diagnosis did not declare a recognized decision phase")
+        config = self.thresholds.post_fan if phase == "post_fan" else self.thresholds.passive
+        extra = threshold_assumptions(
+            config, phase=phase, settings_path=self._settings_path, max_wind_m_s=self._max_wind_m_s
+        )
+        names = {a.name for a in extra}
+        diagnosis = diagnosis.model_copy(
+            update={"assumptions": [a for a in diagnosis.assumptions if a.name not in names] + extra}
+        )
         with self._lock:
             self._diagnoses[diagnosis.diagnosis_id] = (scenario_id, diagnosis.model_copy(deep=True))
         return diagnosis

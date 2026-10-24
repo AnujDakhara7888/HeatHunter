@@ -1,0 +1,1580 @@
+{
+  "scope": "TRAINING, known affected room, fixed severity 2; not full diagnostic accuracy",
+  "cases": 16,
+  "correct_leading_causes": {
+    "passive": 9,
+    "second_passive": 9,
+    "calm_fan": 15,
+    "windy_fan": 10
+  },
+  "rows": [
+    {
+      "seed": 950001,
+      "truth": "draft",
+      "room": "living_room",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 45.26043303743688,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.4271822100790317,
+            "sse": 2.0023121760159888,
+            "bic": -348.1753807101667,
+            "residual_rmse_deg_c": 0.14594928352640935,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.5357997877232688,
+            "sse": 3.2407233766939996,
+            "bic": -302.9149476727298,
+            "residual_rmse_deg_c": 0.18567654833911484,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 56.0249447728155,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.488436307322443,
+            "sse": 4.347239595506643,
+            "bic": -677.7512559814577,
+            "residual_rmse_deg_c": 0.15287987405090528,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.1158923938056886,
+            "sse": 5.875260787610737,
+            "bic": -621.7263112086422,
+            "residual_rmse_deg_c": 0.17772851090724032,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 7.880461959365903,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.5146137341213437,
+            "sse": 5.4512810819904285,
+            "bic": -626.651918247443,
+            "residual_rmse_deg_c": 0.17212358240378683,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.1908150247460556,
+            "sse": 5.689823564002663,
+            "bic": -618.771456288077,
+            "residual_rmse_deg_c": 0.17584923699632132,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 152.2223450312125,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.4497837050154752,
+            "sse": 6.745151401733292,
+            "bic": -596.0446425344483,
+            "residual_rmse_deg_c": 0.19043175903201767,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.5968609978461834,
+            "sse": 15.290376451302047,
+            "bic": -443.82229750323575,
+            "residual_rmse_deg_c": 0.28671645402208823,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950001,
+      "truth": "draft",
+      "room": "kitchen",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 51.81706176109179,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.7171976730444467,
+            "sse": 1.7321297344753213,
+            "bic": -351.8988258748443,
+            "residual_rmse_deg_c": 0.13721332702715938,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.51389899972688,
+            "sse": 3.042199105766128,
+            "bic": -300.0817641137525,
+            "residual_rmse_deg_c": 0.18184438837757527,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 74.1273392563503,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.6697944194706793,
+            "sse": 3.4752453437860575,
+            "bic": -709.4860618238881,
+            "residual_rmse_deg_c": 0.13743072056625116,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.078929385414901,
+            "sse": 5.199336666273317,
+            "bic": -635.3587225675378,
+            "residual_rmse_deg_c": 0.1680989723068403,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 39.03258382457011,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.588931006217824,
+            "sse": 5.364826972181845,
+            "bic": -620.5779196700954,
+            "residual_rmse_deg_c": 0.17168887930126525,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.6653909058424894,
+            "sse": 6.6480851818618,
+            "bic": -581.5453358455253,
+            "residual_rmse_deg_c": 0.19112284154354817,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 124.58912759574969,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.4955154376743602,
+            "sse": 6.609257705084653,
+            "bic": -578.3206604047429,
+            "residual_rmse_deg_c": 0.19108960186178164,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.698567370761609,
+            "sse": 13.155094135042768,
+            "bic": -453.73153280899317,
+            "residual_rmse_deg_c": 0.2695924295935606,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950001,
+      "truth": "draft",
+      "room": "bedroom_1",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 0.7373165496974252,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.578265934268754,
+            "sse": 2.559362634466469,
+            "bic": -325.1025490679063,
+            "residual_rmse_deg_c": 0.16500685461153491,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.4499831096177314,
+            "sse": 2.5795166841589756,
+            "bic": -324.36523251820887,
+            "residual_rmse_deg_c": 0.1656552650921638,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 0.5970811269010028,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.0816717245596443,
+            "sse": 5.039401107521174,
+            "bic": -654.8601616673575,
+            "residual_rmse_deg_c": 0.1641604977580703,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.2730815065790637,
+            "sse": 5.05551736467773,
+            "bic": -654.2630805404565,
+            "residual_rmse_deg_c": 0.16442278497072102,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 51.176306704875515,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.6882992616801875,
+            "sse": 5.823176787093842,
+            "bic": -618.9429031204078,
+            "residual_rmse_deg_c": 0.1774165473725276,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.375891939537892,
+            "sse": 7.67888717387085,
+            "bic": -567.7665964155323,
+            "residual_rmse_deg_c": 0.20373389074265413,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 59.375867866139515,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.413217590059354,
+            "sse": 5.223602379505214,
+            "bic": -639.0447584838306,
+            "residual_rmse_deg_c": 0.16803478371416444,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.3163443479359498,
+            "sse": 7.200409590749232,
+            "bic": -579.6688906176911,
+            "residual_rmse_deg_c": 0.19728439604532544,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950001,
+      "truth": "draft",
+      "room": "bedroom_2",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 17.95364893659132,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.8134027131874546,
+            "sse": 2.278956727212882,
+            "bic": -336.01035551506897,
+            "residual_rmse_deg_c": 0.15570555706931177,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.8631689195187329,
+            "sse": 2.7585744088248045,
+            "bic": -318.05670657847764,
+            "residual_rmse_deg_c": 0.1713083076330324,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 23.44205828809072,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.5492681961948433,
+            "sse": 4.543647614242655,
+            "bic": -664.8443305242741,
+            "residual_rmse_deg_c": 0.15671712533824955,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.7943925656323239,
+            "sse": 5.157458695554096,
+            "bic": -641.4022722361834,
+            "residual_rmse_deg_c": 0.16696752711561377,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 55.819106083887846,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.0038642956970163,
+            "sse": 5.640981331332021,
+            "bic": -615.8973990702455,
+            "residual_rmse_deg_c": 0.17557059718940055,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.7430981406985808,
+            "sse": 7.652868025770719,
+            "bic": -560.0782929863576,
+            "residual_rmse_deg_c": 0.20449682383962772,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 125.14210254705984,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.494165485937322,
+            "sse": 6.311239120078067,
+            "bic": -604.0529785493894,
+            "residual_rmse_deg_c": 0.18470193841558902,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.507870874485055,
+            "sse": 12.413391242997452,
+            "bic": -478.9108760023296,
+            "residual_rmse_deg_c": 0.2590355422028231,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950001,
+      "truth": "envelope_conduction",
+      "room": "living_room",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 408.97761100101263,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.8823589328403965,
+            "sse": 2.002437375543043,
+            "bic": -348.16950331114566,
+            "residual_rmse_deg_c": 0.14595384637526515,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 4.273691240056971,
+            "sse": 155.2739187984558,
+            "bic": 60.80810768986697,
+            "residual_rmse_deg_c": 1.2852432454533937,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 744.942350006539,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.9405612092769062,
+            "sse": 4.212070050477856,
+            "bic": -683.626408709814,
+            "residual_rmse_deg_c": 0.15048434438769678,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 4.450952627566722,
+            "sse": 231.13931481846078,
+            "bic": 61.31594129672496,
+            "residual_rmse_deg_c": 1.1147575917083026,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 747.3667169573375,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.9181001406716685,
+            "sse": 4.116600675217206,
+            "bic": -678.3233314799139,
+            "residual_rmse_deg_c": 0.14957549851702065,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 4.38930306968604,
+            "sse": 239.08123261536517,
+            "bic": 69.04338547742366,
+            "residual_rmse_deg_c": 1.1398923304784125,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 809.1190719282841,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.882470647462497,
+            "sse": 4.122512948705455,
+            "bic": -687.6237921597443,
+            "residual_rmse_deg_c": 0.14887594873356694,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.8860203125541974,
+            "sse": 319.4387193434238,
+            "bic": 121.49527976853983,
+            "residual_rmse_deg_c": 1.310500846847609,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950001,
+      "truth": "envelope_conduction",
+      "room": "kitchen",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 371.19683975881213,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 3.0513609519728813,
+            "sse": 1.8769113631823848,
+            "bic": -344.51345023941775,
+            "residual_rmse_deg_c": 0.14283280599839013,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.7479698917513398,
+            "sse": 106.09933650771363,
+            "bic": 26.68338951939438,
+            "residual_rmse_deg_c": 1.073896483695025,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 685.5425218744474,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 3.0101264004131294,
+            "sse": 3.81259958551348,
+            "bic": -692.4391640911805,
+            "residual_rmse_deg_c": 0.14394669124807596,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.908202655067695,
+            "sse": 158.2357228168417,
+            "bic": -6.896642216733117,
+            "residual_rmse_deg_c": 0.9273493162985332,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 700.7700871270337,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 3.0203036044714735,
+            "sse": 3.8322403642701106,
+            "bic": -681.8053660696063,
+            "residual_rmse_deg_c": 0.14510777283711532,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.7336788012551856,
+            "sse": 180.15807821378948,
+            "bic": 18.964721057427393,
+            "residual_rmse_deg_c": 0.9949269071772142,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 722.9545630806157,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.8606080970429364,
+            "sse": 4.223175972852658,
+            "bic": -659.3876469549413,
+            "residual_rmse_deg_c": 0.1527496773758049,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.6583909602778286,
+            "sse": 229.24964224869518,
+            "bic": 63.56691612567447,
+            "residual_rmse_deg_c": 1.1254210807998992,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950001,
+      "truth": "envelope_conduction",
+      "room": "bedroom_1",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 346.9103161593396,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.5462746274598835,
+            "sse": 2.2877283271358064,
+            "bic": -335.64924832376886,
+            "residual_rmse_deg_c": 0.15600492106040043,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.8194156544205797,
+            "sse": 91.660781637424,
+            "bic": 11.26106783557071,
+            "residual_rmse_deg_c": 0.9874789609254812,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 650.3044682269068,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.4532666649760255,
+            "sse": 4.380521666255152,
+            "bic": -681.0624946975374,
+            "residual_rmse_deg_c": 0.15305309389936092,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.9524196682599637,
+            "sse": 141.84456145320817,
+            "bic": -30.75802647063058,
+            "residual_rmse_deg_c": 0.8709345937524219,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 619.2091510512149,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.4957820374442843,
+            "sse": 4.927284357064558,
+            "bic": -649.8486250913315,
+            "residual_rmse_deg_c": 0.16319917125293945,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.906320408698526,
+            "sse": 140.03109262129266,
+            "bic": -30.639474040116678,
+            "residual_rmse_deg_c": 0.8700142671128792,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 683.4668850429637,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.4550997564135733,
+            "sse": 4.236729415144286,
+            "bic": -677.7829570004161,
+            "residual_rmse_deg_c": 0.15133155679454635,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 4.031576416700199,
+            "sse": 170.4099836311104,
+            "bic": 5.683928042547608,
+            "residual_rmse_deg_c": 0.9597578062483528,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950001,
+      "truth": "envelope_conduction",
+      "room": "bedroom_2",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 328.63201207615856,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 3.141852515479709,
+            "sse": 2.2216805471850845,
+            "bic": -338.40301738917185,
+            "residual_rmse_deg_c": 0.1537364609913315,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.100850026132017,
+            "sse": 73.28450152531624,
+            "bic": -9.771005313013294,
+            "residual_rmse_deg_c": 0.8829622623036052,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 591.881887094286,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.971626699377898,
+            "sse": 4.5023108115762085,
+            "bic": -666.5351102876607,
+            "residual_rmse_deg_c": 0.15600261279129024,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.2323254721363637,
+            "sse": 110.38257988741589,
+            "bic": -74.65322319337471,
+            "residual_rmse_deg_c": 0.7724393788421405,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 629.1059090041485,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.9593457905843485,
+            "sse": 4.414835232548596,
+            "bic": -660.7484173993735,
+            "residual_rmse_deg_c": 0.1553215461277745,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.0789391063650986,
+            "sse": 137.3740807428266,
+            "bic": -31.642508395224944,
+            "residual_rmse_deg_c": 0.8664167801041524,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 721.2975223029305,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.907875636736092,
+            "sse": 3.8869763677453735,
+            "bic": -693.7225635130582,
+            "residual_rmse_deg_c": 0.14495062286480148,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.2286566798664036,
+            "sse": 191.81609951328244,
+            "bic": 27.574958789872344,
+            "residual_rmse_deg_c": 1.0182552632581272,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950002,
+      "truth": "draft",
+      "room": "living_room",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 4.012778862836456,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.3811048962532635,
+            "sse": 2.043436364021771,
+            "bic": -341.4730962780014,
+            "residual_rmse_deg_c": 0.1482310157212028,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.8738673085988373,
+            "sse": 2.1335367371114655,
+            "bic": -337.4603174151649,
+            "residual_rmse_deg_c": 0.15146370930938438,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 5.655550737458839,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.3140481119768266,
+            "sse": 4.68583052637006,
+            "bic": -668.4633034428609,
+            "residual_rmse_deg_c": 0.15829692749171043,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.8442297951403848,
+            "sse": 4.829711622113356,
+            "bic": -662.8077527054021,
+            "residual_rmse_deg_c": 0.16070885127338672,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 28.23618679376284,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.251517898017796,
+            "sse": 5.179462227584972,
+            "bic": -640.6146760836815,
+            "residual_rmse_deg_c": 0.16732331912223392,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.4065505581914692,
+            "sse": 6.033512048941774,
+            "bic": -612.3784892899187,
+            "residual_rmse_deg_c": 0.18059229951171368,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 15.390921406630696,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.2983862642565929,
+            "sse": 6.275237750983423,
+            "bic": -605.1113003521166,
+            "residual_rmse_deg_c": 0.1841743849164966,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.5055112907653916,
+            "sse": 6.819632212863539,
+            "bic": -589.7203789454859,
+            "residual_rmse_deg_c": 0.1919970750461824,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950002,
+      "truth": "draft",
+      "room": "kitchen",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 40.14766188100748,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.6739644437788461,
+            "sse": 2.0875241060837495,
+            "bic": -339.4879329122234,
+            "residual_rmse_deg_c": 0.14982154639550813,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.4713890605472124,
+            "sse": 3.214507039583454,
+            "bic": -299.34027103121593,
+            "residual_rmse_deg_c": 0.18591555024655146,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 64.91840222538224,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.4994096193705375,
+            "sse": 4.278170464409196,
+            "bic": -685.4836164965764,
+            "residual_rmse_deg_c": 0.15125447736174394,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.2180135292240553,
+            "sse": 6.053778894834403,
+            "bic": -620.5652142711941,
+            "residual_rmse_deg_c": 0.1799253989025381,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 34.722439906495765,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.5499206832295434,
+            "sse": 5.9600601677578435,
+            "bic": -614.6444977259551,
+            "residual_rmse_deg_c": 0.17948966947247882,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.7280665939085682,
+            "sse": 7.190562775516481,
+            "bic": -579.9220578194594,
+            "residual_rmse_deg_c": 0.19714945319397587,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 31.5874195041053,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.5617501174551696,
+            "sse": 9.530211392526843,
+            "bic": -527.8080279839859,
+            "residual_rmse_deg_c": 0.22696840347462635,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.935990312475284,
+            "sse": 11.304599828369877,
+            "bic": -496.2206084798806,
+            "residual_rmse_deg_c": 0.24719616707832578,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950002,
+      "truth": "draft",
+      "room": "bedroom_1",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 4.704188049622701,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.3359963132189794,
+            "sse": 2.05920955941132,
+            "bic": -345.5415383731552,
+            "residual_rmse_deg_c": 0.148008393932873,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.622067183085323,
+            "sse": 2.16488394267337,
+            "bic": -340.8373503235325,
+            "residual_rmse_deg_c": 0.15175862493185047,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 7.844432497894104,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.3040920627223016,
+            "sse": 4.616800762114624,
+            "bic": -671.2386048499803,
+            "residual_rmse_deg_c": 0.15712661814267884,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.7611897229891034,
+            "sse": 4.814589688604418,
+            "bic": -663.3941723520862,
+            "residual_rmse_deg_c": 0.16045706255262895,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 32.81817137047426,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.240789204642396,
+            "sse": 5.424684657626646,
+            "bic": -632.0568468687117,
+            "residual_rmse_deg_c": 0.17123848799541194,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.2946232861993112,
+            "sse": 6.477633810843445,
+            "bic": -599.2386754982374,
+            "residual_rmse_deg_c": 0.18712091495973926,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 46.26286717062453,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.7618158049480699,
+            "sse": 4.876643062032339,
+            "bic": -656.3768766140837,
+            "residual_rmse_deg_c": 0.16192131140216032,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.209716547115894,
+            "sse": 6.25375559414232,
+            "bic": -610.1140094434592,
+            "residual_rmse_deg_c": 0.18336396021026313,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950002,
+      "truth": "draft",
+      "room": "bedroom_2",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 10.132958643271195,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.7656745234619426,
+            "sse": 2.570854452844426,
+            "bic": -324.68142352256865,
+            "residual_rmse_deg_c": 0.1653768891223673,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.938197875511167,
+            "sse": 2.863474500926477,
+            "bic": -314.54846487929746,
+            "residual_rmse_deg_c": 0.1745350815472557,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 13.671262755808812,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.6259006101814826,
+            "sse": 5.0168420291515545,
+            "bic": -660.2987974768486,
+            "residual_rmse_deg_c": 0.16335645056836753,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.738662795401189,
+            "sse": 5.395256494790273,
+            "bic": -646.6275347210398,
+            "residual_rmse_deg_c": 0.16940535069657367,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "draft",
+        "correct": true,
+        "bic_gap": 67.85608292349218,
+        "fits": [
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.158758634641429,
+            "sse": 5.618702477453477,
+            "bic": -630.0311530043867,
+            "residual_rmse_deg_c": 0.17380471177667015,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.717693587979168,
+            "sse": 8.092343853965382,
+            "bic": -562.1750700808946,
+            "residual_rmse_deg_c": 0.20858385608986918,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": false,
+        "bic_gap": 79.20685197230858,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 1.4520012710329444,
+            "sse": 7.201249940679721,
+            "bic": -579.6473007811895,
+            "residual_rmse_deg_c": 0.19729590810512396,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 1.5850441943238807,
+            "sse": 11.049661120033491,
+            "bic": -500.44044880888094,
+            "residual_rmse_deg_c": 0.24439291713576108,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950002,
+      "truth": "envelope_conduction",
+      "room": "living_room",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 377.70164392676566,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.75060347645542,
+            "sse": 1.9105956592848006,
+            "bic": -347.7243540884548,
+            "residual_rmse_deg_c": 0.1433319201962647,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.954043213620474,
+            "sse": 110.9104430347622,
+            "bic": 29.977289838310845,
+            "residual_rmse_deg_c": 1.0920555887755612,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 673.6108642094492,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.7649326888896937,
+            "sse": 4.596034386895619,
+            "bic": -672.0816284534602,
+            "residual_rmse_deg_c": 0.15677284201702227,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 4.106237289685714,
+            "sse": 168.57672319356132,
+            "bic": 1.5292357559890704,
+            "residual_rmse_deg_c": 0.9494629024738801,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 666.7666548248894,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.758670709980059,
+            "sse": 4.686175587265353,
+            "bic": -659.1302944908787,
+            "residual_rmse_deg_c": 0.15915614612726392,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 4.077275406519393,
+            "sse": 172.217961074917,
+            "bic": 7.636360334010707,
+            "residual_rmse_deg_c": 0.9648356843018682,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 728.1605869805328,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.7000631547830705,
+            "sse": 4.586175868312864,
+            "bic": -663.1207957977148,
+            "residual_rmse_deg_c": 0.15744884829276518,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.7072014297959286,
+            "sse": 234.87411870148628,
+            "bic": 65.03979118281799,
+            "residual_rmse_deg_c": 1.1267607691159844,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950002,
+      "truth": "envelope_conduction",
+      "room": "kitchen",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 346.95924844657884,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.8164011535315763,
+            "sse": 1.959081411109755,
+            "bic": -345.3937146946484,
+            "residual_rmse_deg_c": 0.14513921426447504,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.7304054751293485,
+            "sse": 81.71358789443975,
+            "bic": 1.5655337519304506,
+            "residual_rmse_deg_c": 0.9373583786619392,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 649.4325225730571,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.6906232374429138,
+            "sse": 3.8950988425279363,
+            "bic": -703.0254134548417,
+            "residual_rmse_deg_c": 0.1443239605021138,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.8880748952745092,
+            "sse": 125.53947437941287,
+            "bic": -53.59289088178461,
+            "residual_rmse_deg_c": 0.8193497956248253,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 649.5873143137931,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.737568246959633,
+            "sse": 4.197222493977155,
+            "bic": -679.5161501589195,
+            "residual_rmse_deg_c": 0.150624331223854,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.754019370882567,
+            "sse": 140.57002675045118,
+            "bic": -29.928835845126446,
+            "residual_rmse_deg_c": 0.8716868603087184,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 688.3523943278117,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.6133057019010493,
+            "sse": 4.344410028269727,
+            "bic": -673.1397603068932,
+            "residual_rmse_deg_c": 0.15324260977321755,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 4.073612582646711,
+            "sse": 179.41718218334512,
+            "bic": 15.212634020918497,
+            "residual_rmse_deg_c": 0.9847957181042473,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950002,
+      "truth": "envelope_conduction",
+      "room": "bedroom_1",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 325.9424859008595,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.336911290829744,
+            "sse": 2.0487288070980965,
+            "bic": -346.02119155545756,
+            "residual_rmse_deg_c": 0.1476312545145987,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.461091371832937,
+            "sse": 65.67332041007074,
+            "bic": -20.078705654598057,
+            "residual_rmse_deg_c": 0.8358542604952054,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 576.3125017522468,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.361796786236714,
+            "sse": 4.5216861137726685,
+            "bic": -675.1313896814012,
+            "residual_rmse_deg_c": 0.15549964516307793,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.5624081250145867,
+            "sse": 98.57029952863041,
+            "bic": -98.81888792915441,
+            "residual_rmse_deg_c": 0.7260261023011656,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 562.6700006893138,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.3813852905906967,
+            "sse": 4.825467404670539,
+            "bic": -653.711498055475,
+            "residual_rmse_deg_c": 0.16150420301903515,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.5192560573657583,
+            "sse": 101.02490440559019,
+            "bic": -91.04149736616111,
+            "residual_rmse_deg_c": 0.738972641140754,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 634.3759389089063,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.2948638189382002,
+            "sse": 4.279578246385489,
+            "bic": -680.668964279415,
+            "residual_rmse_deg_c": 0.15168548116290137,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.6339646604332096,
+            "sse": 129.60324104145081,
+            "bic": -46.29302537050881,
+            "residual_rmse_deg_c": 0.8347404497821007,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 950002,
+      "truth": "envelope_conduction",
+      "room": "bedroom_2",
+      "truth_provenance": "SIMULATED_GROUND_TRUTH",
+      "passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 311.5072955982015,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 3.137825225831374,
+            "sse": 2.6135637373543075,
+            "bic": -323.1326427650552,
+            "residual_rmse_deg_c": 0.16674492359985782,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.0559501729503533,
+            "sse": 71.85298141061897,
+            "bic": -11.625347166853732,
+            "residual_rmse_deg_c": 0.8742959563339544,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "second_passive": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 568.8964025743109,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 3.059331467654513,
+            "sse": 5.194418779496392,
+            "bic": -653.7593905030673,
+            "residual_rmse_deg_c": 0.16622240259658386,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.184359182073357,
+            "sse": 107.08569824598501,
+            "bic": -84.86298792875637,
+            "residual_rmse_deg_c": 0.754721655913076,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "calm_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 610.1400670779607,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 3.094517242802307,
+            "sse": 5.061504883618316,
+            "bic": -649.4564190901448,
+            "residual_rmse_deg_c": 0.16496178905252665,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 3.022311259921227,
+            "sse": 134.55685025192548,
+            "bic": -39.31635201218407,
+            "residual_rmse_deg_c": 0.8505433122925727,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      },
+      "windy_fan": {
+        "best": "envelope_conduction",
+        "correct": true,
+        "bic_gap": 678.7909130412257,
+        "fits": [
+          {
+            "fault_type": "envelope_conduction",
+            "fitted_multiplier": 2.9142639217210737,
+            "sse": 4.790426599924483,
+            "bic": -655.0598027620994,
+            "residual_rmse_deg_c": 0.16091674194262584,
+            "provenance": "MODEL_ESTIMATE"
+          },
+          {
+            "fault_type": "draft",
+            "fitted_multiplier": 2.196734389024767,
+            "sse": 187.8717479878301,
+            "bic": 23.73111027912637,
+            "residual_rmse_deg_c": 1.0077315922885315,
+            "provenance": "MODEL_ESTIMATE"
+          }
+        ]
+      }
+    }
+  ]
+}

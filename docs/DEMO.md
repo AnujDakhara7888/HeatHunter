@@ -1,21 +1,22 @@
 # HeatHunter demo guide
 
-## Run it (offline, one process)
+## Start the local demo
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
-cd frontend && npm install && npm run build && cd ..
+python3 -m venv .venv
+.venv/bin/pip install -e '.[dev]'
+npm --prefix frontend ci
+npm --prefix frontend run build
 .venv/bin/uvicorn backend.app.main:app --port 8000
-# open http://127.0.0.1:8000
 ```
 
-FastAPI serves the built frontend from `frontend/dist`. After installation the
-demo needs no network: weather, the SMETER HH09 house, the public template,
-thresholds and fonts are all local. The only external links are the source
-citations in the Evidence drawer.
+FastAPI serves the built frontend at `http://127.0.0.1:8000`. For frontend
+work, run `npm --prefix frontend run dev`; Vite proxies `/api` to port 8000.
+After dependencies are installed, weather, real-home data, the public model,
+saved decision settings and fonts are cached locally. Source links are optional.
+Restarting the backend clears its in-memory scenarios; start a new run afterward.
 
-For frontend development, run the API as above and `npm run dev` in
-`frontend/` (Vite proxies `/api` to port 8000).
+## Current scientific configuration
 
 ## Run it with nothing installed
 
@@ -103,87 +104,115 @@ which the frozen v3 spec had excluded, together with a homeowner-friendly
   investigation. It shows once per browser and reopens from "How it works".
 
 ## What each tab is
+The API uses the same `build_runtime_components()` factory as the offline
+simulator workflow. It validates the saved public-model/twin/weather/policy
+fingerprints, then constructs one shared service. Initial diagnoses use the
+`passive` profile; combined observations use `post_fan`. Every returned diagnosis
+discloses its phase and exact settings. No startup calibration or PoC fallback
+occurs. Invalid configuration returns 501 for scientific routes.
 
-| Tab | Data | Label shown |
-|---|---|---|
-| Fault Lab | Approximate HH09-inspired digital twin. Synthetic indoor observations from the hidden-fault simulator, with SMETER-station weather (interpolated to 5 min). | `APPROXIMATE HH09 DIGITAL TWIN` |
-| Real Homes | Genuine HH09 room temperatures, the original floor plan, and matching SMETER weather. No fault labels. | `REAL HH09 MEASUREMENTS` |
+`HEATHUNTER_THRESHOLDS_PATH`, if set, must point to the full versioned decision
+settings document. Historical flat threshold files are no longer accepted.
 
-The header shows `Reference house: SMETER HH09` on both tabs. The twin
-schematic draws room proportions from the dimensions printed on the published
-plan; it is labelled a schematic. Bathroom and closets are shown hatched as
-"not modelled".
+## Two separate guided examples
 
-## Guided scenario: how the seed was chosen (disclose this)
-
-The guided scenario plants a draft (air leak, excess multiplier 2.0) in the HH09
-Bedroom. `python -m backend.app.demo_seed_scan --seeds 120` runs that exact
-fault through the live pipeline on TRAINING seeds 1–120 and writes
-`shared/fixtures/guided_seed_scan.json`:
-
-| Outcome arc | Seeds |
+| ID | What it demonstrates |
 |---|---|
-| ambiguous → test → ambiguous | 39 |
-| ambiguous → test → confident | 25 |
-| no_fault (missed) | 21 |
-| ambiguous → no test recommended | 15 |
-| confident without test | 13 |
-| ambiguous → test → unexplained | 7 |
+| `hh09-guided-insulation-v1` | Curated TRAINING example: Hall, wall heat loss, seed 961029. Ambiguous → recommended calm fan → correct conduction diagnosis → repair → no-fault recheck. |
+| `hh09-guided-v1` | Original Bedroom draft example, seed 20261024. The cause stays uncertain after the test; no repair or money estimate is forced. |
 
-The final diagnosis matched the hidden fault in **3/120** seeds (40, 65, 68).
-All 22 confident-but-wrong results chose envelope conduction (17 in the correct
-room). The guided demo uses **seed 68** because it shows every workflow step.
-The UI states this in the guided banner and in the Evidence drawer. Every
-number on screen is still computed live; nothing is scripted. Use Judge mode
-to show unselected cases.
+The API preserves each example's default seed and any explicit caller override.
+Overrides can change the outcome. Both examples use real historical HH09-region
+weather with synthetic indoor observations; neither establishes a defect in real
+HH09. Their planted faults remain inaccessible to the diagnostic engine.
 
-These rates use the provisional TRAINING thresholds and are not the held-out
-benchmark (that belongs to the evaluation workstream).
+The insulation example uses passive weather `smeter-hh09-2020-12-06` and fan
+weather `smeter-hh09-2019-12-01`. Fan eligibility requires station wind <=2 m/s
+through the simulated fan interval. This is a project assumption, not ISO
+compliance or a validated procedure for occupied homes.
 
-### What seed 68 shows (verified 2026-10-24)
+## Reproduce the full loop through the API
 
-1. Passive night: **ambiguous**, Bedroom flagged. Conduction leads draft by
-   6.2 BIC, and the ambiguity threshold is 51.6.
-2. E1 fan test: **recommended**, separation 2.68σ against a 2.0σ threshold.
-3. After the test: **confident draft**, gap 54.3 BIC, leakage ×2.66.
-4. Money at sourced defaults: ≈ £67/yr, 847 kWh gas, payback ≈ 3.3 yr.
-5. Seal leaks at 100%: paired mean +2.04 °C, and the post-repair status is
-   `no_fault`. Re-measured saving ≈ 860 kWh/yr.
-6. Reveal: draft · Bedroom · ×3.0 · matched · repair addressed the cause.
+With the backend running, execute from the repository root:
 
-## Five-minute script
+```bash
+.venv/bin/python - <<'PY'
+import json
+from urllib.request import Request, urlopen
 
-| Time | Action | Say |
-|---|---|---|
-| 0:00–0:30 | Fault Lab, empty | "People know their bills are high, not which room is wasting heat or why. HeatHunter is a check-engine light for a house." |
-| 0:30–1:10 | **Guided demo**, then press ▶ on the playback bar, then **Analyze house** | "We used a real measured English bungalow, SMETER HH09, to build an approximate digital twin and injected a hidden fault. Heating off, one cold night. The Bedroom is flagged." |
-| 1:10–2:30 | Diagnosis panel, then **Run recommended test** | "An air leak and extra conduction both explain this curve. That's honest ambiguity. HeatHunter predicts an exhaust-fan test would separate them, and only recommends it because the predicted difference exceeds the noise. After the test: confident draft." Point at the before/after box and the safety note. |
-| 2:30–3:15 | Cost panel: drag the tariff and repair-cost sliders | "Screening estimate from sourced UK assumptions: Ofgem tariff, HH09's boiler efficiency, local degree-days. Repair prices are flagged unverified." |
-| 3:15–4:00 | **Apply fix**, Repaired tab, then **Reveal answer** | "We apply the *diagnosed* repair, not the true one, and re-simulate with identical weather and sensor noise. Anomaly cleared. Reveal: it was a draft in the Bedroom." |
-| 4:00–5:00 | Evidence drawer, then Real Homes | "Full transparency: this guided seed was selected, and only 3 of 120 seeds get this fault fully right. Here is the real HH09 data: floor plan, measured HTC of 172 W/K, airtightness. No fault claimed for the real house." |
+base = 'http://127.0.0.1:8000/api'
+def call(path, body=None):
+    request = Request(base + path, data=None if body is None else json.dumps(body).encode(),
+                      headers={'Content-Type': 'application/json'})
+    with urlopen(request, timeout=60) as response:
+        return json.load(response)
 
-Backup line if asked about accuracy: the held-out benchmark is produced by the
-evaluation workstream. The drawer shows it once `reports/evaluation/summary.json`
-exists and says so plainly until then.
+created = call('/scenarios', {'mode': 'guided', 'guided_scenario_id': 'hh09-guided-insulation-v1'})
+path = '/scenarios/' + created['scenario_id']
+call(path + '/observations')
+first = call(path + '/diagnose', {})
+assert first['status'] == 'ambiguous' and first['test_decision']['recommended']
+experiment = call(path + '/experiments', {
+    'diagnosis_id': first['diagnosis_id'], 'experiment_type': 'exhaust_fan_depressurization'})
+updated = experiment['updated_diagnosis']
+assert updated['status'] == 'confident'
+assert updated['ranked_causes'][0]['fault_type'] == 'envelope_conduction'
+money = call(path + '/money', {'diagnosis_id': updated['diagnosis_id']})
+assert money['estimate'] is not None
+repair = call(path + '/repair', {'diagnosis_id': updated['diagnosis_id'], 'effectiveness': 1.0})
+assert 'status: no_fault' in repair['diagnosed_improvement']
+truth = call(path + '/reveal')
+assert truth['diagnosis_matched'] and truth['repair_addressed_cause']
+print(json.dumps({'before': first['status'], 'after': updated['status'],
+                  'repair': repair['diagnosed_improvement'],
+                  'matched': truth['diagnosis_matched']}, indent=2))
+PY
+```
 
-## Judge mode
+The regression test `backend/app/tests/test_final_runtime.py` also verifies the
+full flow, the unresolved draft example, phase disclosures, seed preservation,
+stale repair rejection, safe retries, and malformed configuration rejection.
+No fit scores or success statuses are hardcoded into the diagnosis.
 
-**Judge mode**: choose air leak / conduction / no fault, a room and a
-severity, then **Seal fault & start blind investigation**. The dialog closes and
-the choice is not kept in UI state. The backend stores it only in the private
-truth store. Then run the same workflow. If a confident diagnosis is wrong,
-**Apply fix** changes nothing measurable and the repair panel says so.
+## What to explain during a presentation
 
-**Surprise me** draws a random hidden fault, room and severity server-side.
+1. This is an approximate model informed by a real home, not an exact replica.
+2. One night can show unusual cooling without identifying its cause.
+3. The model recommends another simulated test only when it predicts useful evidence.
+4. In the selected insulation example, the test identifies wall heat loss.
+5. Apply the diagnosed repair and compare new readings with identical weather.
+6. Reveal the planted fault after recording the result. Explain that this example
+   was selected from TRAINING data and is not a benchmark.
+7. Show the unresolved draft example to make the system's limitations visible.
 
-## Pre-demo checklist
+Real Homes uses actual HH09 indoor readings and its original plan. It has no
+verified room-level fault labels. Money values are screening estimates under
+stated UK assumptions, not audited savings or measured annual bills.
 
-- [ ] `.venv/bin/pytest` and `.venv/bin/ruff check backend` pass.
-- [ ] `cd frontend && npm run build` succeeds; the API serves `/`.
-- [ ] Footer shows `API ONLINE` with Wi-Fi off.
-- [ ] Guided path reaches Reveal = matched (seed 68).
-- [ ] Judge mode: conduction/Living Room/2.0 diagnoses confident.
-- [ ] Surprise me and Reset work; Real Homes loads the plan and charts.
-- [ ] No hidden fault is visible before Reveal (API tests check payloads).
-- [ ] Evidence drawer opens; benchmark state is honest.
-- [ ] Record a backup video of the guided path.
+## Historical seed scan and remaining work
+
+`shared/fixtures/guided_seed_scan.json` is a historical snapshot made with the
+old provisional rules. Its 3/120 matching count and seed-68 success story do not
+describe the current conservative configuration. Preserve the file as historical
+research; do not present it as current or held-out accuracy.
+
+The frontend's selection/copy remains a separate workstream. Its current default
+`hh09-guided-v1` is the uncertainty example; the full-loop insulation example is
+available through the API above. Historical provisional labels and old seed-scan
+copy in technical UI panels need integration-owner refresh before presentation.
+No frontend files are changed by this backend integration step.
+
+Anuj's independent >=60-case held-out benchmark and final report are still
+pending. `/api/evaluation/summary` returns 501 until that report exists. Report
+misses and uncertainty explicitly; do not retune on the held-out outcomes.
+
+## Freeze checklist
+
+- Run the full pytest suite and Ruff.
+- Verify OpenAPI still matches the checked-in schema.
+- Exercise both guided examples, seeded judge mode and surprise mode.
+- Verify no ground-truth fields appear before reveal.
+- Confirm partial repair and identical retries behave correctly.
+- Restart the backend and repeat a guided API loop without external data access.
+- Reconcile frontend example selection and scientific labels, then test the UI.
+- Complete the held-out report and record a backup presentation video.
