@@ -1,0 +1,2041 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "HeatHunter API",
+    "description": "Physics-guided home thermal diagnostic prototype. This is a preliminary diagnostic concept, not a certified building energy audit.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios": {
+      "post": {
+        "tags": [
+          "fault-lab"
+        ],
+        "summary": "Create Scenario",
+        "operationId": "create_scenario_api_scenarios_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioCreated"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service has not been integrated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/{id}/observations": {
+      "get": {
+        "tags": [
+          "fault-lab"
+        ],
+        "summary": "Get Observations",
+        "operationId": "get_observations_api_scenarios__id__observations_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service has not been integrated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/{id}/diagnose": {
+      "post": {
+        "tags": [
+          "fault-lab"
+        ],
+        "summary": "Diagnose",
+        "operationId": "diagnose_api_scenarios__id__diagnose_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnoseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Diagnosis"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service has not been integrated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/{id}/experiments": {
+      "post": {
+        "tags": [
+          "fault-lab"
+        ],
+        "summary": "Run Experiment",
+        "operationId": "run_experiment_api_scenarios__id__experiments_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperimentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service has not been integrated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/{id}/repair": {
+      "post": {
+        "tags": [
+          "fault-lab"
+        ],
+        "summary": "Apply Repair",
+        "operationId": "apply_repair_api_scenarios__id__repair_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepairRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepairResult"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service has not been integrated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/{id}/reveal": {
+      "get": {
+        "tags": [
+          "fault-lab"
+        ],
+        "summary": "Reveal",
+        "operationId": "reveal_api_scenarios__id__reveal_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroundTruth"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service has not been integrated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/real/house": {
+      "get": {
+        "tags": [
+          "real-homes"
+        ],
+        "summary": "Get Real House",
+        "operationId": "get_real_house_api_real_house_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealHouse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service has not been integrated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evaluation/summary": {
+      "get": {
+        "tags": [
+          "evaluation"
+        ],
+        "summary": "Get Evaluation Summary",
+        "operationId": "get_evaluation_summary_api_evaluation_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationSummary"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service has not been integrated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail",
+          "code"
+        ],
+        "title": "ApiError"
+      },
+      "Assumption": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provenance": {
+            "type": "string",
+            "const": "ASSUMPTION",
+            "title": "Provenance",
+            "default": "ASSUMPTION"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "Assumption"
+      },
+      "BuildingCharacteristic": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "REAL_MEASUREMENT",
+              "ASSUMPTION"
+            ],
+            "title": "Provenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "provenance"
+        ],
+        "title": "BuildingCharacteristic"
+      },
+      "ConfusionMatrix": {
+        "properties": {
+          "actual_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Actual Labels"
+          },
+          "predicted_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Predicted Labels"
+          },
+          "counts": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Counts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "actual_labels",
+          "predicted_labels",
+          "counts"
+        ],
+        "title": "ConfusionMatrix"
+      },
+      "DiagnoseRequest": {
+        "properties": {
+          "observation_night_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation Night Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DiagnoseRequest"
+      },
+      "Diagnosis": {
+        "properties": {
+          "diagnosis_id": {
+            "type": "string",
+            "title": "Diagnosis Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DiagnosisStatus"
+          },
+          "flagged_room_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flagged Room Id"
+          },
+          "ranked_causes": {
+            "items": {
+              "$ref": "#/components/schemas/HypothesisFit"
+            },
+            "type": "array",
+            "title": "Ranked Causes"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "uncertainty": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Uncertainty"
+          },
+          "test_decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TestDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "money_estimate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyEstimate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/Assumption"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "diagnosis_id",
+          "status",
+          "flagged_room_id",
+          "ranked_causes",
+          "evidence",
+          "uncertainty",
+          "test_decision",
+          "money_estimate",
+          "assumptions"
+        ],
+        "title": "Diagnosis"
+      },
+      "DiagnosisStatus": {
+        "type": "string",
+        "enum": [
+          "no_fault",
+          "unexplained",
+          "ambiguous",
+          "confident"
+        ],
+        "title": "DiagnosisStatus"
+      },
+      "EvaluationSummary": {
+        "properties": {
+          "benchmark_id": {
+            "type": "string",
+            "title": "Benchmark Id"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "heldout_scenario_count": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Heldout Scenario Count"
+          },
+          "fault_detection_accuracy": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Fault Detection Accuracy"
+          },
+          "room_identification_accuracy": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Room Identification Accuracy"
+          },
+          "pre_experiment_cause_classification_accuracy": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Pre Experiment Cause Classification Accuracy"
+          },
+          "post_experiment_cause_classification_accuracy": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Experiment Cause Classification Accuracy"
+          },
+          "baseline_strategy_accuracy": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Strategy Accuracy"
+          },
+          "false_positive_rate": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "False Positive Rate"
+          },
+          "ambiguity_rate": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Ambiguity Rate"
+          },
+          "unexplained_rate": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Unexplained Rate"
+          },
+          "pre_experiment_confusion_matrix": {
+            "$ref": "#/components/schemas/ConfusionMatrix"
+          },
+          "post_experiment_confusion_matrix": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConfusionMatrix"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "MODEL_ESTIMATE",
+            "title": "Provenance",
+            "default": "MODEL_ESTIMATE"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "benchmark_id",
+          "generated_at",
+          "heldout_scenario_count",
+          "fault_detection_accuracy",
+          "room_identification_accuracy",
+          "pre_experiment_cause_classification_accuracy",
+          "post_experiment_cause_classification_accuracy",
+          "baseline_strategy_accuracy",
+          "false_positive_rate",
+          "ambiguity_rate",
+          "unexplained_rate",
+          "pre_experiment_confusion_matrix",
+          "post_experiment_confusion_matrix",
+          "disclaimer"
+        ],
+        "title": "EvaluationSummary"
+      },
+      "Evidence": {
+        "properties": {
+          "statement": {
+            "type": "string",
+            "title": "Statement"
+          },
+          "relationship": {
+            "type": "string",
+            "enum": [
+              "supports",
+              "contradicts",
+              "limits"
+            ],
+            "title": "Relationship"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "statement",
+          "relationship",
+          "provenance"
+        ],
+        "title": "Evidence"
+      },
+      "ExperimentRequest": {
+        "properties": {
+          "diagnosis_id": {
+            "type": "string",
+            "title": "Diagnosis Id"
+          },
+          "experiment_type": {
+            "type": "string",
+            "const": "exhaust_fan_depressurization",
+            "title": "Experiment Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "diagnosis_id",
+          "experiment_type"
+        ],
+        "title": "ExperimentRequest"
+      },
+      "ExperimentResponse": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "title": "Scenario Id"
+          },
+          "observations": {
+            "$ref": "#/components/schemas/NightObservations"
+          },
+          "updated_diagnosis": {
+            "$ref": "#/components/schemas/Diagnosis"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "observations",
+          "updated_diagnosis"
+        ],
+        "title": "ExperimentResponse"
+      },
+      "FaultType": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "envelope_conduction",
+          "none"
+        ],
+        "title": "FaultType"
+      },
+      "GroundTruth": {
+        "properties": {
+          "fault_type": {
+            "$ref": "#/components/schemas/FaultType"
+          },
+          "actual_room_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Room Id"
+          },
+          "severity": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Severity"
+          },
+          "diagnosis_matched": {
+            "type": "boolean",
+            "title": "Diagnosis Matched"
+          },
+          "repair_addressed_cause": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair Addressed Cause"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "SIMULATED_GROUND_TRUTH",
+            "title": "Provenance",
+            "default": "SIMULATED_GROUND_TRUTH"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fault_type",
+          "actual_room_id",
+          "severity",
+          "diagnosis_matched",
+          "repair_addressed_cause"
+        ],
+        "title": "GroundTruth"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status",
+            "default": "ok"
+          },
+          "service": {
+            "type": "string",
+            "const": "heat-hunter-api",
+            "title": "Service",
+            "default": "heat-hunter-api"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "HealthResponse"
+      },
+      "HypothesisFit": {
+        "properties": {
+          "fault_type": {
+            "$ref": "#/components/schemas/HypothesisType"
+          },
+          "fitted_multiplier": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fitted Multiplier"
+          },
+          "sse": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Sse"
+          },
+          "bic": {
+            "type": "number",
+            "title": "Bic"
+          },
+          "residual_rmse_deg_c": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Residual Rmse Deg C"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "MODEL_ESTIMATE",
+            "title": "Provenance",
+            "default": "MODEL_ESTIMATE"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fault_type",
+          "fitted_multiplier",
+          "sse",
+          "bic",
+          "residual_rmse_deg_c"
+        ],
+        "title": "HypothesisFit"
+      },
+      "HypothesisType": {
+        "type": "string",
+        "enum": [
+          "normal",
+          "draft",
+          "envelope_conduction"
+        ],
+        "title": "HypothesisType"
+      },
+      "Location": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "elevation_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elevation M"
+          },
+          "distance_to_stony_brook_km_approx": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance To Stony Brook Km Approx"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "latitude",
+          "longitude",
+          "timezone"
+        ],
+        "title": "Location"
+      },
+      "MeasuredMetric": {
+        "properties": {
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "REAL_MEASUREMENT",
+            "title": "Provenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "unit",
+          "provenance"
+        ],
+        "title": "MeasuredMetric"
+      },
+      "MoneyEstimate": {
+        "properties": {
+          "excess_conductance_w_per_k": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Excess Conductance W Per K"
+          },
+          "annual_energy_estimate_kwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Annual Energy Estimate Kwh"
+          },
+          "annual_cost_estimate_usd": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Annual Cost Estimate Usd"
+          },
+          "repair_cost_usd": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Repair Cost Usd"
+          },
+          "simple_payback_years": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simple Payback Years"
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/Assumption"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "MODEL_ESTIMATE",
+            "title": "Provenance",
+            "default": "MODEL_ESTIMATE"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "excess_conductance_w_per_k",
+          "annual_energy_estimate_kwh",
+          "annual_cost_estimate_usd",
+          "repair_cost_usd",
+          "simple_payback_years",
+          "assumptions"
+        ],
+        "title": "MoneyEstimate"
+      },
+      "NightObservations": {
+        "properties": {
+          "night_id": {
+            "type": "string",
+            "title": "Night Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "passive",
+              "fan_test"
+            ],
+            "title": "Kind"
+          },
+          "room_temperature_series": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Series"
+            },
+            "type": "object",
+            "title": "Room Temperature Series"
+          },
+          "weather": {
+            "$ref": "#/components/schemas/WeatherNight"
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/Protocol"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "night_id",
+          "kind",
+          "room_temperature_series",
+          "weather",
+          "protocol"
+        ],
+        "title": "NightObservations"
+      },
+      "ObservationResponse": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "title": "Scenario Id"
+          },
+          "nights": {
+            "items": {
+              "$ref": "#/components/schemas/NightObservations"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Nights"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "nights"
+        ],
+        "title": "ObservationResponse"
+      },
+      "Protocol": {
+        "properties": {
+          "heating_off": {
+            "type": "boolean",
+            "title": "Heating Off"
+          },
+          "doors_closed": {
+            "type": "boolean",
+            "title": "Doors Closed"
+          },
+          "fan_on": {
+            "type": "boolean",
+            "title": "Fan On"
+          },
+          "fan_airflow_m3_per_h": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fan Airflow M3 Per H"
+          },
+          "fan_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fan Start"
+          },
+          "fan_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fan End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "heating_off",
+          "doors_closed",
+          "fan_on"
+        ],
+        "title": "Protocol"
+      },
+      "Provenance": {
+        "type": "string",
+        "enum": [
+          "REAL_MEASUREMENT",
+          "SIMULATED_MEASUREMENT",
+          "SIMULATED_GROUND_TRUTH",
+          "MODEL_ESTIMATE",
+          "ASSUMPTION"
+        ],
+        "title": "Provenance"
+      },
+      "RealHouse": {
+        "properties": {
+          "house_id": {
+            "type": "string",
+            "title": "House Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceMetadata"
+          },
+          "floor_plan_asset_path": {
+            "type": "string",
+            "title": "Floor Plan Asset Path"
+          },
+          "room_temperature_series": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Series"
+            },
+            "type": "object",
+            "title": "Room Temperature Series"
+          },
+          "outdoor_temperature": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "wind_speed": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "characteristics": {
+            "items": {
+              "$ref": "#/components/schemas/BuildingCharacteristic"
+            },
+            "type": "array",
+            "title": "Characteristics"
+          },
+          "reference_htc": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeasuredMetric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "airtightness": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeasuredMetric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "measurement_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Measurement Start"
+          },
+          "measurement_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Measurement End"
+          },
+          "timestamp_notes": {
+            "type": "string",
+            "title": "Timestamp Notes"
+          },
+          "scientific_disclaimer": {
+            "type": "string",
+            "title": "Scientific Disclaimer"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "house_id",
+          "display_name",
+          "source",
+          "floor_plan_asset_path",
+          "room_temperature_series",
+          "outdoor_temperature",
+          "wind_speed",
+          "characteristics",
+          "reference_htc",
+          "airtightness",
+          "measurement_start",
+          "measurement_end",
+          "timestamp_notes",
+          "scientific_disclaimer"
+        ],
+        "title": "RealHouse"
+      },
+      "RepairRequest": {
+        "properties": {
+          "diagnosis_id": {
+            "type": "string",
+            "title": "Diagnosis Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "diagnosis_id"
+        ],
+        "title": "RepairRequest"
+      },
+      "RepairResult": {
+        "properties": {
+          "repair_type": {
+            "$ref": "#/components/schemas/FaultType"
+          },
+          "effectiveness": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Effectiveness"
+          },
+          "original_observations": {
+            "items": {
+              "$ref": "#/components/schemas/NightObservations"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Original Observations"
+          },
+          "repaired_observations": {
+            "items": {
+              "$ref": "#/components/schemas/NightObservations"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Repaired Observations"
+          },
+          "diagnosed_improvement": {
+            "type": "string",
+            "title": "Diagnosed Improvement"
+          },
+          "estimated_savings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyEstimate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "remeasured_savings_kwh": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remeasured Savings Kwh"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "SIMULATED_MEASUREMENT",
+            "title": "Provenance",
+            "default": "SIMULATED_MEASUREMENT"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "repair_type",
+          "effectiveness",
+          "original_observations",
+          "repaired_observations",
+          "diagnosed_improvement",
+          "estimated_savings",
+          "remeasured_savings_kwh"
+        ],
+        "title": "RepairResult"
+      },
+      "ScenarioCreateRequest": {
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/ScenarioMode"
+          },
+          "guided_scenario_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guided Scenario Id"
+          },
+          "judge_fault_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FaultType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "judge_room_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge Room Id"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 3.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "title": "ScenarioCreateRequest"
+      },
+      "ScenarioCreated": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "title": "Scenario Id"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ScenarioMode"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "available_actions": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "observations",
+                "diagnose"
+              ]
+            },
+            "type": "array",
+            "title": "Available Actions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "mode",
+          "created_at",
+          "available_actions"
+        ],
+        "title": "ScenarioCreated"
+      },
+      "ScenarioMode": {
+        "type": "string",
+        "enum": [
+          "guided",
+          "judge",
+          "surprise"
+        ],
+        "title": "ScenarioMode"
+      },
+      "Series": {
+        "properties": {
+          "timestamps": {
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Timestamps"
+          },
+          "values": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Values"
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "timestamps",
+          "values",
+          "unit",
+          "provenance"
+        ],
+        "title": "Series"
+      },
+      "SourceMetadata": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "dataset": {
+            "type": "string",
+            "title": "Dataset"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation"
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Station Id"
+          },
+          "station_call_sign": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Station Call Sign"
+          },
+          "station_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Station Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "dataset"
+        ],
+        "title": "SourceMetadata"
+      },
+      "Split": {
+        "type": "string",
+        "enum": [
+          "training",
+          "heldout"
+        ],
+        "title": "Split"
+      },
+      "TestDecision": {
+        "properties": {
+          "recommended": {
+            "type": "boolean",
+            "title": "Recommended"
+          },
+          "experiment_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "exhaust_fan_depressurization"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Experiment Type"
+          },
+          "separation_score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Separation Score"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "safety_warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Warning"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "MODEL_ESTIMATE",
+            "title": "Provenance",
+            "default": "MODEL_ESTIMATE"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "recommended",
+          "explanation"
+        ],
+        "title": "TestDecision"
+      },
+      "UtcWindow": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "UtcWindow"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WeatherNight": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Schema Version",
+            "default": 1
+          },
+          "night_id": {
+            "type": "string",
+            "title": "Night Id"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceMetadata"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "outdoor_temperature": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "wind_speed": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "train_or_heldout_split": {
+            "$ref": "#/components/schemas/Split"
+          },
+          "local_night_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Night Date"
+          },
+          "utc_window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UtcWindow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "selection_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WeatherSelectionMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "night_id",
+          "source",
+          "location",
+          "outdoor_temperature",
+          "wind_speed",
+          "train_or_heldout_split"
+        ],
+        "title": "WeatherNight"
+      },
+      "WeatherSelectionMetadata": {
+        "properties": {
+          "weather_regime": {
+            "type": "string",
+            "enum": [
+              "calm",
+              "moderate",
+              "windy"
+            ],
+            "title": "Weather Regime"
+          },
+          "mean_temperature_deg_c": {
+            "type": "number",
+            "title": "Mean Temperature Deg C"
+          },
+          "mean_wind_speed_m_s": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Mean Wind Speed M S"
+          },
+          "observation_count": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Observation Count"
+          },
+          "temperature_quality_flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Temperature Quality Flags"
+          },
+          "wind_quality_flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Wind Quality Flags"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "weather_regime",
+          "mean_temperature_deg_c",
+          "mean_wind_speed_m_s",
+          "observation_count",
+          "temperature_quality_flags",
+          "wind_quality_flags"
+        ],
+        "title": "WeatherSelectionMetadata"
+      }
+    }
+  }
+}

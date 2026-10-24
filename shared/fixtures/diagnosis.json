@@ -1,0 +1,49 @@
+{
+  "diagnosis_id": "fixture-diagnosis-001",
+  "status": "ambiguous",
+  "flagged_room_id": "bedroom_1",
+  "ranked_causes": [
+    {
+      "fault_type": "draft",
+      "fitted_multiplier": 2.1,
+      "sse": 0.18,
+      "bic": -12.4,
+      "residual_rmse_deg_c": 0.14,
+      "provenance": "MODEL_ESTIMATE"
+    },
+    {
+      "fault_type": "envelope_conduction",
+      "fitted_multiplier": 1.8,
+      "sse": 0.2,
+      "bic": -11.9,
+      "residual_rmse_deg_c": 0.15,
+      "provenance": "MODEL_ESTIMATE"
+    }
+  ],
+  "evidence": [
+    {
+      "statement": "The synthetic Bedroom 1 fixture cools faster than the other rooms.",
+      "relationship": "supports",
+      "provenance": "SIMULATED_MEASUREMENT"
+    },
+    {
+      "statement": "Passive cooling alone does not separate infiltration from conduction.",
+      "relationship": "limits",
+      "provenance": "MODEL_ESTIMATE"
+    }
+  ],
+  "uncertainty": [
+    "This is a contract fixture, not a calibrated diagnosis.",
+    "The leading BIC values are intentionally close."
+  ],
+  "test_decision": {
+    "recommended": true,
+    "experiment_type": "exhaust_fan_depressurization",
+    "separation_score": 2.4,
+    "explanation": "The synthetic fitted hypotheses predict measurably different responses.",
+    "safety_warning": "Simulation only. Do not reproduce in an occupied home without professional guidance.",
+    "provenance": "MODEL_ESTIMATE"
+  },
+  "money_estimate": null,
+  "assumptions": []
+}
