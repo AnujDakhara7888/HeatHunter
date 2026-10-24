@@ -10,3 +10,4 @@ htmlcov/
 .coverage
 node_modules/
 frontend/dist/
+*.tsbuildinfo

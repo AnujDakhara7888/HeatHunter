@@ -63,9 +63,11 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
         "/api/scenarios/{id}/observations",
         "/api/scenarios/{id}/diagnose",
         "/api/scenarios/{id}/experiments",
+        "/api/scenarios/{id}/money",
         "/api/scenarios/{id}/repair",
         "/api/scenarios/{id}/reveal",
         "/api/real/house",
+        "/api/real/house/floor-plan",
         "/api/evaluation/summary",
     }
     assert set(schema["paths"]) == expected_paths
@@ -81,16 +83,10 @@ def test_checked_in_openapi_matches_application() -> None:
     assert checked_in == app.openapi()
 
 
-def test_health_is_real_and_unintegrated_routes_fail_explicitly() -> None:
+def test_health_is_real() -> None:
     client = TestClient(app)
 
     assert client.get("/api/health").json() == {"status": "ok", "service": "heat-hunter-api"}
-    response = client.get("/api/real/house")
-    assert response.status_code == 501
-    assert response.json() == {
-        "detail": "real-house data service is not integrated",
-        "code": "SERVICE_NOT_INTEGRATED",
-    }
 
 
 def test_location_accepts_unpublished_coordinates_as_null() -> None:

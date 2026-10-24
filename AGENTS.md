@@ -44,3 +44,20 @@ integration-owner review.
   diagnostic PoC and classification benchmark have not run without this engine.
 - Guided ID: `hh09-guided-v1`; old fixture ID retained as compatibility alias.
   Demo ambiguity/success is not hardcoded and remains numerically unverified.
+
+## Nikhil integration status — 2026-10-24
+
+- All routes delegate to `HH09ScenarioService`, `PublicModelEngine`,
+  `PublicMoneyEstimator` and `load_real_house` (`backend/app/runtime.py`).
+  Thresholds are the provisional Gate-2 TRAINING values from
+  `reports/poc/poc_loop_results.json` (disclosed on every diagnosis); Mihir can
+  supply final values via `HEATHUNTER_THRESHOLDS_PATH` without code changes.
+- Approved contract changes: `RepairRequest.effectiveness`;
+  `POST /api/scenarios/{id}/money` (Kailash `estimate_money` overrides);
+  `GET /api/real/house/floor-plan`. Types regenerated.
+- Still 501: `/api/evaluation/summary` until Anuj writes
+  `reports/evaluation/summary.json`.
+- Finding for Mihir/Kailash: for the guided fault (draft, Bedroom, ×3.0) the
+  final diagnosis matched in 3/120 TRAINING seeds. All 22 confident-but-wrong
+  results chose conduction after the fan test
+  (`shared/fixtures/guided_seed_scan.json`).
