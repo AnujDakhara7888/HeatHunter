@@ -35,11 +35,14 @@ from backend.app.contracts import (
     ScenarioCreateRequest,
     ScenarioMode,
     Split,
+    TestDecision,
     WeatherNight,
 )
 from backend.data_pipeline import list_weather_nights, load_hh09_twin_inputs
 from backend.diagnosis import DiagnosisController, EngineDependencyError
 
+from .experiment_policy import CalmFanPolicy
+from .guided import guided_example
 from .observations import (
     SensorSettings,
     fan_protocol,
@@ -53,7 +56,6 @@ from .physics import Fault, build_house, checked_seed, finite, inject_fault, rep
 from .truth_store import PrivateScenario, TruthStore
 from .weather_bridge import load_simulation_weather
 
-GUIDED_SCENARIO_ID = "hh09-guided-v1"
 P = ParamSpec("P")
 T = TypeVar("T")
 
@@ -111,12 +113,14 @@ class HH09ScenarioService:
         split: Split = Split.TRAINING,
         sensors: SensorSettings | None = None,
         max_scenarios: int = 128,
+        fan_policy: CalmFanPolicy | None = None,
     ):
         if not isinstance(split, Split):
             raise ValueError("split must be a canonical Split")
         if isinstance(max_scenarios, bool) or not isinstance(max_scenarios, int) or max_scenarios < 1:
             raise ValueError("max_scenarios must be a positive integer")
         self._controller = controller
+        self._fan_policy = fan_policy or CalmFanPolicy()
         if controller is not None:
             expected = {r["simulator_room_id"]: r for r in load_hh09_twin_inputs()["rooms"]}
             supplied = {r.room_id: r for r in controller.template.rooms}
@@ -158,10 +162,11 @@ class HH09ScenarioService:
     ) -> ScenarioCreated:
         """Optional weather overrides are internal benchmark inputs, not API changes."""
         request = ScenarioCreateRequest.model_validate(request.model_dump())
+        example = guided_example(request.guided_scenario_id) if request.mode == ScenarioMode.GUIDED else None
         seed = (
             request.seed
             if request.seed is not None
-            else (20261024 if request.mode == ScenarioMode.GUIDED else secrets.randbelow(2**63))
+            else (example.seed if example is not None else secrets.randbelow(2**63))
         )
         checked_seed(seed)
         with self._lock:
@@ -175,18 +180,32 @@ class HH09ScenarioService:
             # Catalog entries may expose regime at top level (reader-owned shape).
             if not calm:
                 calm = [n for n in catalog if n.get("weather_regime") == "calm"]
-            passive_id = weather_night_id or rng.choice(calm or catalog)["night_id"]
-            candidates = [n["night_id"] for n in catalog if n["night_id"] != passive_id]
-            test_id = experiment_night_id or rng.choice(candidates)
+            passive_id = weather_night_id or (example.passive_weather if example else None)
+            passive_id = passive_id or rng.choice(calm or catalog)["night_id"]
+            candidates = []
+            for item in catalog:
+                if item["night_id"] == passive_id:
+                    continue
+                candidate_weather = self._weather(item["night_id"])
+                candidate_protocol = fan_protocol(candidate_weather.outdoor_temperature.timestamps[0])
+                if self._fan_policy.assess(candidate_weather, candidate_protocol)[0]:
+                    candidates.append(item["night_id"])
+            test_id = experiment_night_id or (example.fan_weather if example else None)
+            test_id = test_id or (rng.choice(candidates) if candidates else None)
             if passive_id == test_id:
                 raise ValueError("experiment must use a different weather night")
-            weather, _ = self._weather(passive_id), self._weather(test_id)
+            weather = self._weather(passive_id)
+            if test_id is not None:
+                candidate = self._weather(test_id)
+                allowed, explanation = self._fan_policy.assess(
+                    candidate, fan_protocol(candidate.outdoor_temperature.timestamps[0])
+                )
+                if not allowed:
+                    raise ValueError(explanation)
             healthy = build_house(sub_seed(seed, "house") % 2**63)
             ids = [r.room_id for r in healthy.rooms]
             if request.mode == ScenarioMode.GUIDED:
-                if request.guided_scenario_id not in {GUIDED_SCENARIO_ID, "synthetic-guided-draft-01"}:
-                    raise ValueError(f"unknown guided scenario; supported ID is {GUIDED_SCENARIO_ID}")
-                fault = Fault(FaultType.DRAFT, "bedroom_1", 2.0)
+                fault = example.fault
             elif request.mode == ScenarioMode.JUDGE:
                 if request.judge_room_id not in ids:
                     raise ValueError("unknown judge room ID")
@@ -234,15 +253,23 @@ class HH09ScenarioService:
                 "Kailash's public fitter, template and trained thresholds are not integrated"
             )
         kwargs = {}
-        if offer_test:
-            weather = resample_weather(self._weather(self.__truth.get(scenario_id).experiment_night_id))
-            kwargs = {
-                "next_weather": weather,
-                "next_protocol": fan_protocol(weather.outdoor_temperature.timestamps[0]),
-            }
+        test_id = self.__truth.get(scenario_id).experiment_night_id
+        deferred_reason = None
+        if offer_test and test_id is not None:
+            weather = resample_weather(self._weather(test_id))
+            protocol = fan_protocol(weather.outdoor_temperature.timestamps[0])
+            allowed, deferred_reason = self._fan_policy.assess(weather, protocol)
+            if allowed:
+                kwargs = {"next_weather": weather, "next_protocol": protocol}
         # Controller receives only public inputs. No service, truth, seed or House.
         result = self._controller.analyze([n.model_copy(deep=True) for n in nights], **kwargs)
         result = Diagnosis.model_validate(result.model_dump())
+        if offer_test and result.status == DiagnosisStatus.AMBIGUOUS and not kwargs:
+            result.test_decision = TestDecision(
+                recommended=False,
+                explanation=deferred_reason
+                or "No different calm weather night is available; defer the fan test or seek other evidence.",
+            )
         if self._financial is not None and result.status == DiagnosisStatus.CONFIDENT:
             estimate = self._financial.estimate(result.model_copy(deep=True))
             result.money_estimate = MoneyEstimate.model_validate(estimate.model_dump()) if estimate else None
@@ -303,8 +330,13 @@ class HH09ScenarioService:
             ):
                 raise ScenarioStateError("no executable recommended experiment")
             truth = self.__truth.get(scenario_id)
+            if truth.experiment_night_id is None:
+                raise ScenarioStateError("no eligible calm weather night for fan testing")
             weather = self._weather(truth.experiment_night_id)
             protocol = fan_protocol(weather.outdoor_temperature.timestamps[0])
+            eligible, explanation = self._fan_policy.assess(weather, protocol)
+            if not eligible:
+                raise ScenarioStateError(explanation)
             observations = simulate_night(
                 truth.faulty, weather, protocol, sensor_seed=truth.sensor_seed, sensors=self._sensors
             ).observations

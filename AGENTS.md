@@ -27,20 +27,29 @@ integration-owner review.
 6. Keep the judge demo free of live network dependencies.
 7. Regenerate TypeScript types from OpenAPI; do not create parallel interfaces.
 
-## Mihir integration status — 2026-10-24
+## Mihir integration status — 2026-10-24 (updated)
 
-- Ready: `backend.simulation.HH09ScenarioService` implements the six canonical
-  async service methods; API routes are intentionally untouched. Truth physics,
-  hidden faults, sensor generation, E1, diagnosed repair, reveal and public-only
-  diagnosis orchestration are implemented. See `docs/PHYSICS.md` for signatures.
-- QA: 110 repository tests passed; Ruff passed. Real-weather physics sweep:
-  128 cases, 768 checks, zero failures. This is not diagnosis accuracy.
-- Blocker for Nikhil: canonical Location requires station coordinates that HH09
-  does not publish. Please approve nullable latitude/longitude, regenerate types,
-  and wire the existing routes. No coordinates were fabricated or schemas changed.
-- Blocker for Kailash: inject the actual public fitter, coupled experiment
-  predictor, HH09 public template and trained thresholds into DiagnosisController.
-  Financial adapter is optional; unavailable money remains null. The genuine
-  diagnostic PoC and classification benchmark have not run without this engine.
-- Guided ID: `hh09-guided-v1`; old fixture ID retained as compatibility alias.
-  Demo ambiguity/success is not hardcoded and remains numerically unverified.
+- Ready: `backend.simulation.runtime.build_scenario_service()` loads the actual
+  engine, money adapter and offline phase-specific decision profiles. Nikhil
+  should share one instance across the six existing scenario routes.
+- Canonical coordinate blocker is resolved. API/UI wiring and Anuj's independent
+  held-out benchmark remain owned by their respective contributors.
+- Reviewed the volume-weighted fan split and geometric inter-room coupling;
+  their assumptions remain explicit. No physics coefficients were changed here.
+- Fan eligibility now checks max station wind <=2 m/s over the two-hour interval,
+  rejects bad/missing data and windy overrides, and cannot be bypassed by the
+  always-test evaluation flag. Windy passive nights remain supported.
+- Saved profiles: `backend/diagnosis/decision_settings.json`. Separate passive
+  and post-fan decisions were tuned on 344 TRAINING cases and checked on 94
+  further TRAINING cases. Empirical confident precision: 19/19 and 28/28;
+  healthy false alarms 0/30 each. These are conditional finite-sample counts,
+  not overall/held-out/real-home accuracy. No draft had a correct confident
+  classification in that fresh check; uncertainty and misses remain visible.
+- Guided full flow: `hh09-guided-insulation-v1`, explicitly curated from training.
+  Existing `hh09-guided-v1`/legacy draft alias retain an unresolved draft example.
+  Actual-engine integration tests verify full diagnosis/test/money/repair/reveal.
+- QA: 188 repository tests pass; Ruff passes. Reported limitations, exact seeds,
+  weather IDs, saved profiles, failure records and reproduction commands are in
+  Mihir's section of `docs/PHYSICS.md` and `backend/simulation/reports/`.
+- API contracts/routes, public-engine implementation, data-pipeline code and
+  Kailash's section of PHYSICS.md were not modified by this workstream.

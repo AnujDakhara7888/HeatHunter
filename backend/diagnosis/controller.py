@@ -64,14 +64,35 @@ class Thresholds:
     separation: float = 2.0
     measurement_noise: float = 0.15
     calibration_note: str = "User-supplied thresholds; not independently validated"
+    confidence_enabled: bool = True
 
     def __post_init__(self) -> None:
         for name in ("detection_bic", "ambiguity_bic", "adequacy_rmse", "separation", "measurement_noise"):
             value = getattr(self, name)
-            if not math.isfinite(value) or value < 0:
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or value < 0
+            ):
                 raise ValueError(f"{name} must be finite and nonnegative")
         if self.measurement_noise == 0 or self.adequacy_rmse == 0:
             raise ValueError("noise and adequacy threshold must be positive")
+        if not isinstance(self.confidence_enabled, bool):
+            raise ValueError("confidence_enabled must be boolean")
+
+
+@dataclass(frozen=True)
+class DecisionProfiles:
+    passive: Thresholds
+    post_fan: Thresholds
+
+    def for_nights(self, nights: list[NightObservations]) -> Thresholds:
+        passive_count = sum(n.kind == "passive" for n in nights)
+        fan_count = sum(n.kind == "fan_test" for n in nights)
+        if passive_count != 1 or fan_count not in (0, 1):
+            raise ValueError("Calibrated profiles require one passive night and at most one fan night")
+        return self.post_fan if fan_count else self.passive
 
 
 def validate_fit(fit: HypothesisFit, cause: HypothesisType) -> HypothesisFit:
@@ -112,7 +133,9 @@ def separation_score(predictions: tuple[Series, Series], expected_timestamps: li
 
 
 class DiagnosisController:
-    def __init__(self, engine: PublicEngine, template: PublicTemplate, thresholds: Thresholds):
+    def __init__(
+        self, engine: PublicEngine, template: PublicTemplate, thresholds: Thresholds | DecisionProfiles
+    ):
         self.engine = engine
         self.template = PublicTemplate.model_validate(template.model_dump()).model_copy(deep=True)
         self.thresholds = thresholds
@@ -144,6 +167,11 @@ class DiagnosisController:
         next_protocol: Protocol | None = None,
     ) -> Diagnosis:
         nights = [NightObservations.model_validate(n.model_dump()) for n in nights]
+        thresholds = (
+            self.thresholds.for_nights(nights)
+            if isinstance(self.thresholds, DecisionProfiles)
+            else self.thresholds
+        )
         ids = {r.room_id for r in self.template.rooms}
         if not nights or len({n.night_id for n in nights}) != len(nights):
             raise ValueError("provide nonempty, unique observation nights")
@@ -156,12 +184,17 @@ class DiagnosisController:
         ):
             raise ValueError("Fault Lab diagnosis accepts synthetic observations only")
         assumptions = [
-            Assumption(name="diagnostic_threshold_calibration", value=self.thresholds.calibration_note)
+            Assumption(name="diagnostic_threshold_calibration", value=thresholds.calibration_note),
+            Assumption(
+                name="decision_phase",
+                value="post_fan" if any(n.kind == "fan_test" for n in nights) else "passive",
+            ),
         ]
         uncertainty = [
             "Screening on an approximate HH09-inspired twin; not real-home fault validation.",
             "Thermal mass, sensor offsets and model mismatch can affect ranking.",
             "BIC and noise-normalized separation are heuristics, not probabilities.",
+            "Conservative decisions can miss faults; no_fault is not proof of a healthy house.",
         ]
         base = dict(
             diagnosis_id=str(uuid4()),
@@ -219,7 +252,7 @@ class DiagnosisController:
         inadequate = [
             r
             for r in ids
-            if min(f.residual_rmse_deg_c for f in room_fits[r].values()) > self.thresholds.adequacy_rmse
+            if min(f.residual_rmse_deg_c for f in room_fits[r].values()) > thresholds.adequacy_rmse
         ]
         if inadequate:
             return Diagnosis(
@@ -232,10 +265,31 @@ class DiagnosisController:
                     + ["No available model adequately explains rooms: " + ", ".join(sorted(inadequate))],
                 },
             )
-        if scores[flagged] <= self.thresholds.detection_bic:
+        if scores[flagged] <= thresholds.detection_bic:
+            # A larger post-test threshold is not evidence that an earlier
+            # anomaly disappeared. Recheck passive observations, never hidden
+            # truth or a previously cached answer. Repaired passive readings
+            # are re-evaluated independently and may legitimately be normal.
+            passive = [n for n in nights if n.kind == "passive"]
+            if isinstance(self.thresholds, DecisionProfiles) and passive and len(passive) < len(nights):
+                earlier = self.analyze(passive)
+                if earlier.status in {DiagnosisStatus.AMBIGUOUS, DiagnosisStatus.CONFIDENT}:
+                    return Diagnosis(
+                        status=DiagnosisStatus.UNEXPLAINED,
+                        flagged_room_id=earlier.flagged_room_id,
+                        ranked_causes=ranked[earlier.flagged_room_id],
+                        **{
+                            **base,
+                            "uncertainty": uncertainty
+                            + [
+                                "Passive anomaly remains unresolved; combined evidence does not clear "
+                                "the conservative post-fan threshold. This does not verify a repair."
+                            ],
+                        },
+                    )
             return Diagnosis(status=DiagnosisStatus.NO_FAULT, flagged_room_id=None, ranked_causes=[], **base)
         causes = ranked[flagged]
-        if causes[0].residual_rmse_deg_c > self.thresholds.adequacy_rmse:
+        if causes[0].residual_rmse_deg_c > thresholds.adequacy_rmse:
             return Diagnosis(
                 status=DiagnosisStatus.UNEXPLAINED, flagged_room_id=flagged, ranked_causes=causes, **base
             )
@@ -247,7 +301,9 @@ class DiagnosisController:
                 ranked_causes=causes,
                 **{**base, "uncertainty": uncertainty + ["Best fit does not indicate excess heat loss."]},
             )
-        ambiguous = causes[1].bic - causes[0].bic < self.thresholds.ambiguity_bic
+        ambiguous = (
+            not thresholds.confidence_enabled or causes[1].bic - causes[0].bic < thresholds.ambiguity_bic
+        )
         status = DiagnosisStatus.AMBIGUOUS if ambiguous else DiagnosisStatus.CONFIDENT
         decision = TestDecision(
             recommended=False, explanation="No additional test is indicated by this ranking."
@@ -277,9 +333,9 @@ class DiagnosisController:
                 score = separation_score(
                     predictions,
                     next_weather.outdoor_temperature.timestamps,
-                    self.thresholds.measurement_noise,
+                    thresholds.measurement_noise,
                 )
-                recommend = score >= self.thresholds.separation
+                recommend = score >= thresholds.separation
                 decision = TestDecision(
                     recommended=recommend,
                     experiment_type="exhaust_fan_depressurization",

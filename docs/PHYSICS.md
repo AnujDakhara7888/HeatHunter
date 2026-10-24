@@ -146,19 +146,89 @@ the configured threshold. Fit/prediction NaN, infinity, invalid units, mismatche
 timestamps and implausible multiplier bounds are rejected. Money is not attached
 to ambiguous/unexplained results. No fit score is displayed as a probability.
 
-There are deliberately **no claimed trained default thresholds**. The controller
-requires explicit thresholds. `calibrate_healthy_thresholds` provides conservative
-95th-percentile healthy-training house-maxima for detection/adequacy; at least
-20 known-healthy training cases are required, held-out weather rejected. Faulty
-training runs must independently check adequacy and tune ambiguity. Calibration
-of the public template belongs to Kailash. The old generic shared fixture template
-is rejected by the HH09 scenario service because its names/volumes do not match.
+Phase-specific settings now live in `backend/diagnosis/decision_settings.json`.
+`DecisionProfiles` selects passive settings for one passive night, and post-fan
+settings for one passive plus one fan night. Other combinations are rejected
+because they were not calibrated. Legacy callers can still supply a single
+`Thresholds` object, but the supported offline factory uses the saved profiles.
+
+The conservative training workflow is reproducible with:
+
+```bash
+.venv/bin/python -m backend.simulation.train_decisions \
+  --cache /tmp/hh09-training-fits.json --refine-on-training-check --second-refinement
+```
+
+It uses 344 tuning cases (120 healthy, 224 faulty) and a fresh 94-case TRAINING
+check (30 healthy, 64 faulty). Earlier TRAINING-check cases were explicitly
+promoted into tuning during refinement; they are not advertised as independent
+validation. Seeds remain separate from public-template calibration and all
+weather is from the four-night training partition. Passive nights cover both
+calm and windy conditions; fan nights are calm only. Severity, room and weather
+choices are not tied by array index. No held-out sensor observations or fault
+labels participate in selection.
+
+The joint room/cause cutoff search tries healthy house-max BIC p99 times
+{1.1, 1.25, 1.5, 2}, and candidate cause gaps. It prefers the highest empirical
+supported precision, then coverage, with at least 12 confident tuning cases.
+Adequacy includes healthy and true-fault training residuals. The separate fresh
+TRAINING check disables confidence if precision is below 95%, healthy false
+alarms exceed 5%, or supported sample size is below 12. This is a finite-sample
+operating rule, not a guaranteed population error rate or a probability shown
+in the UI. The separation/noise floor remains the documented heuristic 2.0;
+recommendation never guarantees resolution.
+
+On the final fresh check, confident answers were correct in 19/19 passive and
+28/28 post-fan cases, with 0/30 healthy false alarms in each phase. Coverage is
+limited: none of 32 draft cases received a correct confident diagnosis in either
+phase. Post-fan confident coverage was only 28/94 cases overall. No-fault and
+unresolved outcomes must remain visible. Do not describe these conditional
+precision counts as overall accuracy, real-world validation or a held-out
+benchmark. Post-fan checks supplied both nights to all cases; they do not
+represent the recommendation-only policy. Full seed, weather, planted-fault and
+outcome details are in `backend/simulation/reports/decision_training_report.json`.
+
+A higher post-fan threshold cannot by itself erase a passive anomaly: the
+controller rechecks the passive observations and returns `unexplained` if that
+anomaly remains while joint evidence falls below the post-fan cutoff. Repaired
+observations are independently refitted and can legitimately return `no_fault`.
+
+## Calm fan operating policy
+
+`CalmFanPolicy` uses a project-assumed maximum 2.0 m/s during the actual two-hour
+fan interval, including samples bracketing interpolated endpoints. It rejects
+missing, nonfinite, negative or sparse wind data. This uses remote station
+half-hour averages, not house-site gusts. It is NOT ISO 9972 compliance or a
+validated real-home temperature-test acceptance limit. ISO 9972:2015 §5.1.1
+concerns pressure-test conditions and distinguishes near-ground and meteorological
+wind; it does not establish our thermal test's cutoff.
+Reference: https://preview.sist.si/sist-preview/55718/618cb285e8bc49c393f5e6db071dbca6/ISO-9972-2015.pdf
+
+Scenario creation chooses a different eligible night in the same split. Windy
+passive nights remain allowed. Explicit windy fan overrides are rejected; if no
+eligible alternative exists, the house can still be investigated and the test is
+deferred. Execution rechecks eligibility, including for always-test evaluation
+requests. A forced evaluation flag cannot bypass the weather restriction.
+
+A paired protocol study is reproducible with:
+
+```bash
+.venv/bin/python -m backend.simulation.compare_protocols
+```
+
+For 16 known-room TRAINING cases at severity 2, correct leading causes were:
+passive 9/16; two passive nights 9/16; calm fan 15/16; windy fan 10/16. The calm
+fan and second-passive controls share weather, initial conditions and sensor
+streams. This isolates the intervention's contribution for this small sample,
+not room detection, confident diagnosis, general accuracy, or field validity.
+Its complete output is in
+`backend/simulation/reports/paired_protocol_comparison.json`.
 
 ## Nikhil service handoff
 
 ```python
-from backend.simulation import HH09ScenarioService, GUIDED_SCENARIO_ID
-service = HH09ScenarioService(controller, financial_estimator=optional_money_adapter)
+from backend.simulation.runtime import build_scenario_service
+service = build_scenario_service()
 ```
 
 The six async methods match `backend/app/services.py`: create, observations,
@@ -173,10 +243,21 @@ raises KeyError; invalid/stale actions raise ScenarioStateError/ValueError;
 missing engine raises EngineDependencyError. Map these to appropriate API errors.
 Once dispatched, a cancelled waiter does not abort a worker's atomic operation.
 
-`hh09-guided-v1` is the new guided ID; `synthetic-guided-draft-01` is accepted as a
-compatibility alias. The candidate guided scenario uses a fixed draft, **without
-hardcoding its diagnosis or searching held-out seeds**. Its scientific demo success
-is unverified until the actual public engine is connected.
+`hh09-guided-insulation-v1` is the explicitly disclosed, TRAINING-selected full
+flow example (seed 961029, Hall, conduction excess multiplier 1, passive weather
+2020-12-06 and fan weather 2019-12-01). It genuinely produces ambiguous →
+recommended calm fan → correct confident conduction → repair → no-fault recheck.
+It is a curated demo, not an evaluation sample. `hh09-guided-v1` and legacy
+`synthetic-guided-draft-01` retain the original draft scenario; under conservative
+settings it stays unresolved. No result is hardcoded. Request seed/weather
+overrides create variations whose outcomes are not guaranteed. Judge and surprise
+modes continue to display whatever the engine actually concludes.
+
+The factory loads the actual public model, money adapter and saved phase
+profiles entirely offline. It checks template ID and fingerprints of the public
+model, simulator/twin, operating policy and training weather before starting.
+Stale calibration fails explicitly. No private truth, scenario seed or hidden
+parameters are passed into the diagnosis engine.
 
 Repair follows only a confident diagnosis. It changes only the predicted room
 and path toward that particular house's healthy baseline. The hidden fault label
@@ -209,22 +290,46 @@ expose this override in the normal UI. `discard(id)` explicitly releases memory;
 the default capacity is 128 scenarios with no silent eviction. Evaluation may
 call reveal to score answers; the diagnosis controller cannot access reveal.
 
-## Open integration blockers (not silently bypassed)
+## Resolved and remaining integration work
 
-1. HH09 cached weather has unpublished coordinates. The frozen Location schema
-   requires numeric latitude/longitude. **Nikhil must approve and implement**
-   `latitude: float | None = Field(default=None, ge=-90, le=90)` and the analogous
-   longitude field, then regenerate OpenAPI/TypeScript. Until then canonical
-   HH09 scenario creation raises an actionable WeatherContractError. The user
-   requested that Nikhil be informed; this workstream leaves his schema untouched.
-2. No `backend/engine/` implementation exists in this checkout. Numerical fitting,
-   calibrated public template/thresholds, savings, genuine diagnostic PoC and
-   held-out classification accuracy cannot be claimed yet.
-3. Nikhil's existing routes still return 501 until he wires these services.
+Resolved: nullable coordinates are in the canonical contract; actual HH09
+observations now validate. Kailash's fitter, calibrated public template,
+experiment predictor and money adapter are present and used by the offline
+factory. Separate decision settings are now saved and validated.
 
-The metadata-independent `integrate_trajectory` accepts the actual station
-temperature/wind series, so real-weather truth physics is tested without
-fabricating coordinates or bypassing canonical response validation.
+Nikhil still owns route/UI wiring. Use `build_scenario_service()` once and share
+that instance across the six scenario routes. Add the labelled insulation guided
+ID alongside the existing uncertainty example; no endpoint/schema change is
+needed. The canonical repair request still has no effectiveness field.
+
+Anuj owns the independent >=60-case held-out benchmark. Use the frozen offline
+factory with `split=Split.HELDOUT`, judge/surprise cases and separate seeds; never
+count curated guided examples as benchmark evidence. Always-test baselines obey
+the calm policy. After held-out evaluation, report failures rather than tuning
+these settings on that partition.
+
+Kailash and Mihir should continue investigating the underlying draft/conduction
+bias: confidence remains poor for drafts even under calm conditions. Thresholds
+trade coverage for fewer wrong repairs; they do not solve this model mismatch.
+
+## Documented failure cases
+
+- Passive drafts often resemble conduction; earlier training checks contained
+  confident wrong answers and wrong-room selections. The final finite fresh
+  check had none among its confident answers, which does not establish general
+  reliability. No draft received a supported confident classification in that
+  check. This remains a screening prototype.
+- Mild faults may lie inside healthy thermal-property/sensor variation and be
+  reported `no_fault`. This means no supported significant anomaly, not proof
+  that the building is healthy. False negatives are explicitly reported.
+- Windy fan nights were less discriminating in the paired study and are deferred.
+  Natural wind remains useful as passive evidence and for the documented fallback.
+- Missing initial sensor readings prevent fair test prediction; no test is
+  recommended rather than substituting a later, cooler temperature.
+- A passive anomaly that fails the higher combined threshold is unresolved, not
+  a verified repair or an automatic all-clear.
+- The original guided draft remains unresolved; the labelled insulation example
+  is used for the full repair story with explicit curation disclosure.
 
 ## Verification and break testing
 
@@ -251,9 +356,11 @@ Two implementation defects were reproduced and fixed: last-bit residue after
 100% repair, and synchronous numerical work blocking the async API loop. The
 shared coordinate-schema incompatibility remains explicit rather than faked.
 
-After engine/contract integration, call
-`await backend.simulation.poc.run_poc(controller)` for a training-only actual
-fitter PoC. It reports the observed outcomes without forcing success. Then run
+The original `scripts/poc_loop.py` remains a historical provisional PoC, not the
+source of the final offline profiles. The new factory and protocol/training
+commands above reproduce the supported configuration. The legacy helper
+`await backend.simulation.poc.run_poc(controller)` remains available for a
+training-only actual-fitter PoC. It reports the observed outcomes without forcing success. Then run
 Anuj's independent held-out benchmark. Never present the present scripted-engine
 tests or truth-physics sweep as a successful diagnostic PoC.
 

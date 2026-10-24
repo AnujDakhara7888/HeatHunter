@@ -1,5 +1,5 @@
 """Public-input-only diagnostic orchestration owned by Mihir."""
 
-from .controller import DiagnosisController, EngineDependencyError, Thresholds
+from .controller import DecisionProfiles, DiagnosisController, EngineDependencyError, Thresholds
 
-__all__ = ["DiagnosisController", "EngineDependencyError", "Thresholds"]
+__all__ = ["DecisionProfiles", "DiagnosisController", "EngineDependencyError", "Thresholds"]
