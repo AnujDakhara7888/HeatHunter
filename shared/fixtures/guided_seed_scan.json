@@ -1,0 +1,981 @@
+{
+  "title": "Guided scenario seed scan (TRAINING split; workflow illustration, not a benchmark)",
+  "guided_fault": "draft in bedroom_1 (HH09 Bedroom), excess multiplier 2.0",
+  "seeds": 120,
+  "arc_counts": {
+    "ambiguous > test > confident": 25,
+    "confident > no_test": 13,
+    "no_fault > no_test": 21,
+    "ambiguous > test > ambiguous": 39,
+    "ambiguous > test > unexplained": 7,
+    "ambiguous > no_test": 15
+  },
+  "diagnosis_matched": 3,
+  "full_correct_arc_seeds": [
+    40,
+    65,
+    68
+  ],
+  "rows": [
+    {
+      "seed": 1,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 2,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 3,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 4,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 5,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 6,
+      "arc": "ambiguous > test > unexplained",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 7,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 8,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 9,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 10,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "living_room",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 11,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 12,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 13,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 14,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 15,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 16,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 17,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 18,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 19,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 20,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 21,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 22,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 23,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 24,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 25,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 26,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 27,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 28,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 29,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 30,
+      "arc": "ambiguous > test > unexplained",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 31,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 32,
+      "arc": "ambiguous > test > unexplained",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 33,
+      "arc": "ambiguous > test > unexplained",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 34,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 35,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 36,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 37,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 38,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 39,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 40,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": true,
+      "repair_addressed_cause": true
+    },
+    {
+      "seed": 41,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 42,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 43,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "kitchen",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 44,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 45,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 46,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 47,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 48,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 49,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 50,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 51,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 52,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 53,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 54,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 55,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 56,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 57,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 58,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 59,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 60,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 61,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 62,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "kitchen",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 63,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 64,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 65,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": true,
+      "repair_addressed_cause": true
+    },
+    {
+      "seed": 66,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "living_room",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 67,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 68,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": true,
+      "repair_addressed_cause": true
+    },
+    {
+      "seed": 69,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 70,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 71,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 72,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 73,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 74,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 75,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 76,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 77,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 78,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 79,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 80,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 81,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 82,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 83,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 84,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 85,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 86,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "living_room",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 87,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 88,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 89,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 90,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 91,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 92,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 93,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 94,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 95,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 96,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 97,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 98,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 99,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 100,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "living_room",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 101,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 102,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 103,
+      "arc": "ambiguous > test > unexplained",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 104,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 105,
+      "arc": "confident > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 106,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 107,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 108,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 109,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 110,
+      "arc": "ambiguous > test > unexplained",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 111,
+      "arc": "ambiguous > test > unexplained",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 112,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 113,
+      "arc": "ambiguous > no_test",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 114,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 115,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 116,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 117,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 118,
+      "arc": "no_fault > no_test",
+      "final_leading_cause": null,
+      "final_flagged_room": null,
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    },
+    {
+      "seed": 119,
+      "arc": "ambiguous > test > confident",
+      "final_leading_cause": "envelope_conduction",
+      "final_flagged_room": "kitchen",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": false
+    },
+    {
+      "seed": 120,
+      "arc": "ambiguous > test > ambiguous",
+      "final_leading_cause": "draft",
+      "final_flagged_room": "bedroom_1",
+      "diagnosis_matched": false,
+      "repair_addressed_cause": null
+    }
+  ]
+}

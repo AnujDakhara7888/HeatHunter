@@ -338,6 +338,22 @@ class ExperimentResponse(ContractModel):
 
 class RepairRequest(ContractModel):
     diagnosis_id: str
+    # Fraction of the diagnosed path's excess restored toward its healthy value.
+    effectiveness: Probability = 1.0
+
+
+class MoneyRequest(ContractModel):
+    """User what-if overrides for the screening money estimate of a confident diagnosis."""
+
+    diagnosis_id: str
+    gas_price_pence_per_kwh: PositiveFloat | None = None
+    repair_cost_gbp: NonNegativeFloat | None = None
+
+
+class MoneyResponse(ContractModel):
+    diagnosis_id: str
+    estimate: MoneyEstimate | None
+    explanation: str
 
 
 class RepairResult(ContractModel):
@@ -439,6 +455,7 @@ def public_contract_models() -> dict[str, type[BaseModel]]:
             HypothesisFit,
             Diagnosis,
             MoneyEstimate,
+            MoneyResponse,
             RepairResult,
             GroundTruth,
             RealHouse,
