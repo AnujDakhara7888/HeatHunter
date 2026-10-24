@@ -10,10 +10,13 @@ from backend.data_pipeline.weather import (
     WeatherDataError,
     list_weather_nights,
     load_weather_night,
+    load_weather_wind_direction,
 )
 
 
 def test_cached_night_also_matches_canonical_api_contract() -> None:
+    """The preserved NOAA resource remains compatible with the frozen API contract."""
+
     from backend.app.contracts import WeatherNight
 
     WeatherNight.model_validate(load_weather_night("kisp-2025-01-07"))
@@ -35,17 +38,53 @@ def test_every_cached_night_matches_reader_contract(summary: dict[str, object]) 
     night = load_weather_night(str(summary["night_id"]))
 
     assert night["train_or_heldout_split"] == summary["train_or_heldout_split"]
-    assert night["source"]["station_call_sign"] == "KISP"
+    assert night["source"]["station_id"] == "smeter-phase2-central-weather-station"
+    assert night["location"]["coordinates_status"] == "not_published"
+    assert "latitude" not in night["location"]
+    assert "longitude" not in night["location"]
     assert night["outdoor_temperature"]["unit"] == "degC"
     assert night["wind_speed"]["unit"] == "m/s"
     assert night["outdoor_temperature"]["provenance"] == "REAL_MEASUREMENT"
-    assert len(night["outdoor_temperature"]["values"]) == 11
+    assert len(night["outdoor_temperature"]["values"]) == 25
     assert max(night["outdoor_temperature"]["values"]) < 10
+    assert night["data_quality"]["missing_temperature_count"] == 0
+    assert night["data_quality"]["missing_wind_speed_count"] == 0
+
+    direction = load_weather_wind_direction(str(summary["night_id"]))
+    assert direction["wind_direction"]["unit"] == "degrees_from_north"
+    assert direction["wind_direction"]["timestamps"] == night["wind_speed"]["timestamps"]
+    assert len(direction["wind_direction"]["values"]) == 25
+
+
+def test_default_weather_catalog_contains_no_noaa_inputs() -> None:
+    summaries = list_weather_nights()
+
+    assert summaries
+    assert all(not str(summary["night_id"]).startswith("kisp-") for summary in summaries)
+    assert all(
+        summary["source_station_id"] == "smeter-phase2-central-weather-station"
+        for summary in summaries
+    )
+
+
+def test_timezone_conversion_is_explicit_and_in_gmt() -> None:
+    night = load_weather_night("smeter-hh09-2021-02-12")
+
+    assert night["location"]["timezone"] == "Europe/London"
+    assert night["outdoor_temperature"]["timestamps"][0] == "2021-02-12T18:00:00Z"
+    assert night["outdoor_temperature"]["timestamps"][-1] == "2021-02-13T06:00:00Z"
 
 
 def test_unknown_night_does_not_trigger_a_network_fallback() -> None:
     with pytest.raises(FileNotFoundError, match="Unknown cached weather night"):
         load_weather_night("kisp-2099-01-01")
+
+
+def test_legacy_noaa_cache_is_preserved_but_not_listed_by_default() -> None:
+    legacy = load_weather_night("kisp-2025-01-07")
+
+    assert legacy["source"]["station_call_sign"] == "KISP"
+    assert all(summary["night_id"] != "kisp-2025-01-07" for summary in list_weather_nights())
 
 
 def test_reader_rejects_misaligned_cached_series(tmp_path: Path) -> None:

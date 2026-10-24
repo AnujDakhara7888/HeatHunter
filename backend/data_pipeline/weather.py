@@ -1,8 +1,9 @@
 """Offline reader for cached HeatHunter weather nights.
 
 The reader intentionally performs no network access. Acquisition is kept in the
-separate ``acquire_noaa_weather`` module so simulations remain deterministic and
-the demo works without an internet connection.
+separate acquisition/build modules so simulations remain deterministic and the
+demo works without an internet connection. HH09-region SMETER nights are the
+default. Historical NOAA/KISP nights remain addressable by their explicit IDs.
 """
 
 from __future__ import annotations
@@ -12,7 +13,9 @@ from pathlib import Path
 from typing import Any, Literal, TypeAlias
 
 Split: TypeAlias = Literal["training", "heldout"]
-DEFAULT_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "weather"
+WEATHER_ROOT = Path(__file__).resolve().parents[2] / "data" / "weather"
+DEFAULT_DATA_DIR = WEATHER_ROOT / "hh09"
+LEGACY_NOAA_DATA_DIR = WEATHER_ROOT
 _VALID_SPLITS = {"training", "heldout"}
 _VALID_PROVENANCE = {"REAL_MEASUREMENT"}
 
@@ -102,6 +105,8 @@ def load_weather_night(
         raise ValueError("night_id may contain only lowercase letters, digits, hyphens, and underscores")
     cache_dir = Path(data_dir) if data_dir is not None else DEFAULT_DATA_DIR
     path = cache_dir / f"{night_id}.json"
+    if data_dir is None and night_id.startswith("kisp-") and not path.is_file():
+        path = LEGACY_NOAA_DATA_DIR / f"{night_id}.json"
     if not path.is_file():
         raise FileNotFoundError(f"Unknown cached weather night: {night_id}")
     payload = _read_json(path)
@@ -135,3 +140,30 @@ def list_weather_nights(
         if split is None or summary["train_or_heldout_split"] == split:
             summaries.append(dict(summary))
     return sorted(summaries, key=lambda item: (item["local_night_date"], item["night_id"]))
+
+
+def load_weather_wind_direction(
+    night_id: str,
+    data_dir: str | Path | None = None,
+) -> dict[str, Any]:
+    """Load the provenance-rich wind-direction companion for an HH09 night.
+
+    Wind direction is separate because the frozen public ``WeatherNight`` API
+    currently exposes only temperature and wind speed. No legacy NOAA fallback
+    is provided for this HH09-specific companion reader.
+    """
+
+    allowed_characters = "abcdefghijklmnopqrstuvwxyz0123456789-_"
+    if not night_id or any(character not in allowed_characters for character in night_id):
+        raise ValueError("night_id may contain only lowercase letters, digits, hyphens, and underscores")
+    cache_dir = Path(data_dir) if data_dir is not None else DEFAULT_DATA_DIR / "wind_direction"
+    path = cache_dir / f"{night_id}.json"
+    if not path.is_file():
+        raise FileNotFoundError(f"Unknown cached wind-direction series: {night_id}")
+    payload = _read_json(path)
+    if not isinstance(payload, dict) or payload.get("night_id") != night_id:
+        raise WeatherDataError("Wind-direction companion ID does not match its filename")
+    _validate_series(payload.get("wind_direction"), "wind_direction")
+    if payload["wind_direction"].get("unit") != "degrees_from_north":
+        raise WeatherDataError("Wind direction must use degrees_from_north")
+    return payload
