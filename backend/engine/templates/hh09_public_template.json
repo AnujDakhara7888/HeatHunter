@@ -1,0 +1,74 @@
+{
+  "template_id": "hh09-public-template-v1",
+  "rooms": [
+    {
+      "room_id": "living_room",
+      "room_name": "Living Room",
+      "volume_m3": 31.416,
+      "nominal_capacitance_j_per_k": 3310199.2,
+      "nominal_envelope_conductance_w_per_k": 39.16996508758537,
+      "nominal_infiltration_conductance_w_per_k": 11.521754701310133,
+      "wind_sensitivity_s_per_m": 0.29450232534167536,
+      "nominal_leakage_share": 0.3918228398603521
+    },
+    {
+      "room_id": "kitchen",
+      "room_name": "Kitchen",
+      "volume_m3": 13.8,
+      "nominal_capacitance_j_per_k": 1454060.0,
+      "nominal_envelope_conductance_w_per_k": 16.560095660739158,
+      "nominal_infiltration_conductance_w_per_k": 5.118509715790484,
+      "wind_sensitivity_s_per_m": 0.29450232534167536,
+      "nominal_leakage_share": 0.17406628284368708
+    },
+    {
+      "room_id": "bedroom_1",
+      "room_name": "Bedroom",
+      "volume_m3": 28.296,
+      "nominal_capacitance_j_per_k": 2981455.2,
+      "nominal_envelope_conductance_w_per_k": 36.18695186999879,
+      "nominal_infiltration_conductance_w_per_k": 10.101191450382636,
+      "wind_sensitivity_s_per_m": 0.29450232534167536,
+      "nominal_leakage_share": 0.34351343373175486
+    },
+    {
+      "room_id": "bedroom_2",
+      "room_name": "Hall",
+      "volume_m3": 6.528,
+      "nominal_capacitance_j_per_k": 687833.6,
+      "nominal_envelope_conductance_w_per_k": 6.671382446364538,
+      "nominal_infiltration_conductance_w_per_k": 2.6640650189881754,
+      "wind_sensitivity_s_per_m": 0.29450232534167536,
+      "nominal_leakage_share": 0.09059744356420597
+    }
+  ],
+  "inter_room_couplings": [
+    {
+      "room_a_id": "living_room",
+      "room_b_id": "kitchen",
+      "conductance_w_per_k": 18.84
+    },
+    {
+      "room_a_id": "living_room",
+      "room_b_id": "bedroom_1",
+      "conductance_w_per_k": 11.879999999999999
+    },
+    {
+      "room_a_id": "living_room",
+      "room_b_id": "bedroom_2",
+      "conductance_w_per_k": 14.28
+    },
+    {
+      "room_a_id": "kitchen",
+      "room_b_id": "bedroom_1",
+      "conductance_w_per_k": 10.920000000000002
+    },
+    {
+      "room_a_id": "bedroom_1",
+      "room_b_id": "bedroom_2",
+      "conductance_w_per_k": 6.84
+    }
+  ],
+  "calibrated_from_split": "training",
+  "provenance": "MODEL_ESTIMATE"
+}

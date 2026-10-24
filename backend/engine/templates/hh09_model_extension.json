@@ -1,0 +1,15 @@
+{
+  "template_id": "hh09-public-template-v1",
+  "air_fabric_conductance_w_per_k": {
+    "living_room": 201.65631908721386,
+    "kitchen": 88.58088882746216,
+    "bedroom_1": 181.6293355262224,
+    "bedroom_2": 41.90261175838211
+  },
+  "leakage_law": {
+    "stack_wind_ratio": 1.2,
+    "reference_delta_t_k": 12.0
+  },
+  "provenance": "MODEL_ESTIMATE",
+  "note": "Air-fabric: median per-house coefficient x documented floor area (healthy TRAINING fan nights). Leakage law: ASHRAE/LBL one-storey shelter-class-3 stack+wind relation (config assumptions)."
+}

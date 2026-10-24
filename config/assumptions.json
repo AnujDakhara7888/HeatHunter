@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "owner": "Kailash (public engine)",
+  "retrieved_on": "2026-10-24",
+  "description": "Sourced default assumptions for the HeatHunter public diagnostic model and screening money estimates. Every entry is an ASSUMPTION, never a measurement of a simulated fault. Entries with verified=false are illustrative, user-adjustable defaults that could not be tied to an authoritative source.",
+  "physical": {
+    "thermal_mass_parameter": {
+      "value": 250000.0,
+      "unit": "J/(m2.K)",
+      "verified": true,
+      "source": {
+        "provider": "BRE",
+        "dataset": "SAP 2012 v9.92 (Oct 2013, with RdSAP Dec 2014), Table 1f",
+        "url": "https://files.bregroup.com/SAP/SAP-2012_9-92.pdf",
+        "citation": "BRE (2014). The Government's Standard Assessment Procedure for Energy Rating of Dwellings, 2012 edition, Table 1f.",
+        "notes": "Indicative TMP values: low 100, medium 250, high 450 kJ/m2K. 'Medium' is used for HH09 (masonry cavity walls, suspended timber floor). Room capacitance = TMP x documented floor area + air capacity. This is the engine's absolute-scale anchor."
+      }
+    },
+    "air_volumetric_heat_capacity": {
+      "value": 1200.0,
+      "unit": "J/(m3.K)",
+      "verified": true,
+      "source": {
+        "provider": "Physical property",
+        "dataset": "Air density about 1.2 kg/m3 x specific heat about 1005 J/(kg.K)",
+        "notes": "Added to each room's fabric capacitance; it is small relative to the fabric term."
+      }
+    },
+    "sensible_air_heat_factor": {
+      "value": 0.33,
+      "unit": "W/K per (m3/h)",
+      "verified": true,
+      "source": {
+        "provider": "HeatHunter frozen v3 specification",
+        "dataset": "Sections 4 and 7: 0.33 x airflow (m3/h)",
+        "notes": "rho x cp / 3600 = 1.2 x 1005 / 3600 = 0.335 Wh/(m3.K)."
+      }
+    },
+    "infiltration_wind_stack_model": {
+      "stack_coefficient": 0.000145,
+      "wind_coefficient": 0.000174,
+      "coefficient_units": "stack (L/s)^2/(cm^4.K); wind (L/s)^2/(cm^4.(m/s)^2)",
+      "stories": 1,
+      "shelter_class": 3,
+      "reference_delta_t_k": 12.0,
+      "wind_fit_range_m_s": [0.0, 8.0],
+      "verified": true,
+      "source": {
+        "provider": "ASHRAE via U.S. DOE EnergyPlus documentation",
+        "dataset": "Basic (Sherman-Grimsrud/LBL) effective-leakage-area infiltration model coefficients",
+        "url": "https://bigladdersoftware.com/epx/docs/25-2/input-output-reference/group-airflow.html",
+        "citation": "ASHRAE Handbook of Fundamentals (2001 ch.26; 2005 ch.27), as tabulated in EnergyPlus ZoneInfiltration:EffectiveLeakageArea.",
+        "notes": "One-storey house (HH09 is a bungalow), shelter class 3 ('other buildings across the street'). The public model's linear wind sensitivity beta is the least-squares slope/intercept of sqrt(1 + (Cw/Cs) w^2 / dT_ref) over the wind range. dT_ref = 12 K is a HeatHunter assumption for heating-off night tests. Beta converts the measured windy-night increase in heat loss into calm-night infiltration conductance."
+      }
+    },
+    "partition_u_value": {
+      "value": 2.5,
+      "unit": "W/(m2.K)",
+      "verified": true,
+      "source": {
+        "provider": "ISO 6946 calculation by HeatHunter",
+        "dataset": "Plastered 100 mm dense concrete-block partition",
+        "citation": "ISO 6946 internal surface resistances (2 x 0.13 m2K/W, horizontal heat flow); ISO 10456/CIBSE Guide A conductivities: dense block 1.13 W/mK, gypsum plaster 0.57 W/mK.",
+        "notes": "R = 0.26 + 0.100/1.13 + 2 x 0.013/0.57 = 0.394 m2K/W, so U is about 2.5 W/m2K. HH09's partition construction is unpublished. Coupling = U x plan-derived shared-boundary length x 2.4 m. Passive cooling data cannot identify coupling, so it is fixed, not fitted. It is deliberately a different plausible construction from the simulator's assumption, so the benchmark tests model mismatch honestly."
+      }
+    },
+    "fan_airflow": {
+      "value": 84.950541,
+      "unit": "m3/h",
+      "verified": true,
+      "source": {
+        "provider": "PNNL Building America Solution Center",
+        "dataset": "Bathroom exhaust fans resource guide (50 cfm intermittent example)",
+        "url": "https://basc.pnnl.gov/resource-guides/bathroom-exhaust-fans",
+        "notes": "50 cfm x 1.699 = 84.95 m3/h of delivered airflow, the same public value the simulator uses. It is a hypothetical fan, not an HH09 measurement."
+      }
+    }
+  },
+  "economic": {
+    "heating_degree_days": {
+      "value": 1721.6,
+      "unit": "K.day",
+      "verified": true,
+      "source": {
+        "provider": "UK Data Service (SMETER Phase 2), derived by HeatHunter",
+        "dataset": "SMETER Phase 2 central weather station air temperature, calendar year 2020",
+        "url": "https://doi.org/10.5255/UKDA-SN-856978",
+        "citation": "Allinson, D. et al. (2024). Technical Evaluation of SMETER Technologies Project Phase 2 Data. UK Data Service. SN 856978.",
+        "notes": "Sum over 2020 of max(0, 15.5 - daily mean air temperature). All 366 days are complete; base 15.5 degC is the UK convention. The station is 5.2 km from HH09. Cross-check: AHDB reports North West England 1761 (May 2019-Apr 2020) and 1825 (May 2020-Apr 2021). Reproduce with scripts/derive_hh09_money_inputs.py. It is one year only and not a long-term mean."
+      }
+    },
+    "heating_season_mean_wind_speed": {
+      "value": 2.97,
+      "unit": "m/s",
+      "verified": true,
+      "source": {
+        "provider": "UK Data Service (SMETER Phase 2), derived by HeatHunter",
+        "dataset": "SMETER Phase 2 central weather station wind speed, October-April 2019-2021",
+        "url": "https://doi.org/10.5255/UKDA-SN-856978",
+        "notes": "Mean of all half-hourly October-April readings. It converts a draft's calm-air excess into a seasonal average excess (the public infiltration model is linear in wind)."
+      }
+    },
+    "heating_efficiency": {
+      "value": 0.867,
+      "unit": "fraction (useful heat / gas energy, gross)",
+      "verified": true,
+      "source": {
+        "provider": "UK Data Service (SMETER Phase 2)",
+        "dataset": "SMETER_P2_DwellingInfo.csv, HH09 'Boiler_efficiency_Winter seasonal'",
+        "url": "https://doi.org/10.5255/UKDA-SN-856978",
+        "notes": "HH09's documented Intergas Combi Compact ECO RF 30 gas boiler: winter seasonal efficiency 86.7% (SAP annual 88.8%). This is a product rating, not an in-situ measurement. Heat loss is divided by this to give gas energy."
+      }
+    },
+    "gas_unit_price": {
+      "value": 7.97,
+      "unit": "GBP pence/kWh (gas, incl. 5% VAT)",
+      "verified": true,
+      "source": {
+        "provider": "Ofgem",
+        "dataset": "Energy price cap, 1 October - 31 December 2026, Direct Debit average (England, Scotland and Wales)",
+        "url": "https://www.ofgem.gov.uk/news/changes-energy-price-cap-between-1-october-and-31-december-2026",
+        "notes": "Marginal unit rate only. The standing charge (29.68 p/day) is excluded because it does not change with heat loss. Regional rates differ slightly."
+      }
+    },
+    "gbp_to_usd": {
+      "value": 1.3363,
+      "unit": "USD per GBP",
+      "verified": true,
+      "source": {
+        "provider": "Bank of England (spot rate, republished by Pound Sterling Live)",
+        "dataset": "GBP/USD daily spot reference rate, 22 October 2026",
+        "url": "https://www.poundsterlinglive.com/bank-of-england-spot/historical-spot-exchange-rates/gbp/GBP-to-USD-2026",
+        "notes": "Converts UK costs to the API's USD convention. Exchange rates move daily."
+      }
+    },
+    "repair_costs": {
+      "seal_leaks": {
+        "value": 225.0,
+        "unit": "GBP per repair",
+        "verified": false,
+        "source": {
+          "provider": "Secondary UK cost guides (illustrative)",
+          "dataset": "Whole-house professional draught-proofing, typically quoted at GBP 150-300",
+          "url": "https://housekeep.com/cost-guide/handyman/draught-proofing/",
+          "notes": "UNVERIFIED illustrative default; it should be adjustable by the user. It is a whole-house figure, so draught-proofing a single room may cost less. The Energy Saving Trust pages could not be retrieved."
+        }
+      },
+      "add_insulation": {
+        "value": 80.0,
+        "unit": "GBP per m2 of exterior wall",
+        "verified": false,
+        "source": {
+          "provider": "Secondary UK cost guides (illustrative)",
+          "dataset": "Installed internal wall insulation, about GBP 60-100 per m2 (2026)",
+          "url": "https://www.theecoexperts.co.uk/insulation/internal-wall-insulation-costs",
+          "notes": "UNVERIFIED illustrative default; it should be adjustable by the user. It excludes making good, moving radiators and decoration. Multiplied by the room's assumed exterior wall area."
+        }
+      }
+    },
+    "room_exterior_walls": {
+      "verified": false,
+      "unit": "m (exterior wall length on plan)",
+      "ceiling_height_m": 2.4,
+      "rooms": {
+        "living_room": 7.51,
+        "kitchen": 4.97,
+        "bedroom_1": 6.91,
+        "bedroom_2": 1.14
+      },
+      "source": {
+        "provider": "HeatHunter reading of SMETER_P2_Floorplans.pdf page 9",
+        "dataset": "Exterior wall lengths derived from printed room dimensions",
+        "url": "https://doi.org/10.5255/UKDA-SN-856978",
+        "notes": "ASSUMPTION used only to size the illustrative insulation cost. Living = 4.36 + 3.15, Kitchen = 3.14 + 1.83, Bedroom = 3.80 + 3.11, Hall = 1.14 (entrance side). Area = length x 2.4 m minus documented window area."
+      }
+    }
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "template_id": "hh09-public-template-v1",
+  "method": "per-house joint fit of healthy simulated TRAINING passive + fan nights; median of houses",
+  "house_count": 40,
+  "nights_per_house": [
+    6
+  ],
+  "observations": [
+    "smeter-hh09-2019-12-01:fan_test",
+    "smeter-hh09-2019-12-01:passive",
+    "smeter-hh09-2020-01-28:fan_test",
+    "smeter-hh09-2020-01-28:passive",
+    "smeter-hh09-2020-02-10:passive",
+    "smeter-hh09-2020-12-06:passive"
+  ],
+  "wind_sensitivity_s_per_m_linearized": 0.29450232534167536,
+  "leakage_law": {
+    "stack_wind_ratio": 1.2,
+    "reference_delta_t_k": 12.0
+  },
+  "capacitance_anchor": "SAP 2012 Table 1f medium TMP x documented floor area + air capacity",
+  "air_fabric_w_per_m2_k": {
+    "median": 15.40537196999342,
+    "q1": 14.922540536506371,
+    "q3": 15.830146611210637
+  },
+  "rooms": {
+    "living_room": {
+      "capacitance_j_per_k": 3310199.2,
+      "envelope_conductance_w_per_k": {
+        "median": 39.16996508758537,
+        "q1": 36.16399508396285,
+        "q3": 42.183821192286935
+      },
+      "infiltration_conductance_w_per_k": {
+        "median": 11.521754701310133,
+        "q1": 10.738993733532013,
+        "q3": 12.201205740072371
+      },
+      "air_fabric_conductance_w_per_k": 201.65631908721386,
+      "leakage_share": 0.3918228398603521,
+      "seasonal_effective_conductance_w_per_k": 53.82765111623287
+    },
+    "kitchen": {
+      "capacitance_j_per_k": 1454060.0,
+      "envelope_conductance_w_per_k": {
+        "median": 16.560095660739158,
+        "q1": 15.59114941168048,
+        "q3": 18.25010238371853
+      },
+      "infiltration_conductance_w_per_k": {
+        "median": 5.118509715790484,
+        "q1": 4.8117037107780956,
+        "q3": 5.409424379497733
+      },
+      "air_fabric_conductance_w_per_k": 88.58088882746216,
+      "leakage_share": 0.17406628284368708,
+      "seasonal_effective_conductance_w_per_k": 23.06637238542494
+    },
+    "bedroom_1": {
+      "capacitance_j_per_k": 2981455.2,
+      "envelope_conductance_w_per_k": {
+        "median": 36.18695186999879,
+        "q1": 34.32841564326539,
+        "q3": 37.76043832547568
+      },
+      "infiltration_conductance_w_per_k": {
+        "median": 10.101191450382636,
+        "q1": 9.61132058198342,
+        "q3": 10.86777787092899
+      },
+      "air_fabric_conductance_w_per_k": 181.6293355262224,
+      "leakage_share": 0.34351343373175486,
+      "seasonal_effective_conductance_w_per_k": 49.062351364505645
+    },
+    "bedroom_2": {
+      "capacitance_j_per_k": 687833.6,
+      "envelope_conductance_w_per_k": {
+        "median": 6.671382446364538,
+        "q1": 6.214709455599967,
+        "q3": 7.142978537260123
+      },
+      "infiltration_conductance_w_per_k": {
+        "median": 2.6640650189881754,
+        "q1": 2.5145344076667593,
+        "q3": 2.764404445301747
+      },
+      "air_fabric_conductance_w_per_k": 41.90261175838211,
+      "leakage_share": 0.09059744356420597,
+      "seasonal_effective_conductance_w_per_k": 10.032989543023483
+    }
+  },
+  "couplings_fixed_w_per_k": {
+    "living_room|kitchen": 18.84,
+    "living_room|bedroom_1": 11.879999999999999,
+    "living_room|bedroom_2": 14.28,
+    "kitchen|bedroom_1": 10.920000000000002,
+    "bedroom_1|bedroom_2": 6.84
+  },
+  "coupling_basis": "ASSUMPTION: partition U-value x plan-derived shared wall area; not fitted",
+  "per_house_rmse_deg_c": {
+    "median": 0.15790940345310966,
+    "q1": 0.15648503025166938,
+    "q3": 0.16059285821652136
+  },
+  "unconverged_houses": 0,
+  "four_room_total_conductance_at_season_mean_wind_w_per_k": 135.98936440918695,
+  "reference_check": "HH09's measured co-heating HTC is 172 W/K for the whole dwelling, including the bathroom and closets the four-room twin omits. It is a reference sanity check only; it was not used to fit.",
+  "warnings": [],
+  "provenance": "MODEL_ESTIMATE",
+  "calibration_seed_range": [
+    910000,
+    910039
+  ],
+  "runtime_seconds": {
+    "simulation": 20.6,
+    "calibration": 97.9
+  }
+}
