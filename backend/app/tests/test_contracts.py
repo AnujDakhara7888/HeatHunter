@@ -91,3 +91,13 @@ def test_health_is_real_and_unintegrated_routes_fail_explicitly() -> None:
         "detail": "real-house data service is not integrated",
         "code": "SERVICE_NOT_INTEGRATED",
     }
+
+
+def test_location_accepts_unpublished_coordinates_as_null() -> None:
+    from backend.app.contracts import Location
+
+    location = Location(name="SMETER Phase 2 central weather station", timezone="Europe/London")
+
+    assert location.latitude is None and location.longitude is None
+    with pytest.raises(ValidationError):
+        Location(name="bad", timezone="UTC", latitude=91, longitude=0)

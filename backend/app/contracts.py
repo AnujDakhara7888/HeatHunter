@@ -91,8 +91,10 @@ class SourceMetadata(ContractModel):
 
 class Location(ContractModel):
     name: str
-    latitude: float = Field(ge=-90, le=90)
-    longitude: float = Field(ge=-180, le=180)
+    # Null when the source does not publish coordinates (e.g. the SMETER Phase 2
+    # station); unpublished coordinates must never be approximated.
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     timezone: str
     elevation_m: float | None = None
     distance_to_stony_brook_km_approx: NonNegativeFloat | None = None

@@ -376,9 +376,9 @@ export interface components {
             /** Name */
             name: string;
             /** Latitude */
-            latitude: number;
+            latitude?: number | null;
             /** Longitude */
-            longitude: number;
+            longitude?: number | null;
             /** Timezone */
             timezone: string;
             /** Elevation M */

@@ -11,6 +11,8 @@ does not duplicate every field.
 - Temperature: °C (`degC`). Conductance: W/K. Capacity: J/K.
 - Energy: kWh. Wind: m/s. Volume: m³. Fan airflow: m³/h. Money: USD.
 - Missing measurements use `null`; absent optional results also use `null`.
+- `Location.latitude`/`longitude` are `null` when the source does not publish
+  coordinates (the SMETER Phase 2 weather station). They are never approximated.
 - Series timestamps and values must be aligned, unique, and increasing.
 - Contract models reject unknown fields.
 
