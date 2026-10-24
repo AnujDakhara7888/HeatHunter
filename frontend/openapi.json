@@ -559,12 +559,19 @@
       },
       "ConfusionMatrix": {
         "properties": {
-          "labels": {
+          "actual_labels": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Labels"
+            "title": "Actual Labels"
+          },
+          "predicted_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Predicted Labels"
           },
           "counts": {
             "additionalProperties": {
@@ -580,7 +587,8 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "labels",
+          "actual_labels",
+          "predicted_labels",
           "counts"
         ],
         "title": "ConfusionMatrix"
@@ -716,17 +724,49 @@
             "minimum": 1.0,
             "title": "Heldout Scenario Count"
           },
+          "fault_detection_accuracy": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Fault Detection Accuracy"
+          },
           "room_identification_accuracy": {
             "type": "number",
             "maximum": 1.0,
             "minimum": 0.0,
             "title": "Room Identification Accuracy"
           },
-          "cause_classification_accuracy": {
+          "pre_experiment_cause_classification_accuracy": {
             "type": "number",
             "maximum": 1.0,
             "minimum": 0.0,
-            "title": "Cause Classification Accuracy"
+            "title": "Pre Experiment Cause Classification Accuracy"
+          },
+          "post_experiment_cause_classification_accuracy": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Experiment Cause Classification Accuracy"
+          },
+          "baseline_strategy_accuracy": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Strategy Accuracy"
           },
           "false_positive_rate": {
             "type": "number",
@@ -776,8 +816,11 @@
           "benchmark_id",
           "generated_at",
           "heldout_scenario_count",
+          "fault_detection_accuracy",
           "room_identification_accuracy",
-          "cause_classification_accuracy",
+          "pre_experiment_cause_classification_accuracy",
+          "post_experiment_cause_classification_accuracy",
+          "baseline_strategy_accuracy",
           "false_positive_rate",
           "ambiguity_rate",
           "unexplained_rate",

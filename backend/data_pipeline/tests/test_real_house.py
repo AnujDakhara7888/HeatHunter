@@ -12,9 +12,7 @@ def test_processed_real_house_is_complete_and_schema_valid() -> None:
     assert len(house.outdoor_temperature.values) == 336
     assert len(house.wind_speed.values) == 336
     assert all(len(series.values) == 336 for series in house.room_temperature_series.values())
-    measured_values = (
-        value for series in house.room_temperature_series.values() for value in series.values
-    )
+    measured_values = (value for series in house.room_temperature_series.values() for value in series.values)
     assert all(value is not None for value in measured_values)
 
 

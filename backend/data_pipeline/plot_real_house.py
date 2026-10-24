@@ -73,10 +73,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path(__file__).resolve().parents[2]
-        / "data"
-        / "processed"
-        / "smeter_hh09_validation.png",
+        default=Path(__file__).resolve().parents[2] / "data" / "processed" / "smeter_hh09_validation.png",
     )
     args = parser.parse_args()
     render_validation_plot(args.output)

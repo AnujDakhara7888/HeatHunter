@@ -200,8 +200,10 @@ export interface components {
         };
         /** ConfusionMatrix */
         ConfusionMatrix: {
-            /** Labels */
-            labels: string[];
+            /** Actual Labels */
+            actual_labels: string[];
+            /** Predicted Labels */
+            predicted_labels: string[];
             /** Counts */
             counts: {
                 [key: string]: {
@@ -248,10 +250,16 @@ export interface components {
             generated_at: string;
             /** Heldout Scenario Count */
             heldout_scenario_count: number;
+            /** Fault Detection Accuracy */
+            fault_detection_accuracy: number;
             /** Room Identification Accuracy */
             room_identification_accuracy: number;
-            /** Cause Classification Accuracy */
-            cause_classification_accuracy: number;
+            /** Pre Experiment Cause Classification Accuracy */
+            pre_experiment_cause_classification_accuracy: number;
+            /** Post Experiment Cause Classification Accuracy */
+            post_experiment_cause_classification_accuracy: number | null;
+            /** Baseline Strategy Accuracy */
+            baseline_strategy_accuracy: number | null;
             /** False Positive Rate */
             false_positive_rate: number;
             /** Ambiguity Rate */

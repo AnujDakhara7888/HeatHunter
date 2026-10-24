@@ -390,7 +390,8 @@ class RealHouse(ContractModel):
 
 
 class ConfusionMatrix(ContractModel):
-    labels: list[str]
+    actual_labels: list[str]
+    predicted_labels: list[str]
     counts: dict[str, dict[str, int]]
 
 
@@ -398,8 +399,11 @@ class EvaluationSummary(ContractModel):
     benchmark_id: str
     generated_at: datetime
     heldout_scenario_count: int = Field(ge=1)
+    fault_detection_accuracy: Probability
     room_identification_accuracy: Probability
-    cause_classification_accuracy: Probability
+    pre_experiment_cause_classification_accuracy: Probability
+    post_experiment_cause_classification_accuracy: Probability | None
+    baseline_strategy_accuracy: Probability | None
     false_positive_rate: Probability
     ambiguity_rate: Probability
     unexplained_rate: Probability
