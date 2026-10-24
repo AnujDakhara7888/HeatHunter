@@ -224,3 +224,5 @@ export function useInvestigation() {
 
   return { state, start, diagnose, runExperiment, reprice, repair, reveal, reset, dismissError };
 }
+
+export type InvestigationApi = ReturnType<typeof useInvestigation>;

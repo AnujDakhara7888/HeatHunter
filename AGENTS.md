@@ -61,3 +61,6 @@ integration-owner review.
   final diagnosis matched in 3/120 TRAINING seeds. All 22 confident-but-wrong
   results chose conduction after the fan test
   (`shared/fixtures/guided_seed_scan.json`).
+- Scope change approved by Nikhil (2026-10-24): Three.js 3D twin and a
+  Simple/Expert frontend view. Frontend-only; no API or science changes.
+  Details in `docs/DEMO.md`.

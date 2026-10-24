@@ -1,7 +1,8 @@
-import { BookOpenText, Building2, FlaskConical } from "lucide-react";
+import { BookOpenText, Building2, CircleHelp, FlaskConical } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { EvidenceDrawer } from "./components/EvidenceDrawer";
-import { FaultLab } from "./features/faultlab/FaultLab";
+import { shouldShowWelcome, WelcomeTour } from "./components/WelcomeTour";
+import { FaultLab, type LabView } from "./features/faultlab/FaultLab";
 import { RealHomes } from "./features/realhomes/RealHomes";
 import { api } from "./lib/api";
 import { nowUtc } from "./lib/format";
@@ -10,6 +11,15 @@ type Tab = "fault-lab" | "real-homes";
 
 function readTab(): Tab {
   return window.location.hash === "#real-homes" ? "real-homes" : "fault-lab";
+}
+
+const VIEW_KEY = "heathunter-view";
+function readView(): LabView {
+  try {
+    return window.localStorage.getItem(VIEW_KEY) === "expert" ? "expert" : "simple";
+  } catch {
+    return "simple";
+  }
 }
 
 function useHealth() {
@@ -63,6 +73,16 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(readTab);
   const [drawer, setDrawer] = useState(false);
   const [mode, setMode] = useState<string | null>(null);
+  const [view, setViewState] = useState<LabView>(readView);
+  const [welcome, setWelcome] = useState(shouldShowWelcome);
+  const setView = (next: LabView) => {
+    setViewState(next);
+    try {
+      window.localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      /* per-viewer convenience only */
+    }
+  };
   const health = useHealth();
   const clock = useClock();
   const onMode = useCallback((label: string | null) => setMode(label), []);
@@ -117,13 +137,32 @@ export default function App() {
             <span className="text-[11px] text-ink-4">· detached bungalow · England</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            {tab === "fault-lab" && (
+            {tab === "fault-lab" && view === "expert" && (
               <span className="hidden font-mono text-[10px] tracking-[0.12em] text-ink-3 lg:inline">
                 MODE <span className="text-ink">{mode ?? "IDLE"}</span>
               </span>
             )}
-            <button className="btn h-8" onClick={() => setDrawer(true)}>
-              <BookOpenText size={13} /> Evidence
+            {tab === "fault-lab" && (
+              <div className="flex rounded-xl border border-line-strong bg-sunken p-0.5" role="group" aria-label="Level of detail">
+                {(["simple", "expert"] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    aria-pressed={view === v}
+                    title={v === "simple" ? "Friendly, step-by-step view" : "Full scientific dashboard"}
+                    className={`rounded-[10px] px-3 py-1 text-[12px] font-medium transition ${view === v ? "bg-accent/20 text-white" : "text-ink-3 hover:text-ink"}`}
+                  >
+                    {v === "simple" ? "Simple" : "Expert"}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button className="btn h-8 rounded-xl" onClick={() => setWelcome(true)} aria-label="How it works">
+              <CircleHelp size={14} />
+              <span className="hidden sm:inline">How it works</span>
+            </button>
+            <button className="btn h-8 rounded-xl" onClick={() => setDrawer(true)}>
+              <BookOpenText size={13} /> <span className="hidden sm:inline">Evidence</span>
             </button>
           </div>
         </div>
@@ -132,7 +171,7 @@ export default function App() {
       <div className="mx-auto w-full max-w-[1680px] flex-1 px-4 py-4 lg:px-6">
         {/* Both tabs stay mounted so an investigation survives a tab switch. */}
         <div hidden={tab !== "fault-lab"}>
-          <FaultLab onMode={onMode} />
+          <FaultLab onMode={onMode} view={view} />
         </div>
         {tab === "real-homes" && <RealHomes />}
       </div>
@@ -155,6 +194,7 @@ export default function App() {
       </footer>
 
       <EvidenceDrawer open={drawer} onClose={() => setDrawer(false)} />
+      {welcome && <WelcomeTour onClose={() => setWelcome(false)} />}
     </div>
   );
 }

@@ -1,17 +1,19 @@
 import { Dices, Gavel, Play, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRegisterModal } from "../../lib/modal";
 import type { FaultType, ScenarioCreateRequest } from "../../lib/api";
 import { CAUSE_LABEL, TWIN_ORDER, TWIN_ROOMS, type TwinRoomId } from "../../lib/rooms";
 import { Slider, Spinner } from "../../components/ui";
 
 const GUIDED_ID = "hh09-guided-v1";
 
-function JudgeDialog({ onClose, onLaunch }: { onClose: () => void; onLaunch: (r: ScenarioCreateRequest) => void }) {
+export function JudgeDialog({ onClose, onLaunch }: { onClose: () => void; onLaunch: (r: ScenarioCreateRequest) => void }) {
   const [fault, setFault] = useState<FaultType>("draft");
   const [room, setRoom] = useState<TwinRoomId>("kitchen");
   const [severity, setSeverity] = useState(2);
   const dialog = useRef<HTMLDivElement>(null);
+  useRegisterModal();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

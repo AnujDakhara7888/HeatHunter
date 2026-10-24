@@ -1,29 +1,12 @@
 import { useState } from "react";
 import type { DiagnosisStatus } from "../../lib/api";
 import { fmt } from "../../lib/format";
+import { PLAN_ROOMS, PLAN_UNMODELED, PLAN_WINDOWS } from "../../lib/geometry";
 import { TWIN_ORDER, TWIN_ROOMS, type TwinRoomId } from "../../lib/rooms";
 
-// Simplified schematic. Rectangle proportions use the room dimensions printed
-// on the published SMETER HH09 floor plan (page 9); positions are approximate.
-// Units: centimetres. This is not verified as-built geometry.
-type Rect = { x: number; y: number; w: number; h: number };
-const ROOMS: Record<TwinRoomId, Rect> = {
-  bedroom_1: { x: 0, y: 0, w: 311, h: 380 },
-  kitchen: { x: 323, y: 0, w: 314, h: 182 },
-  living_room: { x: 323, y: 194, w: 315, h: 436 },
-  bedroom_2: { x: 197, y: 392, w: 114, h: 239 },
-};
-const UNMODELED: { label: string; rect: Rect }[] = [
-  { label: "Closet", rect: { x: 0, y: 392, w: 92, h: 87 } },
-  { label: "Boiler", rect: { x: 100, y: 392, w: 87, h: 75 } },
-  { label: "Bathroom", rect: { x: 0, y: 491, w: 180, h: 273 } },
-];
-// Windows: documented widths from SMETER_P2_WindowArea_Orientation (positions schematic).
-const WINDOWS = [
-  { x1: 47, y1: 0, x2: 283, y2: 0 },
-  { x1: 504, y1: 0, x2: 625, y2: 0 },
-  { x1: 363, y1: 630, x2: 599, y2: 630 },
-];
+const ROOMS = PLAN_ROOMS;
+const UNMODELED = PLAN_UNMODELED;
+const WINDOWS = PLAN_WINDOWS;
 
 export interface RoomReading {
   temp: number | null;
@@ -31,7 +14,7 @@ export interface RoomReading {
 }
 
 /** Cold = more saturated icy blue; warm = muted slate. Single-hue sequential. */
-function thermalFill(temp: number | null, lo: number, hi: number): string {
+export function thermalFill(temp: number | null, lo: number, hi: number): string {
   if (temp === null) return "rgba(71,82,98,0.18)";
   const t = hi > lo ? Math.min(1, Math.max(0, (hi - temp) / (hi - lo))) : 0.5;
   const light = 22 + t * 20;

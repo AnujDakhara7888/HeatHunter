@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import scan from "../../../shared/fixtures/guided_seed_scan.json";
 import { api, ApiRequestError, type EvaluationSummary, type Provenance } from "../lib/api";
 import { fmt } from "../lib/format";
+import { useRegisterModal } from "../lib/modal";
 import { ProvenanceTag, Spinner } from "./ui";
 
 const PROVENANCE: [Provenance, string][] = [
@@ -80,6 +81,7 @@ function Benchmark() {
 }
 
 export function EvidenceDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  useRegisterModal(open);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

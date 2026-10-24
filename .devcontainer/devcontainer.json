@@ -1,0 +1,14 @@
+{
+  "name": "HeatHunter",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  "postCreateCommand": "pip install -e '.[dev]' && cd frontend && npm ci && npm run build",
+  "postAttachCommand": "uvicorn backend.app.main:app --host 0.0.0.0 --port 8000",
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": { "label": "HeatHunter", "onAutoForward": "openBrowser" }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "4gb" }
+}

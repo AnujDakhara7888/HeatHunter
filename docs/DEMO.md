@@ -17,6 +17,14 @@ citations in the Evidence drawer.
 For frontend development, run the API as above and `npm run dev` in
 `frontend/` (Vite proxies `/api` to port 8000).
 
+## Run it with nothing installed
+
+**GitHub Codespaces:** on the repository page choose **Code → Codespaces →
+Create codespace on this branch**. `.devcontainer/devcontainer.json` installs
+the backend, builds the frontend and starts the server. Port 8000 opens in a
+browser tab, and the whole thing runs on GitHub's machines. A public link
+instead needs the container deployment below.
+
 ## Put it on the web (one container)
 
 HeatHunter needs its Python backend (simulator, fitting, in-memory scenarios),
@@ -37,6 +45,27 @@ Any Docker host works (Render, Railway, Fly.io, a VM). Constraints:
 - Free tiers that sleep add a cold start of about a minute. Open the site
   before presenting, or use a non-sleeping plan.
 - Keep the judged demo on a local run as well (offline requirement).
+
+## Simple and Expert views (scope change approved 2026-10-24)
+
+The integration owner (Nikhil) explicitly approved a **Three.js 3D house**,
+which the frozen v3 spec had excluded, together with a homeowner-friendly
+**Simple** view.
+
+- **Simple** (default): a step tracker (Measure → Find → Test → Fix → Reveal)
+  and one plain-English assistant card with a single main action per step.
+  - Every number still comes from the API; only the wording is simplified.
+  - Ranked causes say "slightly closer fit", never a probability.
+- **Expert:** the full scientific dashboard (BIC, thresholds, provenance,
+  audit log).
+- Both views share one live investigation, so switching never loses progress.
+- **3D:** the twin is built from the same plan geometry as the 2D schematic
+  and the assumed 2.4 m ceiling.
+  - It is lazy-loaded, and rendering pauses while a dialog is open.
+  - It falls back to the 2D plan when WebGL is unavailable or fails.
+  - Labels are plain DOM, and nothing is fetched online.
+- A three-step welcome tour explains real house → hidden problem →
+  investigation. It shows once per browser and reopens from "How it works".
 
 ## What each tab is
 
