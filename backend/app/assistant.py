@@ -159,9 +159,19 @@ def _openai_chat(*, messages: list[dict], system: str) -> tuple[dict, str]:
         raise AssistantUnavailable("OpenAI returned an unreadable reply") from exc
 
 
+def _chat_provider() -> str:
+    """The configured provider; unset, use OpenAI when only an OpenAI key is present."""
+    configured = os.environ.get("HEATHUNTER_CHAT_PROVIDER", "").strip().lower()
+    if configured:
+        return configured
+    has_openai = bool(os.environ.get("OPENAI_API_KEY", "").strip())
+    has_claude = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+    return "openai" if has_openai and not has_claude else "claude"
+
+
 def _chat_create(**kwargs) -> tuple[dict, str]:
     _load_env_file()
-    provider = os.environ.get("HEATHUNTER_CHAT_PROVIDER", "claude").strip().lower()
+    provider = _chat_provider()
     if provider == "openai":
         return _openai_chat(messages=kwargs["messages"], system=kwargs["system"])
     if provider == "claude":

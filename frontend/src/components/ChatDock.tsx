@@ -156,7 +156,9 @@ export function ChatDock() {
         return;
       }
       const fallback = offlineAnswer(q, context);
-      setMsgs((m) => [...m, { role: "assistant", content: fallback.text, offline: true }]);
+      // Say why the AI was unavailable (the server's reason never contains the key).
+      const reason = err instanceof ApiError && err.code === "ASSISTANT_UNAVAILABLE" ? err.message : null;
+      setMsgs((m) => [...m, { role: "assistant", content: fallback.text, offline: true, ...(reason ? { notice: `Offline explanation · ${reason}` } : {}) }]);
     } finally {
       if (epoch === requestEpoch.current) setBusy(false);
     }
