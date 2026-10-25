@@ -660,6 +660,402 @@
           }
         }
       }
+    },
+    "/api/insight/fits": {
+      "post": {
+        "tags": [
+          "insight"
+        ],
+        "summary": "Insight Fits",
+        "description": "Fit normal / draft / insulation per room and return each hypothesis's predicted curve.",
+        "operationId": "insight_fits_api_insight_fits_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsightRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid for this scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/insight/predict": {
+      "post": {
+        "tags": [
+          "insight"
+        ],
+        "summary": "Insight Predict",
+        "description": "Forward-predict a night under competing fitted hypotheses (out-of-sample check).",
+        "operationId": "insight_predict_api_insight_predict_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PredictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid for this scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes/sample-plan": {
+      "get": {
+        "tags": [
+          "homes"
+        ],
+        "summary": "Sample Plan",
+        "description": "The documented HH09 plan, in the same format a user's plan uses.",
+        "operationId": "sample_plan_api_homes_sample_plan_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomePlan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes/template": {
+      "post": {
+        "tags": [
+          "homes"
+        ],
+        "summary": "Home Template",
+        "operationId": "home_template_api_homes_template_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomePlan"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeTemplate"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid for this scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes/analyze": {
+      "post": {
+        "tags": [
+          "homes"
+        ],
+        "summary": "Home Analyze",
+        "description": "Screen a user's own readings with the public engine (no fault labels exist for real homes).",
+        "operationId": "home_analyze_api_homes_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeAnalyzeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeAnalysis"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid for this scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weather/lookup": {
+      "get": {
+        "tags": [
+          "homes"
+        ],
+        "summary": "Weather Lookup",
+        "description": "Hourly gridded weather for a place and time window (needs internet).",
+        "operationId": "weather_lookup_api_weather_lookup_get",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80,
+              "title": "Query"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "Start"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeatherLookup"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid for this scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/chat": {
+      "post": {
+        "tags": [
+          "assistant"
+        ],
+        "summary": "Assistant Chat",
+        "operationId": "assistant_chat_api_assistant_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatReply"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid for this scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/floor-plan": {
+      "post": {
+        "tags": [
+          "assistant"
+        ],
+        "summary": "Assistant Floor Plan",
+        "operationId": "assistant_floor_plan_api_assistant_floor_plan_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_assistant_floor_plan_api_assistant_floor_plan_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FloorPlanDraft"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid for this scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -739,6 +1135,20 @@
         ],
         "title": "Assumption"
       },
+      "Body_assistant_floor_plan_api_assistant_floor_plan_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_assistant_floor_plan_api_assistant_floor_plan_post"
+      },
       "BuildingCharacteristic": {
         "properties": {
           "name": {
@@ -787,6 +1197,105 @@
           "provenance"
         ],
         "title": "BuildingCharacteristic"
+      },
+      "ChatAction": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "focus_room",
+              "set_view",
+              "set_time"
+            ],
+            "title": "Type"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "target"
+        ],
+        "title": "ChatAction"
+      },
+      "ChatMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ChatMessage"
+      },
+      "ChatReply": {
+        "properties": {
+          "reply": {
+            "type": "string",
+            "title": "Reply"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ChatAction"
+            },
+            "type": "array",
+            "title": "Actions"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reply",
+          "model"
+        ],
+        "title": "ChatReply"
+      },
+      "ChatRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Messages"
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "ChatRequest"
       },
       "ConfusionMatrix": {
         "properties": {
@@ -1140,6 +1649,88 @@
         ],
         "title": "FaultType"
       },
+      "FitCurve": {
+        "properties": {
+          "fault_type": {
+            "$ref": "#/components/schemas/HypothesisType"
+          },
+          "fitted_multiplier": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fitted Multiplier"
+          },
+          "bic": {
+            "type": "number",
+            "title": "Bic"
+          },
+          "residual_rmse_deg_c": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Residual Rmse Deg C"
+          },
+          "sensor_offset_deg_c": {
+            "type": "number",
+            "title": "Sensor Offset Deg C"
+          },
+          "converged": {
+            "type": "boolean",
+            "title": "Converged"
+          },
+          "predicted": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Series"
+            },
+            "type": "object",
+            "title": "Predicted"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fault_type",
+          "fitted_multiplier",
+          "bic",
+          "residual_rmse_deg_c",
+          "sensor_offset_deg_c",
+          "converged",
+          "predicted"
+        ],
+        "title": "FitCurve",
+        "description": "One fitted hypothesis for one room, with its predicted readings per night."
+      },
+      "FloorPlanDraft": {
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/HomePlan"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "plan",
+          "notes",
+          "model"
+        ],
+        "title": "FloorPlanDraft"
+      },
       "GroundTruth": {
         "properties": {
           "fault_type": {
@@ -1213,6 +1804,223 @@
         "type": "object",
         "title": "HealthResponse"
       },
+      "HomeAnalysis": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/DiagnosisStatus"
+          },
+          "flagged_room_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flagged Room Id"
+          },
+          "ranked_causes": {
+            "items": {
+              "$ref": "#/components/schemas/HypothesisFit"
+            },
+            "type": "array",
+            "title": "Ranked Causes"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/RoomInsight"
+            },
+            "type": "array",
+            "title": "Rooms"
+          },
+          "money_estimate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyEstimate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nights": {
+            "items": {
+              "$ref": "#/components/schemas/NightObservations"
+            },
+            "type": "array",
+            "title": "Nights"
+          },
+          "home": {
+            "$ref": "#/components/schemas/HomeTemplate"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "uncertainty": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Uncertainty"
+          },
+          "elapsed_ms": {
+            "type": "number",
+            "title": "Elapsed Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "flagged_room_id",
+          "ranked_causes",
+          "rooms",
+          "money_estimate",
+          "nights",
+          "home",
+          "evidence",
+          "uncertainty",
+          "elapsed_ms"
+        ],
+        "title": "HomeAnalysis"
+      },
+      "HomeAnalyzeRequest": {
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/HomePlan"
+          },
+          "room_temperature_series": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Series"
+            },
+            "type": "object",
+            "title": "Room Temperature Series"
+          },
+          "outdoor_temperature": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "wind_speed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Series"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "plan",
+          "room_temperature_series",
+          "outdoor_temperature"
+        ],
+        "title": "HomeAnalyzeRequest"
+      },
+      "HomePlan": {
+        "properties": {
+          "plan_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Plan Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/PlanRoom"
+            },
+            "type": "array",
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Rooms"
+          },
+          "openings": {
+            "items": {
+              "$ref": "#/components/schemas/PlanOpening"
+            },
+            "type": "array",
+            "title": "Openings"
+          },
+          "ceiling_height_m": {
+            "type": "number",
+            "maximum": 5.0,
+            "exclusiveMinimum": 1.8,
+            "title": "Ceiling Height M",
+            "default": 2.4
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "plan_id",
+          "name",
+          "rooms"
+        ],
+        "title": "HomePlan"
+      },
+      "HomeTemplate": {
+        "properties": {
+          "template": {
+            "$ref": "#/components/schemas/PublicTemplate"
+          },
+          "exterior_wall_length_m": {
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0.0
+            },
+            "type": "object",
+            "title": "Exterior Wall Length M"
+          },
+          "window_area_m2": {
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0.0
+            },
+            "type": "object",
+            "title": "Window Area M2"
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/Assumption"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "template",
+          "exterior_wall_length_m",
+          "window_area_m2",
+          "assumptions"
+        ],
+        "title": "HomeTemplate"
+      },
       "HypothesisFit": {
         "properties": {
           "fault_type": {
@@ -1263,6 +2071,105 @@
           "envelope_conduction"
         ],
         "title": "HypothesisType"
+      },
+      "InsightRequest": {
+        "properties": {
+          "nights": {
+            "items": {
+              "$ref": "#/components/schemas/NightObservations"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Nights"
+          },
+          "room_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Ids"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicTemplate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nights"
+        ],
+        "title": "InsightRequest"
+      },
+      "InsightResponse": {
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "title": "Template Id"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/RoomInsight"
+            },
+            "type": "array",
+            "title": "Rooms"
+          },
+          "model_evaluations": {
+            "type": "integer",
+            "title": "Model Evaluations"
+          },
+          "elapsed_ms": {
+            "type": "number",
+            "title": "Elapsed Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "template_id",
+          "rooms",
+          "model_evaluations",
+          "elapsed_ms"
+        ],
+        "title": "InsightResponse"
+      },
+      "InterRoomCoupling": {
+        "properties": {
+          "room_a_id": {
+            "type": "string",
+            "title": "Room A Id"
+          },
+          "room_b_id": {
+            "type": "string",
+            "title": "Room B Id"
+          },
+          "conductance_w_per_k": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Conductance W Per K"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "room_a_id",
+          "room_b_id",
+          "conductance_w_per_k"
+        ],
+        "title": "InterRoomCoupling"
       },
       "Location": {
         "properties": {
@@ -1559,6 +2466,174 @@
         ],
         "title": "ObservationResponse"
       },
+      "PlanOpening": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "window",
+              "door"
+            ],
+            "title": "Kind"
+          },
+          "x0": {
+            "type": "number",
+            "title": "X0"
+          },
+          "z0": {
+            "type": "number",
+            "title": "Z0"
+          },
+          "x1": {
+            "type": "number",
+            "title": "X1"
+          },
+          "z1": {
+            "type": "number",
+            "title": "Z1"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "x0",
+          "z0",
+          "x1",
+          "z1"
+        ],
+        "title": "PlanOpening"
+      },
+      "PlanRoom": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]{1,40}$",
+            "title": "Room Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "x": {
+            "type": "number",
+            "title": "X"
+          },
+          "z": {
+            "type": "number",
+            "title": "Z"
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Width"
+          },
+          "depth": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Depth"
+          },
+          "has_sensor": {
+            "type": "boolean",
+            "title": "Has Sensor",
+            "default": true
+          },
+          "exposed_floor": {
+            "type": "boolean",
+            "title": "Exposed Floor",
+            "default": true
+          },
+          "exposed_roof": {
+            "type": "boolean",
+            "title": "Exposed Roof",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "room_id",
+          "name",
+          "x",
+          "z",
+          "width",
+          "depth"
+        ],
+        "title": "PlanRoom",
+        "description": "Axis-aligned rectangular room on the plan, in metres (x right, z down)."
+      },
+      "PredictionRequest": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "causes": {
+            "items": {
+              "$ref": "#/components/schemas/HypothesisFit"
+            },
+            "type": "array",
+            "minItems": 2,
+            "title": "Causes"
+          },
+          "night": {
+            "$ref": "#/components/schemas/NightObservations"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicTemplate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "room_id",
+          "causes",
+          "night"
+        ],
+        "title": "PredictionRequest",
+        "description": "Out-of-sample check: predict a later night from fits made on earlier nights."
+      },
+      "PredictionResponse": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "night_id": {
+            "type": "string",
+            "title": "Night Id"
+          },
+          "predictions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Series"
+            },
+            "type": "object",
+            "title": "Predictions"
+          },
+          "elapsed_ms": {
+            "type": "number",
+            "title": "Elapsed Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "room_id",
+          "night_id",
+          "predictions",
+          "elapsed_ms"
+        ],
+        "title": "PredictionResponse"
+      },
       "Protocol": {
         "properties": {
           "heating_off": {
@@ -1629,6 +2704,49 @@
           "ASSUMPTION"
         ],
         "title": "Provenance"
+      },
+      "PublicTemplate": {
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "title": "Template Id"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/RoomTemplate"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Rooms"
+          },
+          "inter_room_couplings": {
+            "items": {
+              "$ref": "#/components/schemas/InterRoomCoupling"
+            },
+            "type": "array",
+            "title": "Inter Room Couplings"
+          },
+          "calibrated_from_split": {
+            "type": "string",
+            "const": "training",
+            "title": "Calibrated From Split",
+            "default": "training"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "MODEL_ESTIMATE",
+            "title": "Provenance",
+            "default": "MODEL_ESTIMATE"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "template_id",
+          "rooms",
+          "inter_room_couplings"
+        ],
+        "title": "PublicTemplate"
       },
       "RealHouse": {
         "properties": {
@@ -1819,6 +2937,89 @@
           "remeasured_savings_kwh"
         ],
         "title": "RepairResult"
+      },
+      "RoomInsight": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "fits": {
+            "items": {
+              "$ref": "#/components/schemas/FitCurve"
+            },
+            "type": "array",
+            "title": "Fits"
+          },
+          "anomaly_score": {
+            "type": "number",
+            "title": "Anomaly Score"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "room_id",
+          "fits",
+          "anomaly_score"
+        ],
+        "title": "RoomInsight"
+      },
+      "RoomTemplate": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "room_name": {
+            "type": "string",
+            "title": "Room Name"
+          },
+          "volume_m3": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Volume M3"
+          },
+          "nominal_capacitance_j_per_k": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Nominal Capacitance J Per K"
+          },
+          "nominal_envelope_conductance_w_per_k": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Nominal Envelope Conductance W Per K"
+          },
+          "nominal_infiltration_conductance_w_per_k": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Nominal Infiltration Conductance W Per K"
+          },
+          "wind_sensitivity_s_per_m": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Wind Sensitivity S Per M"
+          },
+          "nominal_leakage_share": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Nominal Leakage Share"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "room_id",
+          "room_name",
+          "volume_m3",
+          "nominal_capacitance_j_per_k",
+          "nominal_envelope_conductance_w_per_k",
+          "nominal_infiltration_conductance_w_per_k",
+          "wind_sensitivity_s_per_m",
+          "nominal_leakage_share"
+        ],
+        "title": "RoomTemplate"
       },
       "ScenarioCreateRequest": {
         "properties": {
@@ -2177,6 +3378,31 @@
           "end"
         ],
         "title": "UtcWindow"
+      },
+      "WeatherLookup": {
+        "properties": {
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "outdoor_temperature": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "wind_speed": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceMetadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "location",
+          "outdoor_temperature",
+          "wind_speed",
+          "source"
+        ],
+        "title": "WeatherLookup"
       },
       "WeatherNight": {
         "properties": {

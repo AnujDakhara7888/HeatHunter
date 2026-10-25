@@ -1,0 +1,28 @@
+import type { components } from "./schema";
+
+type S = components["schemas"];
+export type Series = S["Series"];
+export type NightObservations = S["NightObservations"];
+export type Diagnosis = S["Diagnosis"];
+export type HypothesisFit = S["HypothesisFit"];
+export type ExperimentResponse = S["ExperimentResponse"];
+export type MoneyResponse = S["MoneyResponse"];
+export type MoneyEstimate = S["MoneyEstimate"];
+export type RepairResult = S["RepairResult"];
+export type GroundTruth = S["GroundTruth"];
+export type RealHouse = S["RealHouse"];
+export type InsightResponse = S["InsightResponse"];
+export type RoomInsight = S["RoomInsight"];
+export type FitCurve = S["FitCurve"];
+export type HomePlan = S["HomePlan"];
+export type PlanRoom = S["PlanRoom"];
+export type PlanOpening = S["PlanOpening"];
+export type HomeAnalysis = S["HomeAnalysis"];
+export type HomeAnalyzeRequest = S["HomeAnalyzeRequest"];
+export type WeatherLookup = S["WeatherLookup"];
+export type ChatReply = S["ChatReply"];
+export type ChatAction = S["ChatAction"];
+export type FloorPlanDraft = S["FloorPlanDraft"];
+export type ScenarioCreateRequest = S["ScenarioCreateRequest"];
+export type FaultType = S["FaultType"];
+export type DiagnosisStatus = S["DiagnosisStatus"];
