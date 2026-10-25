@@ -100,11 +100,13 @@ Only four routes are demo-only.
 |---|---|---|---|---|
 | 1 | GET | `/api/homes` | all | House picker: list of homes |
 | 2 | POST | `/api/demo/homes` | demo | Load any scenario: house + fault (or random, or none) |
+| 2b | GET | `/api/demo/weeks` | demo | Weeks a demo house can start on, with each week's real weather (mean °C, wind, windy/calm nights) |
 | 3 | POST | `/api/homes` | real | Set up a real home: plan, location, heating-off hours |
 | 4 | GET | `/api/homes/{home_id}` | all | Home health: every room's status in plain words |
 | 5 | GET | `/api/homes/{home_id}/readings` | all | Chart data: room temps, weather, "expected if healthy" line |
 | 6 | GET | `/api/homes/{home_id}/rooms/{room_id}` | all | One room: why, what to do, cost, evidence over nights |
 | 7 | GET | `/api/homes/{home_id}/rooms/{room_id}/technical` | all | Fits, scores, thresholds (only when someone opens "details") |
+| 7b | GET | `/api/homes/{home_id}/history` | all | Every room's status, cause, fits and cost after each night (analysis as of any past night) |
 | 8 | POST | `/api/homes/{home_id}/rooms/{room_id}/fix` | all | "I've fixed it": starts verification |
 | 9 | POST | `/api/homes/{home_id}/readings` | real | Sensors upload readings |
 | 10 | POST | `/api/demo/homes/{home_id}/advance` | demo | Move the demo clock on by N nights |

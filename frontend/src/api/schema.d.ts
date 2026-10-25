@@ -178,6 +178,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo/weeks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Demo Weeks
+         * @description Weeks a demo house can start on (held-out winter 2020-21), with each week's real weather.
+         */
+        get: operations["demo_weeks_api_demo_weeks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demo/homes": {
         parameters: {
             query?: never;
@@ -274,6 +294,26 @@ export interface paths {
          * @description Fits, scores and thresholds behind a room's status (for a details panel).
          */
         get: operations["room_technical_api_homes__home_id__rooms__room_id__technical_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/{home_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Home History
+         * @description Every room's status, cause and fits after each night, to show the analysis as of any night.
+         */
+        get: operations["home_history_api_homes__home_id__history_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -581,6 +621,30 @@ export interface components {
              */
             provenance: "SIMULATED_GROUND_TRUTH";
         };
+        /**
+         * DemoWeek
+         * @description A week of the held-out winter a demo house can start on, with its real weather.
+         */
+        DemoWeek: {
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Mean Outdoor C */
+            mean_outdoor_c: number;
+            /** Mean Wind M S */
+            mean_wind_m_s: number;
+            /** Windy Nights */
+            windy_nights: number;
+            /** Calm Nights */
+            calm_nights: number;
+        };
         /** EvaluationSummary */
         EvaluationSummary: {
             /** Benchmark Id */
@@ -724,6 +788,26 @@ export interface components {
             rooms: components["schemas"]["RoomHealthView"][];
             /** Disclaimer */
             disclaimer: string;
+        };
+        /**
+         * HomeHistory
+         * @description Every room's status night by night, so a client can show the analysis as of any past night.
+         */
+        HomeHistory: {
+            /** Home Id */
+            home_id: string;
+            /** Nights */
+            nights: components["schemas"]["NightInfo"][];
+            /** Rooms */
+            rooms: components["schemas"]["RoomHistory"][];
+            /** Persistence Nights */
+            persistence_nights: number;
+            /** Cause Gap Bic */
+            cause_gap_bic: number;
+            /** Advice */
+            advice: {
+                [key: string]: string[];
+            };
         };
         /**
          * HomeKind
@@ -978,6 +1062,16 @@ export interface components {
             /** Nights Seen */
             nights_seen: number;
         };
+        /** RoomHistory */
+        RoomHistory: {
+            /** Room Id */
+            room_id: string;
+            /** Name */
+            name: string;
+            /** Snapshots */
+            snapshots: components["schemas"]["RoomNightSnapshot"][];
+            fix_action: components["schemas"]["FixAction"] | null;
+        };
         /** RoomMoney */
         RoomMoney: {
             /** Annual Cost Gbp */
@@ -990,6 +1084,40 @@ export interface components {
             payback_years: number | null;
             /** Assumptions */
             assumptions: components["schemas"]["Assumption"][];
+        };
+        /**
+         * RoomNightSnapshot
+         * @description The rule's view of one room right after one night: what the app knew at that point.
+         */
+        RoomNightSnapshot: {
+            /** Night Id */
+            night_id: string;
+            /** Night Number */
+            night_number: number;
+            /** Nights Judged */
+            nights_judged: number;
+            /** After Fix */
+            after_fix: boolean;
+            status: components["schemas"]["RoomStatus"];
+            /** Named Cause */
+            named_cause: ("draft" | "envelope_conduction") | null;
+            /**
+             * Leading Cause
+             * @enum {string}
+             */
+            leading_cause: "draft" | "envelope_conduction";
+            /** Extra Heat Loss Percent */
+            extra_heat_loss_percent: number;
+            /** Threshold Percent */
+            threshold_percent: number;
+            /** Cause Gap Bic */
+            cause_gap_bic: number;
+            /** Candidate */
+            candidate: boolean;
+            /** Fits */
+            fits: components["schemas"]["HypothesisSummary"][];
+            /** Annual Cost Gbp */
+            annual_cost_gbp: number | null;
         };
         /** RoomReadings */
         RoomReadings: {
@@ -1474,6 +1602,71 @@ export interface operations {
             };
         };
     };
+    demo_weeks_api_demo_weeks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoWeek"][];
+                };
+            };
+            /** @description Unknown home, room or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid for this home now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (assistant, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     create_demo_home_api_demo_homes_post: {
         parameters: {
             query?: never;
@@ -1839,6 +2032,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoomTechnical"];
+                };
+            };
+            /** @description Unknown home, room or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid for this home now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (assistant, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    home_history_api_homes__home_id__history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeHistory"];
                 };
             };
             /** @description Unknown home, room or asset. */
@@ -2269,7 +2529,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;

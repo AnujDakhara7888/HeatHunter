@@ -156,7 +156,9 @@ export function ChatDock() {
         return;
       }
       const fallback = offlineAnswer(q, context);
-      setMsgs((m) => [...m, { role: "assistant", content: fallback.text, offline: true }]);
+      // Say why the AI was unavailable (the server's reason never contains the key).
+      const reason = err instanceof ApiError && err.code === "ASSISTANT_UNAVAILABLE" ? err.message : null;
+      setMsgs((m) => [...m, { role: "assistant", content: fallback.text, offline: true, ...(reason ? { notice: `Offline explanation · ${reason}` } : {}) }]);
     } finally {
       if (epoch === requestEpoch.current) setBusy(false);
     }
@@ -164,7 +166,7 @@ export function ChatDock() {
 
   return (
     <>
-      <div ref={dragBounds} className="pointer-events-none fixed inset-3 z-50">
+      <div ref={dragBounds} className="pointer-events-none fixed inset-3 z-[70]">
       <AnimatePresence>
         {open && (
           <motion.div
@@ -265,7 +267,7 @@ export function ChatDock() {
             setOpen((value) => !value);
           }
         }}
-        className="glass fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium"
+        className="glass fixed bottom-5 right-5 z-[70] flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium"
       >
         <MessageCircle size={16} className="text-warm" /> Ask HeatHunter
       </button>

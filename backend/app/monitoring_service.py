@@ -57,6 +57,7 @@ from .contracts import (
     FixRequest,
     HomeCreate,
     HomeHealth,
+    HomeHistory,
     HomeKind,
     HomeReadings,
     HomeStatus,
@@ -72,7 +73,9 @@ from .contracts import (
     PublicTemplate,
     ReadingsUpload,
     RoomHealthView,
+    RoomHistory,
     RoomMoney,
+    RoomNightSnapshot,
     RoomReadings,
     RoomReport,
     RoomStatus,
@@ -211,6 +214,8 @@ class RoomTrack:
     history: list[NightScore] = field(default_factory=list)  # scores after 1, 2, ... judged nights
     judged_ids: list[str] = field(default_factory=list)
     timeline: list[tuple[int, RoomStatus, HypothesisType | None, bool]] = field(default_factory=list)
+    # (night id, scores so far, status) after every scored night; unlike history, kept across a fix
+    snapshots: list[tuple[str, NightScore, RoomStatus, bool]] = field(default_factory=list)
     fix: FixState | None = None
 
 
@@ -242,6 +247,19 @@ class HomeState:
             for n in self.nights
             if n.weather.local_night_date and n.weather.local_night_date >= fix.first_night
         ]
+
+
+def _night_info(night: NightObservations) -> NightInfo:
+    weather = night.weather
+    return NightInfo(
+        night_id=night.night_id,
+        start=weather.outdoor_temperature.timestamps[0],
+        end=weather.outdoor_temperature.timestamps[-1],
+        mean_outdoor_c=round(
+            sum(weather.outdoor_temperature.values) / len(weather.outdoor_temperature.values), 2
+        ),
+        mean_wind_m_s=round(sum(weather.wind_speed.values) / len(weather.wind_speed.values), 2),
+    )
 
 
 def _night_date(night: NightObservations) -> date:
@@ -390,6 +408,7 @@ class HomeService:
                 track.history.clear()
                 track.judged_ids.clear()
                 track.timeline.clear()
+                track.snapshots.clear()
         state.nights = merged
 
     def _refresh(self, state: HomeState) -> None:
@@ -411,6 +430,7 @@ class HomeService:
             track.timeline.append(
                 (position[night_id], status, self._named(track, status), track.fix is not None)
             )
+            track.snapshots.append((night_id, score, status, track.fix is not None))
 
     def _ensure_current(self, state: HomeState) -> None:
         with state.lock:
@@ -473,8 +493,10 @@ class HomeService:
 
     # --- money and words --------------------------------------------------------
 
-    def _money(self, state: HomeState, room_id: str, named: HypothesisType | None) -> RoomMoney | None:
-        score = state.tracks[room_id].history[-1]
+    def _money(
+        self, state: HomeState, room_id: str, named: HypothesisType | None, score: NightScore | None = None
+    ) -> RoomMoney | None:
+        score = score or state.tracks[room_id].history[-1]
         fit = score.fits[score.leading_cause]
         overrides = None
         if state.kind == HomeKind.REAL and named is not None:
@@ -739,6 +761,65 @@ class HomeService:
                 rule=rule,
             )
 
+    def history(self, home_id: str) -> HomeHistory:
+        """Each room's status after every night, read from the scores already made (no refitting)."""
+
+        state = self._get(home_id)
+        self._ensure_current(state)
+        with state.lock:
+            position = {night.night_id: index + 1 for index, night in enumerate(state.nights)}
+            rooms = []
+            for room_id, track in state.tracks.items():
+                snapshots = []
+                for night_id, score, status, after_fix in track.snapshots:
+                    named = (
+                        score.leading_cause
+                        if status in {RoomStatus.ISSUE, RoomStatus.STILL_AN_ISSUE}
+                        else None
+                    )
+                    money = self._money(state, room_id, named, score) if status in ISSUE_STATUSES else None
+                    snapshots.append(
+                        RoomNightSnapshot(
+                            night_id=night_id,
+                            night_number=position[night_id],
+                            nights_judged=score.nights,
+                            after_fix=after_fix,
+                            status=status,
+                            named_cause=named.value if named else None,
+                            leading_cause=score.leading_cause.value,
+                            extra_heat_loss_percent=round(score.excess_fraction * 100, 1),
+                            threshold_percent=round(score.threshold * 100, 1),
+                            cause_gap_bic=round(score.cause_gap_bic, 2),
+                            candidate=score.candidate,
+                            fits=[
+                                HypothesisSummary(
+                                    fault_type=cause,
+                                    fitted_multiplier=fit.fitted_multiplier,
+                                    bic=fit.bic,
+                                    residual_rmse_deg_c=fit.residual_rmse_deg_c,
+                                )
+                                for cause, fit in score.fits.items()
+                            ],
+                            annual_cost_gbp=money.annual_cost_gbp if money else None,
+                        )
+                    )
+                rooms.append(
+                    RoomHistory(
+                        room_id=room_id,
+                        name=state.room_names[room_id],
+                        snapshots=snapshots,
+                        fix_action=track.fix.action if track.fix else None,
+                    )
+                )
+            return HomeHistory(
+                home_id=home_id,
+                nights=[_night_info(n) for n in state.nights],
+                rooms=rooms,
+                persistence_nights=state.settings.persistence_nights,
+                cause_gap_bic=state.settings.cause_gap_bic,
+                advice={cause.value: lines for cause, lines in WHAT_TO_DO.items()},
+            )
+
     def report_fix(self, home_id: str, room_id: str, request: FixRequest) -> RoomReport:
         state = self._get(home_id)
         self._ensure_current(state)
@@ -849,22 +930,7 @@ class HomeService:
                     [n.weather.wind_speed for n in nights], nights[0].weather.wind_speed.provenance, "m/s"
                 ),
                 rooms=out_rooms,
-                nights=[
-                    NightInfo(
-                        night_id=n.night_id,
-                        start=n.weather.outdoor_temperature.timestamps[0],
-                        end=n.weather.outdoor_temperature.timestamps[-1],
-                        mean_outdoor_c=round(
-                            sum(n.weather.outdoor_temperature.values)
-                            / len(n.weather.outdoor_temperature.values),
-                            2,
-                        ),
-                        mean_wind_m_s=round(
-                            sum(n.weather.wind_speed.values) / len(n.weather.wind_speed.values), 2
-                        ),
-                    )
-                    for n in nights
-                ],
+                nights=[_night_info(n) for n in nights],
             )
 
     def reveal(self, home_id: str) -> DemoReveal:

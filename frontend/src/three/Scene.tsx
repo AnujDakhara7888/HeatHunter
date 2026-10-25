@@ -325,6 +325,43 @@ function Atmosphere() {
   return null;
 }
 
+/**
+ * Infrared spot meter: casts a ray through the HUD crosshair a few times a second and
+ * reports which room (or the outside) it lands on, so the readout follows the camera.
+ */
+function SpotMeter() {
+  const camera = useThree((s) => s.camera);
+  const scene = useThree((s) => s.scene);
+  const size = useThree((s) => s.size);
+  const active = useScene((s) => s.view === "thermal" || s.ir);
+  const ray = useMemo(() => new THREE.Raycaster(), []);
+  const last = useRef(0);
+  useEffect(() => {
+    if (!active) useScene.getState().set({ spot: null });
+  }, [active]);
+  useFrame(({ clock }) => {
+    if (!active || clock.elapsedTime - last.current < 0.12) return;
+    last.current = clock.elapsedTime;
+    const { inset, plan, spot } = useScene.getState();
+    // The crosshair sits in the middle of the space left of the side panel.
+    const ndcX = inset > 0 ? -inset / size.width : 0;
+    ray.setFromCamera(new THREE.Vector2(ndcX, 0), camera);
+    const hit = ray.intersectObjects(scene.children, true).find((h) => (h.object as THREE.Mesh).isMesh && h.object.visible);
+    let room: string | null = null;
+    if (hit) {
+      const { x, z } = hit.point;
+      const tol = 0.25; // walls sit on room edges; count a hit on either face
+      const near = plan.rooms.filter((r) => x >= r.x - tol && x <= r.x + r.width + tol && z >= r.z - tol && z <= r.z + r.depth + tol);
+      const cam = camera.position;
+      near.sort((a, b) => Math.hypot(a.x + a.width / 2 - cam.x, a.z + a.depth / 2 - cam.z) - Math.hypot(b.x + b.width / 2 - cam.x, b.z + b.depth / 2 - cam.z));
+      const inside = near.find((r) => x >= r.x && x <= r.x + r.width && z >= r.z && z <= r.z + r.depth);
+      room = (inside && near.length === 1 ? inside : near[0])?.room_id ?? null;
+    }
+    if (spot?.room !== room || spot === null) useScene.getState().set({ spot: { room } });
+  });
+  return null;
+}
+
 export function HouseCanvas({ className, effects = true, focusControl = false }: {
   className?: string;
   effects?: boolean;
@@ -356,6 +393,7 @@ export function HouseCanvas({ className, effects = true, focusControl = false }:
           <HeatFlux />
           <Airflow />
           <Rig focusRequest={focusRequest} />
+          <SpotMeter />
           {focusControl && <CompassHeading needle={compassNeedle} />}
           {effects && (
             <EffectComposer multisampling={0}>

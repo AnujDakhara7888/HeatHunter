@@ -297,3 +297,23 @@ def test_hidden_truth_is_available_only_after_reveal(monkeypatch):
     context["hidden_answer"] = {"fault_type": "draft", "room_id": "kitchen"}
     assistant.home_chat([ChatMessage(role="user", content="Explain the revealed answer")], context)
     assert '"fault_type": "draft"' in seen["request"]["input"][-1]["content"]
+
+
+@pytest.mark.parametrize(
+    ("openai_key", "claude_key", "expected"),
+    [
+        ("sk-openai", None, "openai"),
+        (None, "sk-ant", "claude"),
+        ("sk-openai", "sk-ant", "claude"),
+        (None, None, "claude"),
+    ],
+)
+def test_unset_provider_follows_the_key_that_is_present(monkeypatch, openai_key, claude_key, expected):
+    monkeypatch.delenv("HEATHUNTER_CHAT_PROVIDER")
+    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
+    for name, value in (("OPENAI_API_KEY", openai_key), ("ANTHROPIC_API_KEY", claude_key)):
+        if value:
+            monkeypatch.setenv(name, value)
+        else:
+            monkeypatch.delenv(name, raising=False)
+    assert assistant._chat_provider() == expected
