@@ -1,12 +1,13 @@
-import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, Send, Sparkles, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useDragControls, useMotionValue } from "framer-motion";
+import { GripVertical, Maximize2, MessageCircle, Minus, Send, Sparkles, X } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { create } from "zustand";
 import { ApiError, api, traced } from "../api/client";
-import type { ChatAction } from "../api/types";
+import type { AssistantScreen, ChatAction } from "../api/types";
 import { useScene, type View } from "../store/scene";
 
-type Msg = { role: "user" | "assistant"; content: string; offline?: boolean };
+type Msg = { role: "user" | "assistant"; content: string; offline?: boolean; notice?: string };
 
 /** What the current page has shown the user. The assistant sees only this. */
 export const useChatContext = create<{
@@ -69,19 +70,58 @@ function offlineAnswer(q: string, ctx: Record<string, unknown>): { text: string;
   if (/do|fix|repair/.test(s) && room?.what_to_do.length) return { text: room.what_to_do.join(" "), actions: [] };
   if (d.rooms?.length) return { text: `After ${d.nights ?? 0} night(s): ${d.rooms.join(" · ")}`, actions: [] };
   return {
-    text: "I can explain what the heat map shows, which room is losing heat and why, and what a fix is worth. Add an ANTHROPIC_API_KEY on the server for free-form answers.",
+    text: "I can explain what the heat map shows, which room is losing heat and why, and what a fix is worth. Free-form AI chat is unavailable right now; this is an offline explanation.",
     actions: [],
   };
 }
 
 export function ChatDock() {
   const [open, setOpen] = useState(false);
+  const [minimized, setMinimized] = useState(false);
+  const dragControls = useDragControls();
+  const dragBounds = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const positioned = useRef(false);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const keepOnScreen = useCallback(() => {
+    if (!dragBounds.current || !panel.current) return;
+    const maxX = Math.max(0, dragBounds.current.clientWidth - panel.current.offsetWidth);
+    const maxY = Math.max(0, dragBounds.current.clientHeight - panel.current.offsetHeight);
+    x.set(positioned.current ? Math.min(maxX, Math.max(0, x.get())) : Math.max(0, maxX - 8));
+    y.set(positioned.current ? Math.min(maxY, Math.max(0, y.get())) : Math.max(0, maxY - 68));
+    positioned.current = true;
+  }, [x, y]);
+  useLayoutEffect(() => {
+    if (!open) return;
+    keepOnScreen();
+    window.addEventListener("resize", keepOnScreen);
+    return () => window.removeEventListener("resize", keepOnScreen);
+  }, [open, minimized, keepOnScreen]);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const { context, suggestions, homeId } = useChatContext();
+  const { context, suggestions, homeId: storedHomeId } = useChatContext();
+  const { pathname } = useLocation();
+  const page: AssistantScreen["page"] = pathname === "/lab" ? "fault_lab" : pathname === "/real" ? "real_home" : pathname === "/home" ? "your_home" : "overview";
+  const homeId = page === "fault_lab" || page === "your_home" ? storedHomeId : null;
+  const view = useScene((s) => s.view);
+  const infrared = useScene((s) => s.ir);
+  const focusRoom = useScene((s) => s.focusRoom);
+  const scope = `${page}:${homeId ?? ""}`;
+  const currentScope = useRef(scope);
+  currentScope.current = scope;
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth" }), [msgs, busy]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs, busy]);
+  const requestEpoch = useRef(0);
+  useEffect(() => {
+    requestEpoch.current += 1;
+    setMsgs([]);
+    setInput("");
+    setBusy(false);
+  }, [scope]);
 
   const ask = async (q: string) => {
     if (!q.trim() || busy) return;
@@ -89,59 +129,107 @@ export function ChatDock() {
     setMsgs(history);
     setInput("");
     setBusy(true);
+    const epoch = ++requestEpoch.current;
+    const selected = focusRoom ?? (typeof context.selected_room_id === "string" ? context.selected_room_id : null);
+    const selectedRoom = page === "fault_lab" && selected ? ({ bedroom: "bedroom_1", hall: "bedroom_2" } as Record<string, string>)[selected] ?? selected : selected;
+    const window = context.visible_window as { start: string; end: string } | undefined;
+    const screen: AssistantScreen = {
+      page, view, infrared, selected_room_id: selectedRoom,
+      ...(window ? { window_start: window.start, window_end: window.end } : {}),
+      ...(page === "your_home" ? { step: context.step as AssistantScreen["step"] } : {}),
+    };
+    const body = { messages: history.slice(-12).map(({ role, content }) => ({ role, content })), screen };
     try {
-      if (!homeId) throw new ApiError("no home on screen", 503);
-      const reply = await traced("chat", "POST /homes/{id}/assistant", () =>
-        api.POST("/api/homes/{home_id}/assistant", {
-          params: { path: { home_id: homeId } },
-          body: { messages: history.slice(-12).map(({ role, content }) => ({ role, content })) },
-        }),
+      const reply = await traced("chat", homeId ? "POST /homes/{id}/assistant" : "POST /assistant/help", () =>
+        homeId
+          ? api.POST("/api/homes/{home_id}/assistant", { params: { path: { home_id: homeId } }, body })
+          : api.POST("/api/assistant/help", { body }),
         (r) => r.model,
       );
+      if (epoch !== requestEpoch.current || currentScope.current !== scope) return;
       setMsgs((m) => [...m, { role: "assistant", content: reply.reply }]);
       applyActions(reply.actions ?? []);
     } catch (err) {
+      if (epoch !== requestEpoch.current || currentScope.current !== scope) return;
+      if (err instanceof ApiError && err.status === 404) {
+        setMsgs((m) => [...m, { role: "assistant", content: "This demo session has expired. Start a new demo to ask about its rooms.", notice: "Session unavailable" }]);
+        return;
+      }
       const fallback = offlineAnswer(q, context);
-      const note = err instanceof ApiError && err.status === 503;
-      setMsgs((m) => [...m, { role: "assistant", content: fallback.text, offline: note }]);
-      applyActions(fallback.actions);
+      setMsgs((m) => [...m, { role: "assistant", content: fallback.text, offline: true }]);
     } finally {
-      setBusy(false);
+      if (epoch === requestEpoch.current) setBusy(false);
     }
   };
 
   return (
     <>
+      <div ref={dragBounds} className="pointer-events-none fixed inset-3 z-50">
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.97 }}
+            ref={panel}
+            role="dialog"
+            aria-label="HeatHunter assistant"
+            aria-modal={false}
+            style={{ x, y }}
+            drag
+            dragControls={dragControls}
+            dragListener={false}
+            dragConstraints={dragBounds}
+            dragElastic={0}
+            dragMomentum={false}
+            onDragEnd={keepOnScreen}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
             transition={{ type: "spring", bounce: 0.15, duration: 0.45 }}
-            className="glass fixed bottom-20 right-5 z-50 flex h-[min(520px,70vh)] w-[min(380px,calc(100vw-40px))] flex-col overflow-hidden rounded-3xl"
+            className={`glass pointer-events-auto absolute left-0 top-0 flex w-[min(380px,calc(100vw-40px))] flex-col overflow-hidden rounded-3xl ${minimized ? "h-auto" : "h-[min(520px,70dvh,calc(100dvh-40px))]"}`}
           >
-            <div className="flex items-center gap-2 border-b border-line px-4 py-3">
-              <Sparkles size={15} className="text-warm" />
-              <div className="text-sm font-semibold">Ask HeatHunter</div>
-              <span className="ml-1 text-[11px] text-dim">sees only what's on screen</span>
-              <button onClick={() => setOpen(false)} className="ml-auto text-mute hover:text-ink" aria-label="Close">
+            <div className={`flex shrink-0 items-center gap-1 px-3 py-2.5 ${minimized ? "" : "border-b border-line"}`}>
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Move chat window"
+                title="Drag to move · arrow keys also move the chat"
+                className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-2 rounded-lg py-1 outline-none focus-visible:ring-1 focus-visible:ring-warm active:cursor-grabbing"
+                onPointerDown={(event) => dragControls.start(event)}
+                onKeyDown={(event) => {
+                  const delta = { ArrowLeft: [-20, 0], ArrowRight: [20, 0], ArrowUp: [0, -20], ArrowDown: [0, 20] }[event.key];
+                  if (!delta) return;
+                  event.preventDefault();
+                  x.set(x.get() + delta[0]);
+                  y.set(y.get() + delta[1]);
+                  keepOnScreen();
+                }}
+              >
+                <GripVertical size={13} className="shrink-0 text-dim" />
+                <Sparkles size={15} className="shrink-0 text-warm" />
+                <div className="truncate text-sm font-semibold">Ask HeatHunter</div>
+                {!minimized && <span className="truncate text-[11px] text-dim">{({ overview: "Overview", fault_lab: "Fault Lab", real_home: "Real home", your_home: "Your home" })[page]}</span>}
+                {minimized && busy && <span className="pulse-dot text-[11px] text-dim">thinking…</span>}
+              </div>
+              <button onClick={() => setMinimized((value) => !value)} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-mute hover:bg-white/5 hover:text-ink" aria-label={minimized ? "Restore chat" : "Minimize chat"} title={minimized ? "Restore chat" : "Minimize chat"}>
+                {minimized ? <Maximize2 size={14} /> : <Minus size={16} />}
+              </button>
+              <button onClick={() => setOpen(false)} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-mute hover:bg-white/5 hover:text-ink" aria-label="Close" title="Close chat">
                 <X size={16} />
               </button>
             </div>
+            <div className={minimized ? "hidden" : "flex min-h-0 flex-1 flex-col"}>
             <div className="scroll-thin flex-1 space-y-3 overflow-y-auto px-4 py-3 text-[13.5px] leading-relaxed">
               {!msgs.length && <div className="text-mute">Ask anything about what you're looking at. The answer can move the 3D view too.</div>}
               {msgs.map((m, i) => (
                 <div key={i} className={m.role === "user" ? "ml-8 rounded-2xl rounded-br-md bg-[#1f2433] px-3 py-2" : "mr-4 text-[#d9dce3]"}>
                   {m.content}
-                  {m.offline && <div className="mt-1 text-[10.5px] text-dim">offline answer · built from the engine output on screen</div>}
+                  {m.role === "assistant" && <div className="mt-1 text-[10.5px] text-dim">{m.notice ?? (m.offline ? "Offline explanation · AI connection unavailable" : "AI reply")}</div>}
                 </div>
               ))}
               {busy && <div className="text-mute pulse-dot">thinking…</div>}
               <div ref={end} />
             </div>
             <div className="flex flex-wrap gap-1.5 px-4 pb-2">
-              {suggestions.slice(0, 3).map((s) => (
+              {["Explain this screen", ...(homeId ? suggestions : ["How do I start?", "Can I connect sensors?"])].slice(0, 3).map((s) => (
                 <button key={s} onClick={() => ask(s)} className="rounded-full border border-line px-2.5 py-1 text-[11.5px] text-mute hover:text-ink">
                   {s}
                 </button>
@@ -164,11 +252,19 @@ export function ChatDock() {
                 <Send size={14} />
               </button>
             </form>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (open && minimized) setMinimized(false);
+          else {
+            setMinimized(false);
+            setOpen((value) => !value);
+          }
+        }}
         className="glass fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium"
       >
         <MessageCircle size={16} className="text-warm" /> Ask HeatHunter
