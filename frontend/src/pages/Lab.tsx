@@ -23,7 +23,7 @@ import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
 import { assumption, bicGap, causeLabel, fitsFor, strengthOf } from "../lib/diagnosis";
 import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
-import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, ms, roomColor } from "../lib/rooms";
+import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, ms, roomColor, type CauseKey } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
@@ -173,6 +173,9 @@ export default function Lab() {
   const [repair, setRepair] = useState<RepairResult | null>(null);
   const [showAfter, setShowAfter] = useState(true);
   const [truth, setTruth] = useState<GroundTruth | null>(null);
+  // "What would it look like if…": preview any explanation in 3D without changing the verdict.
+  const [preview, setPreview] = useState<CauseKey | null>(null);
+  useEffect(() => setPreview(null), [phase]);
 
   const final = exp?.updated_diagnosis ?? diag;
   const flagged = final?.flagged_room_id ?? null;
@@ -205,12 +208,18 @@ export default function Lab() {
       set({ finding: null });
       return;
     }
+    if (preview) {
+      const fits = phase === "tested" ? flaggedFits2 : flaggedFits1;
+      const m = fits[preview]?.fitted_multiplier ?? lead.fitted_multiplier;
+      set({ finding: preview === "normal" ? null : { room: SIM_TO_PLAN[flagged], cause: preview, strength: strengthOf(m) } });
+      return;
+    }
     if (phase === "fixed" && showAfter && repair?.diagnosed_improvement.includes("no_fault")) {
       set({ finding: null });
       return;
     }
     set({ finding: { room: SIM_TO_PLAN[flagged], cause: lead.fault_type as "draft" | "envelope_conduction", strength: strengthOf(lead.fitted_multiplier) } });
-  }, [final, flagged, phase, showAfter, repair, set]);
+  }, [final, flagged, phase, showAfter, repair, set, preview, fits1, fits2]);
 
   // What the assistant may know: only what is on screen.
   useEffect(() => {
@@ -347,6 +356,35 @@ export default function Lab() {
           <ViewSwitcher views={["exterior", "thermal", "open", "inside", "fan"]} className="pointer-events-auto" />
         </div>
       )}
+      <AnimatePresence>
+        {preview && final && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="pointer-events-none absolute inset-x-0 top-[166px] z-20 flex justify-center pr-[460px]"
+          >
+            <div className="glass pointer-events-auto flex items-center gap-3 rounded-full py-1.5 pl-4 pr-1.5 text-[12.5px]">
+              <span>
+                Previewing <b style={{ color: CAUSE[preview].color }}>{CAUSE[preview].label.toLowerCase()}</b>
+                <span className="text-mute">
+                  {" · "}
+                  {preview === final.ranked_causes[0]?.fault_type
+                    ? "the engine's best explanation"
+                    : preview === "normal"
+                      ? "what a healthy room would look like"
+                      : final.status === "confident"
+                        ? "ruled out by the evidence"
+                        : "still a contender"}
+                </span>
+              </span>
+              <button onClick={() => setPreview(null)} className="rounded-full bg-ink px-3 py-1 font-semibold text-black">
+                Back to verdict
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {phase === "start" && (
@@ -445,6 +483,8 @@ export default function Lab() {
                         nightId={passive.night_id}
                         leading={diag.ranked_causes[0]?.fault_type}
                         ruledOut={["normal"]}
+                        selected={preview}
+                        onSelect={(c) => setPreview((p) => (p === c ? null : c))}
                       />
                     </div>
                   )}
@@ -496,6 +536,8 @@ export default function Lab() {
                         leading={exp.updated_diagnosis.ranked_causes[0]?.fault_type}
                         ruledOut={exp.updated_diagnosis.status === "confident" ? ["normal", exp.updated_diagnosis.ranked_causes[1].fault_type] : ["normal"]}
                         band={fanBand}
+                        selected={preview}
+                        onSelect={(c) => setPreview((p) => (p === c ? null : c))}
                       />
                     </div>
                   )}
@@ -645,9 +687,16 @@ export default function Lab() {
           <div className="text-[12px] text-mute pulse-dot">Pricing the extra heat loss…</div>
         )}
         <div className="space-y-1.5 text-[12px]">
-          <Option label={repairName} note="recommended · verified below" tone="ok" />
-          {runner && <Option label={runner.fault_type === "draft" ? "Seal drafts instead" : "Insulate instead"} note="the other suspect · ruled out by the evidence" />}
-          <Option label="Do nothing" note={est ? `keep losing ~${fmtMoney(est.annual_cost_estimate_usd)}/yr` : "keep losing heat"} />
+          <Option label={repairName} note="recommended · verified below" tone="ok" active={preview === lead.fault_type} onClick={() => setPreview(lead.fault_type as CauseKey)} />
+          {runner && (
+            <Option
+              label={runner.fault_type === "draft" ? "Seal drafts instead" : "Insulate instead"}
+              note="the other suspect · ruled out by the evidence"
+              active={preview === runner.fault_type}
+              onClick={() => setPreview(runner.fault_type as CauseKey)}
+            />
+          )}
+          <Option label="Do nothing" note={est ? `keep losing ~${fmtMoney(est.annual_cost_estimate_usd)}/yr` : "keep losing heat"} active={preview === null} onClick={() => setPreview(null)} />
         </div>
         <label className="block text-[11.5px] text-mute">
           Repair quality <span className="num text-ink">{Math.round(effectiveness * 100)}%</span>
@@ -680,12 +729,16 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
   );
 }
 
-function Option({ label, note, tone }: { label: string; note: string; tone?: "ok" }) {
+function Option({ label, note, tone, active, onClick }: { label: string; note: string; tone?: "ok"; active?: boolean; onClick?: () => void }) {
   return (
-    <div className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 ${tone === "ok" ? "bg-ok/10 text-ink" : "bg-white/[0.03] text-mute"}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition hover:bg-white/[0.07] ${tone === "ok" ? "bg-ok/10 text-ink" : "bg-white/[0.03] text-mute"} ${active ? "ring-1 ring-white/50" : ""}`}
+    >
       <span>{label}</span>
       <span className="text-[10.5px] text-dim">{note}</span>
-    </div>
+    </button>
   );
 }
 
