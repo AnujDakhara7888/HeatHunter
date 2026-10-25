@@ -81,7 +81,9 @@ export function ChatDock() {
   const [busy, setBusy] = useState(false);
   const { context, suggestions, homeId } = useChatContext();
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth" }), [msgs, busy]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs, busy]);
 
   const ask = async (q: string) => {
     if (!q.trim() || busy) return;
