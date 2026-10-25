@@ -7,6 +7,7 @@ fabricated success.
 
 from __future__ import annotations
 
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, NoReturn
@@ -17,21 +18,30 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .contracts import (
+    AdvanceRequest,
     ApiError,
     ChatReply,
     ChatRequest,
+    DemoHomeCreate,
+    DemoReveal,
     DiagnoseRequest,
     Diagnosis,
     DiagnosisStatus,
     EvaluationSummary,
     ExperimentRequest,
     ExperimentResponse,
+    FixRequest,
     FloorPlanDraft,
     GroundTruth,
     HealthResponse,
     HomeAnalysis,
     HomeAnalyzeRequest,
+    HomeChatRequest,
+    HomeCreate,
+    HomeHealth,
     HomePlan,
+    HomeReadings,
+    HomeSummary,
     HomeTemplate,
     InsightRequest,
     InsightResponse,
@@ -40,9 +50,12 @@ from .contracts import (
     ObservationResponse,
     PredictionRequest,
     PredictionResponse,
+    ReadingsUpload,
     RealHouse,
     RepairRequest,
     RepairResult,
+    RoomReport,
+    RoomTechnical,
     ScenarioCreated,
     ScenarioCreateRequest,
     WeatherLookup,
@@ -431,6 +444,181 @@ async def assistant_floor_plan(file: Annotated[UploadFile, File()]) -> FloorPlan
         raise ApiFailure(503, "ASSISTANT_UNAVAILABLE", str(exc)) from exc
     except ValueError as exc:
         raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# API v2: homes monitored night after night (docs/CONTRACTS.md, "API v2").
+# ---------------------------------------------------------------------------
+
+V2_ERRORS = _errors(404, 409, 422, 501, 503)
+_home_service_lock = threading.Lock()
+_home_service = None
+
+
+def _homes():
+    from backend.diagnosis.settings import DecisionSettingsError
+
+    from .monitoring_service import HomeService
+
+    global _home_service
+    with _home_service_lock:
+        if _home_service is None:
+            try:
+                _home_service = HomeService()
+            except DecisionSettingsError as exc:
+                raise ServiceNotIntegratedError(f"monitoring rule is not available: {exc}") from exc
+        return _home_service
+
+
+def reset_home_service() -> None:
+    """Testing hook: forget all homes held in memory (real homes reload from disk)."""
+
+    global _home_service
+    with _home_service_lock:
+        _home_service = None
+
+
+async def _v2(function, *args):
+    from backend.diagnosis.settings import DecisionSettingsError
+
+    from .homes import HomeError
+    from .monitoring_service import HomeStateError
+
+    try:
+        return await run_in_threadpool(function, *args)
+    except KeyError as exc:
+        raise ApiFailure(404, "NOT_FOUND", str(exc.args[0]) if exc.args else "not found") from exc
+    except HomeStateError as exc:
+        raise ApiFailure(409, "INVALID_HOME_STATE", str(exc)) from exc
+    except DecisionSettingsError as exc:
+        raise ApiFailure(501, "SERVICE_NOT_INTEGRATED", str(exc)) from exc
+    except (HomeError, ValueError) as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+    except OSError as exc:
+        raise ApiFailure(503, "WEATHER_UNAVAILABLE", f"weather service unreachable: {exc}") from exc
+
+
+@app.get("/api/homes", response_model=list[HomeSummary], responses=V2_ERRORS, tags=["homes-v2"])
+async def list_homes() -> list[HomeSummary]:
+    """House picker: every demo and real home."""
+
+    return await _v2(_homes().list_homes)
+
+
+@app.post(
+    "/api/demo/homes",
+    response_model=HomeSummary,
+    status_code=status.HTTP_201_CREATED,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
+)
+async def create_demo_home(request: DemoHomeCreate) -> HomeSummary:
+    """Load any scenario on the simulated HH09 twin: a chosen fault, a random hidden one, or none."""
+
+    return await _v2(_homes().create_demo, request)
+
+
+@app.post(
+    "/api/homes",
+    response_model=HomeSummary,
+    status_code=status.HTTP_201_CREATED,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
+)
+async def create_home(request: HomeCreate) -> HomeSummary:
+    """Set up a real home from its plan, location and heating-off hours."""
+
+    return await _v2(_homes().create_real, request)
+
+
+@app.get("/api/homes/{home_id}", response_model=HomeHealth, responses=V2_ERRORS, tags=["homes-v2"])
+async def home_health(home_id: str) -> HomeHealth:
+    """Every room's status in plain words."""
+
+    return await _v2(_homes().health, home_id)
+
+
+@app.get("/api/homes/{home_id}/readings", response_model=HomeReadings, responses=V2_ERRORS, tags=["homes-v2"])
+async def home_readings(
+    home_id: str,
+    start: Annotated[datetime | None, Query(alias="from")] = None,
+    end: Annotated[datetime | None, Query(alias="to")] = None,
+    room_id: str | None = None,
+) -> HomeReadings:
+    """Chart data: measured room temperatures, weather and the engine's expected-if-healthy line."""
+
+    return await _v2(_homes().readings, home_id, start, end, room_id)
+
+
+@app.post("/api/homes/{home_id}/readings", response_model=HomeHealth, responses=V2_ERRORS, tags=["homes-v2"])
+async def upload_readings(home_id: str, request: ReadingsUpload) -> HomeHealth:
+    """Sensor readings for a real home; weather is fetched for its location."""
+
+    return await _v2(_homes().upload, home_id, request)
+
+
+@app.get(
+    "/api/homes/{home_id}/rooms/{room_id}", response_model=RoomReport, responses=V2_ERRORS, tags=["homes-v2"]
+)
+async def room_report(home_id: str, room_id: str) -> RoomReport:
+    """One room: why, what to do, cost and the evidence night by night."""
+
+    return await _v2(_homes().room_report, home_id, room_id)
+
+
+@app.get(
+    "/api/homes/{home_id}/rooms/{room_id}/technical",
+    response_model=RoomTechnical,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
+)
+async def room_technical(home_id: str, room_id: str) -> RoomTechnical:
+    """Fits, scores and thresholds behind a room's status (for a details panel)."""
+
+    return await _v2(_homes().room_technical, home_id, room_id)
+
+
+@app.post(
+    "/api/homes/{home_id}/rooms/{room_id}/fix",
+    response_model=RoomReport,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
+)
+async def report_fix(home_id: str, room_id: str, request: FixRequest) -> RoomReport:
+    """'I've fixed it': the room is re-judged on nights after the fix only."""
+
+    return await _v2(_homes().report_fix, home_id, room_id, request)
+
+
+@app.post(
+    "/api/demo/homes/{home_id}/advance", response_model=HomeHealth, responses=V2_ERRORS, tags=["homes-v2"]
+)
+async def advance_demo(home_id: str, request: AdvanceRequest) -> HomeHealth:
+    """Run the demo house through its next heating-off nights."""
+
+    return await _v2(_homes().advance, home_id, request.nights)
+
+
+@app.get(
+    "/api/demo/homes/{home_id}/reveal", response_model=DemoReveal, responses=V2_ERRORS, tags=["homes-v2"]
+)
+async def reveal_demo(home_id: str) -> DemoReveal:
+    """The hidden fault, whether the app found it, and the same night without the fault."""
+
+    return await _v2(_homes().reveal, home_id)
+
+
+@app.post("/api/homes/{home_id}/assistant", response_model=ChatReply, responses=V2_ERRORS, tags=["homes-v2"])
+async def home_assistant(home_id: str, request: HomeChatRequest) -> ChatReply:
+    """Chat about this home. The server supplies the home's public data; Claude only."""
+
+    from .assistant import AssistantUnavailable, home_chat
+
+    context = await _v2(_homes().assistant_context, home_id)
+    try:
+        return await run_in_threadpool(home_chat, request.messages, context)
+    except AssistantUnavailable as exc:
+        raise ApiFailure(503, "ASSISTANT_UNAVAILABLE", str(exc)) from exc
 
 
 # Serve the built frontend for the offline single-process demo, if present.

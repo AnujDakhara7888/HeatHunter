@@ -170,6 +170,32 @@ def score_room(
     )
 
 
+def room_status(history: Sequence[NightScore], settings: MonitoringSettings) -> tuple[RoomStatus, int]:
+    """Status from a room's scores after 1, 2, ... nights (oldest first) and its candidate streak.
+
+    Only the last ``persistence_nights`` scores matter, so callers that score
+    night by night can keep a running history instead of refitting old prefixes.
+    """
+
+    if not history:
+        raise ValueError("at least one scored night is required")
+    latest = history[-1]
+    streak = 0
+    for score in reversed(history[-settings.persistence_nights :]):
+        if not (score.candidate and score.leading_cause == latest.leading_cause):
+            break
+        streak += 1
+    if streak >= settings.persistence_nights:
+        status: RoomStatus = (
+            "issue" if latest.cause_gap_bic > settings.cause_gap_bic else "issue_cause_unclear"
+        )
+    elif streak:
+        status = "watching"
+    else:
+        status = "healthy"
+    return status, streak
+
+
 def assess_rooms(
     nights: Sequence[NightObservations],
     template: PublicTemplate,
@@ -193,23 +219,13 @@ def assess_rooms(
     nights = list(nights)
     out = []
     for room in template.rooms:
-        latest = score_room(nights, room.room_id, template, settings, engine, layer)
-        streak = 0
-        if latest.candidate:
-            streak = 1
-            for count in range(len(nights) - 1, max(len(nights) - settings.persistence_nights, 0), -1):
-                earlier = score_room(nights[:count], room.room_id, template, settings, engine, layer)
-                if not (earlier.candidate and earlier.leading_cause == latest.leading_cause):
-                    break
-                streak += 1
-        if streak >= settings.persistence_nights:
-            status: RoomStatus = (
-                "issue" if latest.cause_gap_bic > settings.cause_gap_bic else "issue_cause_unclear"
-            )
-        elif streak:
-            status = "watching"
-        else:
-            status = "healthy"
+        first = max(len(nights) - settings.persistence_nights + 1, 1)
+        history = [
+            score_room(nights[:count], room.room_id, template, settings, engine, layer)
+            for count in range(first, len(nights) + 1)
+        ]
+        status, streak = room_status(history, settings)
+        latest = history[-1]
         out.append(
             RoomHealth(
                 room_id=room.room_id,

@@ -384,8 +384,8 @@ def analyze_home(
     )
 
 
-def lookup_weather(query: str, start: datetime, end: datetime) -> WeatherLookup:
-    """Geocode a place and fetch hourly reanalysis weather (Open-Meteo; needs network)."""
+def geocode(query: str) -> Location:
+    """Find a place by name (Open-Meteo geocoding; needs network)."""
 
     geo = _get_json(
         "https://geocoding-api.open-meteo.com/v1/search?" + urlencode({"name": query, "count": 1})
@@ -393,9 +393,28 @@ def lookup_weather(query: str, start: datetime, end: datetime) -> WeatherLookup:
     if not geo.get("results"):
         raise HomeError(f"could not find a place called {query!r}")
     place = geo["results"][0]
+    return Location(
+        name=f"{place['name']}, {place.get('country', '')}".strip(", "),
+        latitude=place["latitude"],
+        longitude=place["longitude"],
+        timezone="UTC",
+    )
+
+
+def lookup_weather(query: str, start: datetime, end: datetime) -> WeatherLookup:
+    """Geocode a place and fetch hourly reanalysis weather (Open-Meteo; needs network)."""
+
+    return fetch_weather(geocode(query), start, end)
+
+
+def fetch_weather(location: Location, start: datetime, end: datetime) -> WeatherLookup:
+    """Hourly gridded weather at a location's coordinates (Open-Meteo; needs network)."""
+
+    if location.latitude is None or location.longitude is None:
+        raise HomeError("the location has no coordinates")
     params = {
-        "latitude": place["latitude"],
-        "longitude": place["longitude"],
+        "latitude": location.latitude,
+        "longitude": location.longitude,
         "start_date": (start - timedelta(days=1)).date().isoformat(),
         "end_date": (end + timedelta(days=1)).date().isoformat(),
         "hourly": "temperature_2m,wind_speed_10m",
@@ -429,12 +448,7 @@ def lookup_weather(query: str, start: datetime, end: datetime) -> WeatherLookup:
         notes="Gridded model weather, not a station reading.",
     )
     return WeatherLookup(
-        location=Location(
-            name=f"{place['name']}, {place.get('country', '')}".strip(", "),
-            latitude=place["latitude"],
-            longitude=place["longitude"],
-            timezone="UTC",
-        ),
+        location=location,
         outdoor_temperature=Series(
             timestamps=[stamps[i] for i in keep],
             values=[hourly["temperature_2m"][i] for i in keep],

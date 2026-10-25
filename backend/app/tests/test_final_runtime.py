@@ -68,9 +68,7 @@ def test_insulation_demo_completes_http_loop_with_correct_phase_profiles(client)
     assert after["money_estimate"] is not None
     assert_profile(after, "post_fan")
     # Money lookup retains the post-test diagnosis and its exact model estimate.
-    money = client.post(
-        f"/api/scenarios/{sid}/money", json={"diagnosis_id": after["diagnosis_id"]}
-    ).json()
+    money = client.post(f"/api/scenarios/{sid}/money", json={"diagnosis_id": after["diagnosis_id"]}).json()
     assert_no_truth(money)
     assert money["estimate"] == after["money_estimate"]
     stale = client.post(f"/api/scenarios/{sid}/repair", json={"diagnosis_id": before["diagnosis_id"]})

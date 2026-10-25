@@ -348,10 +348,226 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/homes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Homes
+         * @description House picker: every demo and real home.
+         */
+        get: operations["list_homes_api_homes_get"];
+        put?: never;
+        /**
+         * Create Home
+         * @description Set up a real home from its plan, location and heating-off hours.
+         */
+        post: operations["create_home_api_homes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/homes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Demo Home
+         * @description Load any scenario on the simulated HH09 twin: a chosen fault, a random hidden one, or none.
+         */
+        post: operations["create_demo_home_api_demo_homes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/{home_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Home Health
+         * @description Every room's status in plain words.
+         */
+        get: operations["home_health_api_homes__home_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/{home_id}/readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Home Readings
+         * @description Chart data: measured room temperatures, weather and the engine's expected-if-healthy line.
+         */
+        get: operations["home_readings_api_homes__home_id__readings_get"];
+        put?: never;
+        /**
+         * Upload Readings
+         * @description Sensor readings for a real home; weather is fetched for its location.
+         */
+        post: operations["upload_readings_api_homes__home_id__readings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/{home_id}/rooms/{room_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Room Report
+         * @description One room: why, what to do, cost and the evidence night by night.
+         */
+        get: operations["room_report_api_homes__home_id__rooms__room_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/{home_id}/rooms/{room_id}/technical": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Room Technical
+         * @description Fits, scores and thresholds behind a room's status (for a details panel).
+         */
+        get: operations["room_technical_api_homes__home_id__rooms__room_id__technical_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/{home_id}/rooms/{room_id}/fix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Fix
+         * @description 'I've fixed it': the room is re-judged on nights after the fix only.
+         */
+        post: operations["report_fix_api_homes__home_id__rooms__room_id__fix_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/homes/{home_id}/advance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Advance Demo
+         * @description Run the demo house through its next heating-off nights.
+         */
+        post: operations["advance_demo_api_demo_homes__home_id__advance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/homes/{home_id}/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reveal Demo
+         * @description The hidden fault, whether the app found it, and the same night without the fault.
+         */
+        get: operations["reveal_demo_api_demo_homes__home_id__reveal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/{home_id}/assistant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Home Assistant
+         * @description Chat about this home. The server supplies the home's public data; Claude only.
+         */
+        post: operations["home_assistant_api_homes__home_id__assistant_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdvanceRequest */
+        AdvanceRequest: {
+            /**
+             * Nights
+             * @default 1
+             */
+            nights: number;
+        };
         /** ApiError */
         ApiError: {
             /** Detail */
@@ -444,6 +660,63 @@ export interface components {
                     [key: string]: number;
                 };
             };
+        };
+        /** DemoFault */
+        DemoFault: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "draft" | "envelope_conduction";
+            /** Room Id */
+            room_id: string;
+            /** Severity */
+            severity: number;
+        };
+        /** DemoHomeCreate */
+        DemoHomeCreate: {
+            /**
+             * House
+             * @default hh09
+             * @constant
+             */
+            house: "hh09";
+            fault?: components["schemas"]["DemoFault"] | null;
+            /**
+             * Random Fault
+             * @default false
+             */
+            random_fault: boolean;
+            /** Start Date */
+            start_date?: string | null;
+            /** Seed */
+            seed?: number | null;
+        };
+        /** DemoReveal */
+        DemoReveal: {
+            fault_type: components["schemas"]["FaultType"];
+            /** Room Id */
+            room_id: string | null;
+            /** Severity */
+            severity: number;
+            /** App Found It */
+            app_found_it: boolean;
+            /** Nights To Find */
+            nights_to_find: number | null;
+            /** Summary */
+            summary: string;
+            /** Fault Free Twin */
+            fault_free_twin: {
+                [key: string]: components["schemas"]["Series"];
+            };
+            /** Fault Free Night Id */
+            fault_free_night_id: string;
+            /**
+             * Provenance
+             * @default SIMULATED_GROUND_TRUTH
+             * @constant
+             */
+            provenance: "SIMULATED_GROUND_TRUTH";
         };
         /** DiagnoseRequest */
         DiagnoseRequest: {
@@ -567,6 +840,36 @@ export interface components {
             /** Warnings */
             warnings?: string[];
         };
+        /**
+         * FixAction
+         * @enum {string}
+         */
+        FixAction: "seal_leaks" | "add_insulation" | "other";
+        /** FixRecord */
+        FixRecord: {
+            action: components["schemas"]["FixAction"];
+            /**
+             * Reported At
+             * Format: date-time
+             */
+            reported_at: string;
+            /** Fixed On */
+            fixed_on: string | null;
+            /** Note */
+            note: string | null;
+            /** Nights Since Fix */
+            nights_since_fix: number;
+            /** Found Before Fix */
+            found_before_fix: ("draft" | "envelope_conduction" | "unclear") | null;
+        };
+        /** FixRequest */
+        FixRequest: {
+            action: components["schemas"]["FixAction"];
+            /** Fixed On */
+            fixed_on?: string | null;
+            /** Note */
+            note?: string | null;
+        };
         /** FloorPlanDraft */
         FloorPlanDraft: {
             plan: components["schemas"]["HomePlan"];
@@ -608,6 +911,27 @@ export interface components {
              */
             service: "heat-hunter-api";
         };
+        /**
+         * HeatingOffWindow
+         * @description Local hours when the heating is reliably off; only these nights are analysed.
+         */
+        HeatingOffWindow: {
+            /**
+             * Start
+             * @default 22:00
+             */
+            start: string;
+            /**
+             * End
+             * @default 06:00
+             */
+            end: string;
+            /**
+             * Timezone
+             * @default Europe/London
+             */
+            timezone: string;
+        };
         /** HomeAnalysis */
         HomeAnalysis: {
             status: components["schemas"]["DiagnosisStatus"];
@@ -640,6 +964,37 @@ export interface components {
             /** Location Name */
             location_name?: string | null;
         };
+        /** HomeChatRequest */
+        HomeChatRequest: {
+            /** Messages */
+            messages: components["schemas"]["ChatMessage"][];
+        };
+        /** HomeCreate */
+        HomeCreate: {
+            /** Name */
+            name: string;
+            plan: components["schemas"]["HomePlan"];
+            /** Location Query */
+            location_query?: string | null;
+            /** Latitude */
+            latitude?: number | null;
+            /** Longitude */
+            longitude?: number | null;
+            heating_off?: components["schemas"]["HeatingOffWindow"];
+        };
+        /** HomeHealth */
+        HomeHealth: {
+            home: components["schemas"]["HomeSummary"];
+            /** Rooms */
+            rooms: components["schemas"]["RoomHealthView"][];
+            /** Disclaimer */
+            disclaimer: string;
+        };
+        /**
+         * HomeKind
+         * @enum {string}
+         */
+        HomeKind: "demo" | "real";
         /** HomePlan */
         HomePlan: {
             /** Plan Id */
@@ -655,6 +1010,44 @@ export interface components {
              * @default 2.4
              */
             ceiling_height_m: number;
+        };
+        /** HomeReadings */
+        HomeReadings: {
+            /** Home Id */
+            home_id: string;
+            outdoor_temperature: components["schemas"]["Series"];
+            wind_speed: components["schemas"]["Series"];
+            /** Rooms */
+            rooms: {
+                [key: string]: components["schemas"]["RoomReadings"];
+            };
+            /** Nights */
+            nights: components["schemas"]["NightInfo"][];
+        };
+        /**
+         * HomeStatus
+         * @enum {string}
+         */
+        HomeStatus: "monitoring" | "issue" | "verifying" | "all_clear";
+        /** HomeSummary */
+        HomeSummary: {
+            /** Home Id */
+            home_id: string;
+            /** Name */
+            name: string;
+            kind: components["schemas"]["HomeKind"];
+            status: components["schemas"]["HomeStatus"];
+            /** Rooms With Issues */
+            rooms_with_issues: number;
+            /** Nights Monitored */
+            nights_monitored: number;
+            /** Last Night */
+            last_night: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** HomeTemplate */
         HomeTemplate: {
@@ -687,6 +1080,16 @@ export interface components {
              * @constant
              */
             provenance: "MODEL_ESTIMATE";
+        };
+        /** HypothesisSummary */
+        HypothesisSummary: {
+            fault_type: components["schemas"]["HypothesisType"];
+            /** Fitted Multiplier */
+            fitted_multiplier: number;
+            /** Bic */
+            bic: number;
+            /** Residual Rmse Deg C */
+            residual_rmse_deg_c: number;
         };
         /**
          * HypothesisType
@@ -790,6 +1193,43 @@ export interface components {
             estimate: components["schemas"]["MoneyEstimate"] | null;
             /** Explanation */
             explanation: string;
+        };
+        /** NightEvidence */
+        NightEvidence: {
+            /** Night Id */
+            night_id: string;
+            /** Nights So Far */
+            nights_so_far: number;
+            /** Extra Heat Loss Percent */
+            extra_heat_loss_percent: number;
+            /** Threshold Percent */
+            threshold_percent: number;
+            /**
+             * Leading Cause
+             * @enum {string}
+             */
+            leading_cause: "draft" | "envelope_conduction";
+            /** Mean Wind M S */
+            mean_wind_m_s: number;
+        };
+        /** NightInfo */
+        NightInfo: {
+            /** Night Id */
+            night_id: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Mean Outdoor C */
+            mean_outdoor_c: number;
+            /** Mean Wind M S */
+            mean_wind_m_s: number;
         };
         /** NightObservations */
         NightObservations: {
@@ -929,6 +1369,13 @@ export interface components {
              */
             provenance: "MODEL_ESTIMATE";
         };
+        /** ReadingsUpload */
+        ReadingsUpload: {
+            /** Room Temperature Series */
+            room_temperature_series: {
+                [key: string]: components["schemas"]["Series"];
+            };
+        };
         /** RealHouse */
         RealHouse: {
             /** House Id */
@@ -994,6 +1441,24 @@ export interface components {
              */
             provenance: "SIMULATED_MEASUREMENT";
         };
+        /** RoomHealthView */
+        RoomHealthView: {
+            /** Room Id */
+            room_id: string;
+            /** Name */
+            name: string;
+            status: components["schemas"]["RoomStatus"];
+            /** Headline */
+            headline: string;
+            /** Likely Cause */
+            likely_cause: ("draft" | "envelope_conduction") | null;
+            /** Extra Heat Loss Percent */
+            extra_heat_loss_percent: number | null;
+            /** Annual Cost Gbp */
+            annual_cost_gbp: number | null;
+            /** Nights Seen */
+            nights_seen: number;
+        };
         /** RoomInsight */
         RoomInsight: {
             /** Room Id */
@@ -1002,6 +1467,70 @@ export interface components {
             fits: components["schemas"]["FitCurve"][];
             /** Anomaly Score */
             anomaly_score: number;
+        };
+        /** RoomMoney */
+        RoomMoney: {
+            /** Annual Cost Gbp */
+            annual_cost_gbp: number;
+            /** Annual Energy Kwh */
+            annual_energy_kwh: number;
+            /** Repair Cost Gbp */
+            repair_cost_gbp: number | null;
+            /** Payback Years */
+            payback_years: number | null;
+            /** Assumptions */
+            assumptions: components["schemas"]["Assumption"][];
+        };
+        /** RoomReadings */
+        RoomReadings: {
+            measured: components["schemas"]["Series"];
+            expected_if_healthy: components["schemas"]["Series"] | null;
+        };
+        /** RoomReport */
+        RoomReport: {
+            /** Room Id */
+            room_id: string;
+            /** Name */
+            name: string;
+            status: components["schemas"]["RoomStatus"];
+            /** Headline */
+            headline: string;
+            /** Why */
+            why: string[];
+            /** What To Do */
+            what_to_do: string[];
+            money: components["schemas"]["RoomMoney"] | null;
+            /** Evidence By Night */
+            evidence_by_night: components["schemas"]["NightEvidence"][];
+            /** Suggested Check */
+            suggested_check: string | null;
+            fix: components["schemas"]["FixRecord"] | null;
+        };
+        /**
+         * RoomStatus
+         * @enum {string}
+         */
+        RoomStatus: "not_enough_data" | "healthy" | "watching" | "issue" | "issue_cause_unclear" | "verifying" | "resolved" | "still_an_issue";
+        /** RoomTechnical */
+        RoomTechnical: {
+            /** Room Id */
+            room_id: string;
+            /** Nights Judged */
+            nights_judged: number;
+            /** Fits */
+            fits: components["schemas"]["HypothesisSummary"][];
+            /** Leading Cause */
+            leading_cause: ("draft" | "envelope_conduction") | null;
+            /** Extra Heat Loss Fraction */
+            extra_heat_loss_fraction: number | null;
+            /** Threshold Fraction */
+            threshold_fraction: number | null;
+            /** Cause Gap Bic */
+            cause_gap_bic: number | null;
+            /** Consecutive Candidate Nights */
+            consecutive_candidate_nights: number;
+            /** Rule */
+            rule: components["schemas"]["Assumption"][];
         };
         /** RoomTemplate */
         RoomTemplate: {
@@ -1995,6 +2524,835 @@ export interface operations {
             };
             /** @description The request is invalid for this scenario. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    list_homes_api_homes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSummary"][];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    create_home_api_homes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSummary"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    create_demo_home_api_demo_homes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoHomeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSummary"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    home_health_api_homes__home_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeHealth"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    home_readings_api_homes__home_id__readings_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                room_id?: string | null;
+            };
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeReadings"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    upload_readings_api_homes__home_id__readings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadingsUpload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeHealth"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    room_report_api_homes__home_id__rooms__room_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomReport"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    room_technical_api_homes__home_id__rooms__room_id__technical_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomTechnical"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    report_fix_api_homes__home_id__rooms__room_id__fix_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FixRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomReport"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    advance_demo_api_demo_homes__home_id__advance_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeHealth"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    reveal_demo_api_demo_homes__home_id__reveal_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoReveal"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    home_assistant_api_homes__home_id__assistant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomeChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatReply"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid in the scenario's current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
                 headers: {
                     [name: string]: unknown;
                 };

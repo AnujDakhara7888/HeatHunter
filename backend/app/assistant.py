@@ -12,7 +12,7 @@ import json
 import os
 import re
 
-from .contracts import ChatAction, ChatReply, ChatRequest, FloorPlanDraft, HomePlan
+from .contracts import ChatAction, ChatMessage, ChatReply, ChatRequest, FloorPlanDraft, HomePlan
 
 MODEL = os.environ.get("HEATHUNTER_ASSISTANT_MODEL", "claude-opus-5-5")
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
@@ -103,6 +103,43 @@ def chat(request: ChatRequest) -> ChatReply:
         output_config={"effort": "low", "format": {"type": "json_schema", "schema": CHAT_SCHEMA}},
     )
     actions = [ChatAction.model_validate(a) for a in data.get("actions", [])[:3]]
+    return ChatReply(reply=data["reply"], actions=actions, model=model)
+
+
+HOME_SYSTEM = """You are HeatHunter's assistant. HeatHunter watches a home night after night while the
+heating is off and checks how fast each room cools. For every room it compares three explanations:
+normal behaviour, air leaks (draughts) and heat escaping through the walls, roof or floor. Leak heat
+loss grows with wind and wall loss does not, so several nights with different wind are needed to tell
+them apart. A room is flagged only after it stays above an alarm level for two nights in a row.
+Repairs are done by people, in the room; afterwards HeatHunter keeps watching to confirm the fix.
+
+Rules:
+- Answer in plain, friendly language for a homeowner. 1-4 short sentences. No markdown headings.
+- Use ONLY facts and numbers in <home>. Never invent readings, prices, causes or results.
+- Money figures are screening estimates with stated assumptions, not quotes.
+- A demo home is a simulated twin of a real UK bungalow (HH09); never claim the real house has a fault.
+- If "hidden_answer" is "not revealed", you do not know the planted fault; say so if asked.
+- For practical repair questions, give safe, ordinary homeowner steps and suggest a professional for
+  insulation work or anything involving gas appliances.
+- When it helps, add a focus_room action (target = a room_id from <home>).
+"""
+
+
+def home_chat(messages: list[ChatMessage], context: dict) -> ChatReply:
+    """Chat about one monitored home; ``context`` is built by the server, never by the client."""
+
+    payload = json.dumps(context, default=str, sort_keys=True)[:60000]
+    turns = [{"role": m.role, "content": m.content} for m in messages]
+    turns[-1] = {"role": "user", "content": f"<home>{payload}</home>\n\n{turns[-1]['content']}"}
+    data, model = _create(
+        max_tokens=2000,
+        system=HOME_SYSTEM,
+        messages=turns,
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": CHAT_SCHEMA}},
+    )
+    actions = [
+        ChatAction.model_validate(a) for a in data.get("actions", [])[:3] if a.get("type") == "focus_room"
+    ]
     return ChatReply(reply=data["reply"], actions=actions, model=model)
 
 

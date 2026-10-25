@@ -19,7 +19,7 @@
     "backend/engine/money.py": "38e9234f5b9b5597d4ce11138ded9bb1159c8b3a3c28fe0f50ff642924d4d1cb",
     "backend/engine/templates/hh09_public_template.json": "af52a792bf00e4da5eac8a8047720d4dec4f7ba01ed56faf52b4f207e9c6d884",
     "backend/engine/templates/hh09_model_extension.json": "540036d846a407e3513d4cebb68dda332256503a9ad71cf7600c668ded92a760",
-    "backend/diagnosis/monitoring.py": "339042318bafeb007ce47baef574fa6215f8269c985d4b8f7c26c393a844166f"
+    "backend/diagnosis/monitoring.py": "3ee36dfdd5eb2021b4dfbf2cc674ac906317e8bc4d043e33659f33f3c3a5a72b"
   },
   "provenance": "Tuned on TRAINING-season study houses (even house indices) with backend/simulation/tune_monitoring.py; checked on odd houses. Not held-out or real-home validation.",
   "check_summary": {

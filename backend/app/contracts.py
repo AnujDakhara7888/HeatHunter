@@ -587,6 +587,225 @@ class FloorPlanDraft(ContractModel):
     model: str
 
 
+# ---------------------------------------------------------------------------
+# API v2: homes monitored night after night (docs/CONTRACTS.md, "API v2").
+# Demo and real homes share these shapes. No model here carries hidden truth
+# except DemoReveal, which only the reveal route returns.
+# ---------------------------------------------------------------------------
+
+
+class HomeKind(StrEnum):
+    DEMO = "demo"
+    REAL = "real"
+
+
+class HomeStatus(StrEnum):
+    MONITORING = "monitoring"
+    ISSUE = "issue"
+    VERIFYING = "verifying"
+    ALL_CLEAR = "all_clear"
+
+
+class RoomStatus(StrEnum):
+    NOT_ENOUGH_DATA = "not_enough_data"
+    HEALTHY = "healthy"
+    WATCHING = "watching"
+    ISSUE = "issue"
+    ISSUE_CAUSE_UNCLEAR = "issue_cause_unclear"
+    VERIFYING = "verifying"
+    RESOLVED = "resolved"
+    STILL_AN_ISSUE = "still_an_issue"
+
+
+class FixAction(StrEnum):
+    SEAL_LEAKS = "seal_leaks"
+    ADD_INSULATION = "add_insulation"
+    OTHER = "other"
+
+
+class HomeSummary(ContractModel):
+    home_id: str
+    name: str
+    kind: HomeKind
+    status: HomeStatus
+    rooms_with_issues: int = Field(ge=0)
+    nights_monitored: int = Field(ge=0)
+    last_night: date | None
+    created_at: datetime
+
+
+class DemoFault(ContractModel):
+    type: Literal["draft", "envelope_conduction"]
+    room_id: str
+    severity: Annotated[float, Field(gt=0, le=3)]
+
+
+class DemoHomeCreate(ContractModel):
+    house: Literal["hh09"] = "hh09"
+    fault: DemoFault | None = None
+    random_fault: bool = False
+    start_date: date | None = None
+    seed: int | None = Field(default=None, ge=0, lt=2**63)
+
+    @model_validator(mode="after")
+    def one_fault_choice(self) -> DemoHomeCreate:
+        if self.fault is not None and self.random_fault:
+            raise ValueError("give a fault or ask for a random one, not both")
+        return self
+
+
+class HeatingOffWindow(ContractModel):
+    """Local hours when the heating is reliably off; only these nights are analysed."""
+
+    start: str = Field(default="22:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    end: str = Field(default="06:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    timezone: str = "Europe/London"
+
+
+class HomeCreate(ContractModel):
+    name: str = Field(min_length=1, max_length=80)
+    plan: HomePlan
+    location_query: str | None = Field(default=None, min_length=2, max_length=80)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    heating_off: HeatingOffWindow = Field(default_factory=HeatingOffWindow)
+
+    @model_validator(mode="after")
+    def located(self) -> HomeCreate:
+        has_coordinates = self.latitude is not None and self.longitude is not None
+        if not has_coordinates and self.location_query is None:
+            raise ValueError("give location_query or both latitude and longitude")
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("latitude and longitude go together")
+        return self
+
+
+class RoomHealthView(ContractModel):
+    room_id: str
+    name: str
+    status: RoomStatus
+    headline: str
+    likely_cause: Literal["draft", "envelope_conduction"] | None
+    extra_heat_loss_percent: float | None
+    annual_cost_gbp: NonNegativeFloat | None
+    nights_seen: int = Field(ge=0)
+
+
+class HomeHealth(ContractModel):
+    home: HomeSummary
+    rooms: list[RoomHealthView]
+    disclaimer: str
+
+
+class NightInfo(ContractModel):
+    night_id: str
+    start: datetime
+    end: datetime
+    mean_outdoor_c: float
+    mean_wind_m_s: NonNegativeFloat
+
+
+class RoomReadings(ContractModel):
+    measured: Series
+    expected_if_healthy: Series | None
+
+
+class HomeReadings(ContractModel):
+    home_id: str
+    outdoor_temperature: Series
+    wind_speed: Series
+    rooms: dict[str, RoomReadings]
+    nights: list[NightInfo]
+
+
+class RoomMoney(ContractModel):
+    annual_cost_gbp: NonNegativeFloat
+    annual_energy_kwh: NonNegativeFloat
+    repair_cost_gbp: NonNegativeFloat | None
+    payback_years: NonNegativeFloat | None
+    assumptions: list[Assumption]
+
+
+class NightEvidence(ContractModel):
+    night_id: str
+    nights_so_far: int = Field(ge=1)
+    extra_heat_loss_percent: float
+    threshold_percent: float
+    leading_cause: Literal["draft", "envelope_conduction"]
+    mean_wind_m_s: NonNegativeFloat
+
+
+class FixRecord(ContractModel):
+    action: FixAction
+    reported_at: datetime
+    fixed_on: date | None
+    note: str | None
+    nights_since_fix: int = Field(ge=0)
+    found_before_fix: Literal["draft", "envelope_conduction", "unclear"] | None
+
+
+class RoomReport(ContractModel):
+    room_id: str
+    name: str
+    status: RoomStatus
+    headline: str
+    why: list[str]
+    what_to_do: list[str]
+    money: RoomMoney | None
+    evidence_by_night: list[NightEvidence]
+    suggested_check: str | None
+    fix: FixRecord | None
+
+
+class HypothesisSummary(ContractModel):
+    fault_type: HypothesisType
+    fitted_multiplier: PositiveFloat
+    bic: float
+    residual_rmse_deg_c: NonNegativeFloat
+
+
+class RoomTechnical(ContractModel):
+    room_id: str
+    nights_judged: int = Field(ge=0)
+    fits: list[HypothesisSummary]
+    leading_cause: Literal["draft", "envelope_conduction"] | None
+    extra_heat_loss_fraction: float | None
+    threshold_fraction: float | None
+    cause_gap_bic: float | None
+    consecutive_candidate_nights: int = Field(ge=0)
+    rule: list[Assumption]
+
+
+class FixRequest(ContractModel):
+    action: FixAction
+    fixed_on: date | None = None
+    note: str | None = Field(default=None, max_length=500)
+
+
+class ReadingsUpload(ContractModel):
+    room_temperature_series: dict[str, Series] = Field(min_length=1)
+
+
+class AdvanceRequest(ContractModel):
+    nights: int = Field(default=1, ge=1, le=14)
+
+
+class DemoReveal(ContractModel):
+    fault_type: FaultType
+    room_id: str | None
+    severity: NonNegativeFloat
+    app_found_it: bool
+    nights_to_find: int | None
+    summary: str
+    fault_free_twin: dict[str, Series]
+    fault_free_night_id: str
+    provenance: Literal[Provenance.SIMULATED_GROUND_TRUTH] = Provenance.SIMULATED_GROUND_TRUTH
+
+
+class HomeChatRequest(ContractModel):
+    messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+
+
 def public_contract_models() -> dict[str, type[BaseModel]]:
     """Named model registry used by fixture validation and integration tooling."""
 

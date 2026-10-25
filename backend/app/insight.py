@@ -34,7 +34,7 @@ from .contracts import (
 )
 
 
-def _predicted_series(
+def predicted_series(
     nights: list[NightObservations],
     template: PublicTemplate,
     room_id: str,
@@ -104,7 +104,7 @@ def room_insights(
                     residual_rmse_deg_c=detail.fit.residual_rmse_deg_c,
                     sensor_offset_deg_c=detail.sensor_offset_deg_c,
                     converged=detail.converged,
-                    predicted=_predicted_series(nights, template, room_id, cause, detail, settings, layer),
+                    predicted=predicted_series(nights, template, room_id, cause, detail, settings, layer),
                     warnings=list(detail.warnings),
                 )
             )
