@@ -214,9 +214,6 @@ export default function Landing() {
             <div>
               <div className="text-[28px] font-bold text-ink">3</div>suspects tested
             </div>
-            <div>
-              <div className="text-[28px] font-bold text-ink">28</div>winter nights watched
-            </div>
           </div>
         </motion.div>
         <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 2 }} className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[12px] text-dim">
