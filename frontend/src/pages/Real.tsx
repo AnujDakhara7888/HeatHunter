@@ -1,16 +1,14 @@
 import { motion } from "framer-motion";
-import { FlaskConical, Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api, traced } from "../api/client";
-import type { HomeAnalysis, RealHouse, Series } from "../api/types";
+import type { RealHouse, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
 import { EngineTrace } from "../components/EngineTrace";
 import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
-import { Screening } from "../components/Screening";
 import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
-import { strengthOf } from "../lib/diagnosis";
 import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
 import { ROOM_NAMES, fmtDate, ms, roomColor } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
@@ -30,8 +28,6 @@ export default function Real() {
   const [house, setHouse] = useState<RealHouse | null>(null);
   const [plan, setPlanImg] = useState(false);
   const [nightIdx, setNightIdx] = useState<number | null>(null);
-  const [result, setResult] = useState<HomeAnalysis | null>(null);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,15 +57,6 @@ export default function Real() {
   const wind = useMemo(() => (house ? (window_ ? slice(house.wind_speed, ...window_) : house.wind_speed) : null), [house, window_]);
   const player = useNight(rooms, outdoor, wind, window_ ? 10 : 24);
 
-  useEffect(() => {
-    const lead = result?.ranked_causes[0];
-    set({
-      finding:
-        result?.flagged_room_id && lead && (result.status === "confident" || result.status === "ambiguous")
-          ? { room: result.flagged_room_id, cause: lead.fault_type as "draft" | "envelope_conduction", strength: strengthOf(lead.fitted_multiplier) }
-          : null,
-    });
-  }, [result, set]);
 
   useEffect(() => {
     useChatContext.getState().setContext(
@@ -79,41 +66,13 @@ export default function Real() {
         characteristics: house?.characteristics.map((c) => `${c.name}: ${c.value}${c.unit ? " " + c.unit : ""}`),
         measured_heat_transfer_coefficient: house?.reference_htc,
         airtightness: house?.airtightness,
-        screened_night: window_ ? fmtDate(window_[0]) : null,
-        screening: result && { status: result.status, flagged_room: result.flagged_room_id, causes: result.ranked_causes, uncertainty: result.uncertainty, money: result.money_estimate },
+        night_on_screen: window_ ? fmtDate(window_[0]) : "whole week",
+        monitoring: "Not monitored: the heating was on during this week, so heating-off nights do not exist.",
       },
       ["Is this real data?", "Which room cools fastest?", "Why no fault labels?"],
     );
-  }, [house, result, window_]);
+  }, [house, window_]);
 
-  const screen = async (i: number) => {
-    if (!house) return;
-    setNightIdx(i);
-    setResult(null);
-    setBusy(true);
-    setError(null);
-    const [a, b] = nights[i];
-    try {
-      const r = await traced("screen", "POST /homes/analyze", () =>
-        api.POST("/api/homes/analyze", {
-          body: {
-            plan: HH09_PLAN,
-            room_temperature_series: Object.fromEntries(Object.entries(house.room_temperature_series).map(([k, s]) => [k, slice(s, a, b)])),
-            outdoor_temperature: slice(house.outdoor_temperature, a, b),
-            wind_speed: slice(house.wind_speed, a, b),
-            location_name: "SMETER HH09",
-          },
-        }),
-        (d) => `${d.status} · ${d.rooms.length * 3} fits`,
-      );
-      setResult(r);
-      setTimeout(() => player.play(), 300);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const chartData = rooms
     ? [
@@ -170,32 +129,26 @@ export default function Real() {
         )}
 
         <div className="mt-4">
-          <div className="text-[12px] font-semibold">Screen a real night with the engine</div>
-          <div className="mt-1 text-[11px] text-dim">22:00 to 06:00. Same physics as the Fault Lab, applied to measured data.</div>
+          <div className="text-[12px] font-semibold">Replay one night</div>
+          <div className="mt-1 text-[11px] text-dim">22:00 to 06:00, real sensor readings.</div>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {nights.map(([a], i) => (
-              <button key={a} onClick={() => screen(i)} disabled={busy} className={`btn !px-3 !py-1 !text-[12px] ${nightIdx === i ? "btn-primary" : "btn-ghost"}`}>
+              <button key={a} onClick={() => (setNightIdx(i), setTimeout(() => player.play(), 200))} className={`btn !px-3 !py-1 !text-[12px] ${nightIdx === i ? "btn-primary" : "btn-ghost"}`}>
                 {new Date(a).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", timeZone: "UTC" })}
               </button>
             ))}
             {nightIdx != null && (
-              <button onClick={() => (setNightIdx(null), setResult(null))} className="btn btn-ghost !px-3 !py-1 !text-[12px]">
+              <button onClick={() => setNightIdx(null)} className="btn btn-ghost !px-3 !py-1 !text-[12px]">
                 whole week
               </button>
             )}
           </div>
         </div>
-        {busy && (
-          <div className="mt-3 flex items-center gap-2 text-[12.5px] text-mute">
-            <FlaskConical size={14} className="pulse-dot text-warm" /> Fitting 15 physics models to real readings…
-          </div>
-        )}
         {error && <div className="mt-3 rounded-xl border border-hot/40 bg-hot/10 px-3 py-2 text-[12px] text-hot">{error}</div>}
-        {result && (
-          <div className="mt-4 border-t border-line pt-4">
-            <Screening result={result} names={NAMES} />
-          </div>
-        )}
+        <div className="mt-4 rounded-2xl border border-line bg-white/[0.02] p-3 text-[12px] leading-snug text-mute">
+          <b className="text-ink">Why this week isn't monitored:</b> the heating ran overnight, so there are no heating-off nights for the
+          engine to judge. It shows what real sensors record. The Fault Lab watches the same house's digital twin with the heating off.
+        </div>
         <p className="mt-5 text-[10.5px] leading-relaxed text-dim">{house?.scientific_disclaimer}</p>
       </motion.aside>
 

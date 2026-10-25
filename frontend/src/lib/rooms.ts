@@ -73,8 +73,12 @@ export function valueAt(series: Series | undefined, t: number): number | null {
   const ts = series.timestamps;
   let lo = 0;
   let hi = ts.length - 1;
-  if (t <= ms(ts[0])) return series.values[0] ?? null;
-  if (t >= ms(ts[hi])) return series.values[hi] ?? null;
+  const firstValid = series.values.findIndex((v) => v != null);
+  if (firstValid < 0) return null;
+  let lastValid = hi;
+  while (lastValid > 0 && series.values[lastValid] == null) lastValid--;
+  if (t <= ms(ts[firstValid])) return series.values[firstValid];
+  if (t >= ms(ts[lastValid])) return series.values[lastValid];
   while (hi - lo > 1) {
     const mid = (lo + hi) >> 1;
     if (ms(ts[mid]) <= t) lo = mid;

@@ -111,3 +111,9 @@ def test_wind_direction_companion(client: TestClient) -> None:
     assert body["unit"] == "degrees_from_north" and body["provenance"] == "REAL_MEASUREMENT"
     assert all(0 <= v <= 360 for v in body["values"] if v is not None)
     assert client.get("/api/weather/not-a-night/wind-direction").status_code == 404
+
+
+def test_wind_direction_for_monitoring_nights(client: TestClient) -> None:
+    body = client.get("/api/weather/hh09-night-2020-12-23/wind-direction").json()
+    assert body["unit"] == "degrees_from_north" and len(body["values"]) > 10
+    assert client.get("/api/weather/hh09-night-1990-01-01/wind-direction").status_code == 404

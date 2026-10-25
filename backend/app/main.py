@@ -167,6 +167,30 @@ async def weather_lookup(
         raise ApiFailure(503, "WEATHER_UNAVAILABLE", f"weather service unreachable: {exc}") from exc
 
 
+def _timeline_wind_direction(night_id: str) -> Series:
+    """Wind direction for a monitoring night, sliced from the consecutive-season timeline."""
+
+    from datetime import date
+
+    from backend.data_pipeline.weather_timeline import TimelineError, _night_slice, load_season
+
+    try:
+        night_date = date.fromisoformat(night_id.removeprefix("hh09-night-"))
+    except ValueError as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", "night_id must end with an ISO date") from exc
+    for split in ("heldout", "training"):
+        try:
+            payload = load_season(split)
+            times, index = _night_slice(payload, night_date)
+        except (TimelineError, FileNotFoundError):
+            continue
+        values = payload["wind_direction_deg_from_north"][index : index + len(times)]
+        return Series(
+            timestamps=times, values=values, unit="degrees_from_north", provenance="REAL_MEASUREMENT"
+        )
+    raise ApiFailure(404, "NOT_FOUND", f"no wind direction for {night_id}")
+
+
 @app.get(
     "/api/weather/{night_id}/wind-direction",
     response_model=Series,
@@ -181,6 +205,8 @@ async def wind_direction(night_id: str) -> Series:
 
     from backend.data_pipeline.weather import load_weather_wind_direction
 
+    if night_id.startswith("hh09-night-"):
+        return _timeline_wind_direction(night_id)
     try:
         payload = load_weather_wind_direction(night_id)
     except FileNotFoundError as exc:

@@ -1,103 +1,51 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Dice5, Eye, FlaskConical, Gavel, Lock, Play, RotateCcw, Wind as WindIcon, Wrench } from "lucide-react";
+import { Dice5, Eye, FastForward, Gavel, HeartPulse, Lock, RotateCcw, SkipForward } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api, traced } from "../api/client";
-import type {
-  Diagnosis,
-  ExperimentResponse,
-  GroundTruth,
-  InsightResponse,
-  MoneyEstimate,
-  MoneyResponse,
-  NightObservations,
-  RepairResult,
-  ScenarioCreateRequest,
-  Series,
-} from "../api/types";
+import type { DemoHomeCreate, DemoReveal, FixAction, HomeHealth, HomeReadings, HomeSummary, RoomReport, RoomTechnical, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
 import { EngineTrace } from "../components/EngineTrace";
-import { Gauge } from "../components/Gauge";
-import { LineChart, type ChartSeries } from "../components/LineChart";
+import { RoomDetail } from "../components/RoomDetail";
+import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
-import { Suspects } from "../components/Suspects";
 import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
-import { assumption, bicGap, causeLabel, fitsFor, strengthOf } from "../lib/diagnosis";
+import { FLAG_STATUSES, ROOM_STATUS, strengthOf } from "../lib/diagnosis";
 import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
-import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, ms, roomColor, type CauseKey } from "../lib/rooms";
+import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, fmtDate, ms, type CauseKey } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
 import { HouseCanvas } from "../three/Scene";
 
-type Phase = "start" | "night" | "diagnosed" | "tested" | "fixed" | "revealed";
-const STEPS: { key: Phase; label: string }[] = [
-  { key: "night", label: "Night" },
-  { key: "diagnosed", label: "Diagnose" },
-  { key: "tested", label: "Test" },
-  { key: "fixed", label: "Fix" },
-  { key: "revealed", label: "Reveal" },
-];
+const roomName = (id: string | null | undefined) => (id ? ROOM_NAMES[id] ?? id : "–");
 
-const roomName = (sim: string | null | undefined) => (sim ? ROOM_NAMES[sim] ?? sim : "–");
-const toPlan = (night: NightObservations): Record<string, Series> =>
-  Object.fromEntries(Object.entries(night.room_temperature_series).map(([k, v]) => [SIM_TO_PLAN[k] ?? k, v]));
-
-const fmtMoney = (usd: number) => `$${usd < 100 ? usd.toFixed(0) : Math.round(usd).toLocaleString()}`;
-
-function nightChart(night: NightObservations, emphasise?: string | null): ChartSeries[] {
-  const rooms = Object.entries(night.room_temperature_series).map(([id, s]) => ({
-    id,
-    label: ROOM_NAMES[id] ?? id,
-    color: roomColor(id),
-    series: s,
-    width: emphasise === id ? 3 : 2,
-    muted: emphasise != null && emphasise !== id,
-  }));
-  return [...rooms, { id: "out", label: "Outside", color: "#8a90a2", series: night.weather.outdoor_temperature, dashed: true, width: 1.5 }];
+function slice(s: Series, a: number, b: number): Series {
+  const idx = s.timestamps.map((t, i) => [ms(t), i] as const).filter(([t]) => t >= a && t <= b).map(([, i]) => i);
+  return { ...s, timestamps: idx.map((i) => s.timestamps[i]), values: idx.map((i) => s.values[i]) };
 }
 
-function StartCard({ onStart }: { onStart: (req: ScenarioCreateRequest, label: string) => void }) {
+function StartCard({ onStart }: { onStart: (req: DemoHomeCreate, label: string) => void }) {
   const [judge, setJudge] = useState(false);
   const [room, setRoom] = useState("bedroom_1");
-  const [fault, setFault] = useState<"draft" | "envelope_conduction" | "none">("draft");
-  const [severity, setSeverity] = useState(2);
+  const [fault, setFault] = useState<"draft" | "envelope_conduction">("draft");
+  const [severity, setSeverity] = useState(1.8);
   const cards = [
-    {
-      icon: <Play size={18} />,
-      title: "Guided night",
-      line: "A hidden fault in one room. Follow the full investigation.",
-      go: () => onStart({ mode: "guided", guided_scenario_id: "hh09-guided-insulation-v1" }, "Guided"),
-    },
-    {
-      icon: <Dice5 size={18} />,
-      title: "Surprise me",
-      line: "New random fault, room and weather. A different answer every time.",
-      go: () => onStart({ mode: "surprise", seed: Math.floor(Math.random() * 2 ** 31) }, "Surprise"),
-    },
-    {
-      icon: <Gavel size={18} />,
-      title: "Judge mode",
-      line: "You hide the fault. We try to find it.",
-      go: () => setJudge(true),
-    },
+    { icon: <Dice5 size={18} />, title: "Hidden fault", line: "A random fault, room and severity. Or none at all.", go: () => onStart({ house: "hh09", random_fault: true, seed: Math.floor(Math.random() * 2 ** 31) }, "Hidden random fault") },
+    { icon: <Gavel size={18} />, title: "Judge mode", line: "You plant the fault. The app has to find it.", go: () => setJudge(true) },
+    { icon: <HeartPulse size={18} />, title: "Healthy house", line: "No fault. Does the app stay calm?", go: () => onStart({ house: "hh09", fault: null, random_fault: false, seed: Math.floor(Math.random() * 2 ** 31) }, "Healthy house") },
   ];
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -24 }}
-      className="glass pointer-events-auto mx-auto w-[min(760px,calc(100vw-32px))] rounded-[28px] p-6"
-    >
-      <div className="eyebrow">Fault Lab · digital twin of a real UK home</div>
+    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} className="glass pointer-events-auto mx-auto w-[min(760px,calc(100vw-32px))] rounded-[28px] p-6">
+      <div className="eyebrow">Fault Lab · digital twin of a real UK home · real winter 2020-21 weather</div>
       <h1 className="mt-2 text-[34px] font-bold leading-[1.05] tracking-[-0.03em]">
-        One house. One hidden fault. <span className="text-mute">Can physics find it?</span>
+        Watch a home, night after night. <span className="text-mute">Catch the leak.</span>
       </h1>
       {!judge ? (
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           {cards.map((c) => (
-            <button key={c.title} onClick={c.go} className="group rounded-2xl border border-line bg-white/[0.03] p-4 text-left transition hover:border-white/30 hover:bg-white/[0.06]">
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-ink">{c.icon}</div>
+            <button key={c.title} onClick={c.go} className="rounded-2xl border border-line bg-white/[0.03] p-4 text-left transition hover:border-white/30 hover:bg-white/[0.06]">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-white/10">{c.icon}</div>
               <div className="mt-3 font-semibold">{c.title}</div>
               <div className="mt-1 text-[13px] leading-snug text-mute">{c.line}</div>
             </button>
@@ -105,7 +53,7 @@ function StartCard({ onStart }: { onStart: (req: ScenarioCreateRequest, label: s
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          <div className="text-sm text-mute">Pick it in secret. The engine never sees your choice; only the reveal does.</div>
+          <div className="text-sm text-mute">Pick it in secret. The monitoring engine never sees it; only the reveal does.</div>
           <div className="flex flex-wrap gap-2">
             {Object.keys(SIM_TO_PLAN).map((id) => (
               <button key={id} onClick={() => setRoom(id)} className={`btn !py-1.5 ${room === id ? "btn-primary" : "btn-ghost"}`}>
@@ -114,24 +62,24 @@ function StartCard({ onStart }: { onStart: (req: ScenarioCreateRequest, label: s
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
-            {(["draft", "envelope_conduction", "none"] as const).map((f) => (
+            {(["draft", "envelope_conduction"] as const).map((f) => (
               <button key={f} onClick={() => setFault(f)} className={`btn !py-1.5 ${fault === f ? "btn-primary" : "btn-ghost"}`}>
-                {f === "none" ? "No fault" : CAUSE[f].label}
+                {CAUSE[f].label}
               </button>
             ))}
           </div>
-          {fault !== "none" && (
-            <label className="flex items-center gap-3 text-sm text-mute">
-              Severity
-              <input type="range" min={1.3} max={3} step={0.1} value={severity} onChange={(e) => setSeverity(Number(e.target.value))} className="w-48" />
-              <span className="num text-ink">×{severity.toFixed(1)}</span>
-            </label>
-          )}
+          <label className="flex items-center gap-3 text-sm text-mute">
+            Severity
+            <input type="range" min={1.2} max={3} step={0.1} value={severity} onChange={(e) => setSeverity(Number(e.target.value))} className="w-48" />
+            <span className="num text-ink">×{severity.toFixed(1)}</span>
+          </label>
           <div className="flex gap-2">
-            <button className="btn btn-hot" onClick={() => onStart({ mode: "judge", judge_fault_type: fault, judge_room_id: room, severity: fault === "none" ? 1 : severity }, "Judge")}>
+            <button className="btn btn-hot" onClick={() => onStart({ house: "hh09", fault: { type: fault, room_id: room, severity }, random_fault: false, seed: Math.floor(Math.random() * 2 ** 31) }, "Judge mode")}>
               <Lock size={15} /> Hide it & start
             </button>
-            <button className="btn btn-ghost" onClick={() => setJudge(false)}>Back</button>
+            <button className="btn btn-ghost" onClick={() => setJudge(false)}>
+              Back
+            </button>
           </div>
         </div>
       )}
@@ -139,122 +87,91 @@ function StartCard({ onStart }: { onStart: (req: ScenarioCreateRequest, label: s
   );
 }
 
-function Stepper({ phase }: { phase: Phase }) {
-  const idx = STEPS.findIndex((s) => s.key === phase);
+function StatusChip({ status }: { status: keyof typeof ROOM_STATUS }) {
+  const s = ROOM_STATUS[status];
   return (
-    <div className="flex items-center gap-1.5">
-      {STEPS.map((s, i) => (
-        <div key={s.key} className="flex items-center gap-1.5">
-          <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] ${i === idx ? "bg-ink font-semibold text-black" : i < idx ? "text-ink" : "text-dim"}`}>
-            {i < idx ? <Check size={12} /> : <span className="num">{i + 1}</span>}
-            {s.label}
-          </div>
-          {i < STEPS.length - 1 && <div className={`h-px w-3 ${i < idx ? "bg-ink/60" : "bg-white/15"}`} />}
-        </div>
-      ))}
-    </div>
+    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ color: s.color, background: `${s.color}1f` }}>
+      <span aria-hidden>{s.icon}</span>
+      {s.label}
+    </span>
   );
 }
 
 export default function Lab() {
   const set = useScene((s) => s.set);
-  const [phase, setPhase] = useState<Phase>("start");
+  const [label, setLabel] = useState("");
+  const [home, setHome] = useState<HomeSummary | null>(null);
+  const [health, setHealth] = useState<HomeHealth | null>(null);
+  const [readings, setReadings] = useState<HomeReadings | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [report, setReport] = useState<RoomReport | null>(null);
+  const [technical, setTechnical] = useState<RoomTechnical | null>(null);
+  const [reveal, setReveal] = useState<DemoReveal | null>(null);
+  const [nightIdx, setNightIdx] = useState<number | null>(null);
+  const [preview, setPreview] = useState<CauseKey | null>(null);
+  const [windDirs, setWindDirs] = useState<Record<string, Series | null>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [scenario, setScenario] = useState<{ id: string; label: string } | null>(null);
-  const [passive, setPassive] = useState<NightObservations | null>(null);
-  const [diag, setDiag] = useState<Diagnosis | null>(null);
-  const [fits1, setFits1] = useState<InsightResponse | null>(null);
-  const [exp, setExp] = useState<ExperimentResponse | null>(null);
-  const [fits2, setFits2] = useState<InsightResponse | null>(null);
-  const [money, setMoney] = useState<MoneyResponse | null>(null);
-  const [altMoney, setAltMoney] = useState<MoneyEstimate | null>(null);
-  const [gas, setGas] = useState<number | null>(null);
-  const [repairCost, setRepairCost] = useState<number | null>(null);
-  const [effectiveness, setEffectiveness] = useState(1);
-  const [repair, setRepair] = useState<RepairResult | null>(null);
-  const [showAfter, setShowAfter] = useState(true);
-  const [truth, setTruth] = useState<GroundTruth | null>(null);
-  // "What would it look like if…": preview any explanation in 3D without changing the verdict.
-  const [preview, setPreview] = useState<CauseKey | null>(null);
-  useEffect(() => setPreview(null), [phase]);
-
-  const final = exp?.updated_diagnosis ?? diag;
-  const flagged = final?.flagged_room_id ?? null;
-  const playingNight: NightObservations | null =
-    phase === "fixed" && repair && showAfter ? repair.repaired_observations[0] : phase === "tested" && exp ? exp.observations : passive;
-  const roomsPlan = useMemo(() => (playingNight ? toPlan(playingNight) : null), [playingNight]);
-  const [windDirs, setWindDirs] = useState<Record<string, Series | null>>({});
-  const weatherId = playingNight?.weather.night_id;
-  useEffect(() => {
-    if (!weatherId || weatherId in windDirs) return;
-    // Measured direction is a companion series (not in the frozen WeatherNight contract).
-    traced("wind", "GET /weather/{night}/wind-direction", () =>
-      api.GET("/api/weather/{night_id}/wind-direction", { params: { path: { night_id: weatherId } } }),
-      (s) => `${s.values.length} measured directions`,
-    )
-      .then((s) => setWindDirs((cur) => ({ ...cur, [weatherId]: s })))
-      .catch(() => setWindDirs((cur) => ({ ...cur, [weatherId]: null })));
-  }, [weatherId, windDirs]);
-  const player = useNight(roomsPlan, playingNight?.weather.outdoor_temperature, playingNight?.weather.wind_speed, 12, weatherId ? windDirs[weatherId] : null);
 
   useEffect(() => {
     set({ plan: HH09_PLAN, view: "exterior", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: true, names: {}, inset: 0, ir: false, zBearing: HH09_Z_BEARING, windFrom: null });
     useTrace.getState().clear();
+    return () => useChatContext.getState().setHome(null);
   }, [set]);
 
-  // Push the engine's finding into the 3D scene.
+  const nights = readings?.nights ?? [];
+  const night = nights.length ? nights[nightIdx ?? nights.length - 1] : null;
+  const window_ = night ? ([ms(night.start), ms(night.end)] as [number, number]) : null;
+  const roomsPlan = useMemo(() => {
+    if (!readings || !window_) return null;
+    return Object.fromEntries(Object.entries(readings.rooms).map(([k, r]) => [SIM_TO_PLAN[k] ?? k, slice(r.measured, ...window_)]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readings, window_?.[0]]);
+  const outdoor = useMemo(() => (readings && window_ ? slice(readings.outdoor_temperature, ...window_) : null), [readings, window_?.[0]]); // eslint-disable-line react-hooks/exhaustive-deps
+  const wind = useMemo(() => (readings && window_ ? slice(readings.wind_speed, ...window_) : null), [readings, window_?.[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const lead = final?.ranked_causes[0];
-    if (!flagged || !lead || (final.status !== "confident" && final.status !== "ambiguous")) {
-      set({ finding: null });
-      return;
-    }
-    if (preview) {
-      const fits = phase === "tested" ? flaggedFits2 : flaggedFits1;
-      const m = fits[preview]?.fitted_multiplier ?? lead.fitted_multiplier;
-      set({ finding: preview === "normal" ? null : { room: SIM_TO_PLAN[flagged], cause: preview, strength: strengthOf(m) } });
-      return;
-    }
-    if (phase === "fixed" && showAfter && repair?.diagnosed_improvement.includes("no_fault")) {
-      set({ finding: null });
-      return;
-    }
-    set({ finding: { room: SIM_TO_PLAN[flagged], cause: lead.fault_type as "draft" | "envelope_conduction", strength: strengthOf(lead.fitted_multiplier) } });
-  }, [final, flagged, phase, showAfter, repair, set, preview, fits1, fits2]);
+    const id = night?.night_id;
+    if (!id || id in windDirs) return;
+    traced("wind", "GET /weather/{night}/wind-direction", () => api.GET("/api/weather/{night_id}/wind-direction", { params: { path: { night_id: id } } }), (s) => `${s.values.length} measured directions`)
+      .then((s) => setWindDirs((c) => ({ ...c, [id]: s })))
+      .catch(() => setWindDirs((c) => ({ ...c, [id]: null })));
+  }, [night?.night_id, windDirs]);
+  const player = useNight(roomsPlan, outdoor, wind, 10, night ? windDirs[night.night_id] : null);
 
-  // What the assistant may know: only what is on screen.
+  // The room the app is worried about drives the 3D finding (or the user's preview).
+  const flaggedRoom = health?.rooms.find((r) => FLAG_STATUSES.includes(r.status));
   useEffect(() => {
-    const lead = final?.ranked_causes[0];
-    const est = money?.estimate;
+    const r = selected ? health?.rooms.find((x) => x.room_id === selected) : flaggedRoom;
+    const target = r && FLAG_STATUSES.includes(r.status) ? r : flaggedRoom;
+    if (preview && (target || selected)) {
+      const room = (target ?? r)!.room_id;
+      set({ finding: preview === "normal" ? null : { room: SIM_TO_PLAN[room], cause: preview, strength: strengthOf(target?.extra_heat_loss_percent ?? 25) } });
+      return;
+    }
+    if (!target || target.status === "verifying") {
+      set({ finding: target ? { room: SIM_TO_PLAN[target.room_id], cause: null, strength: 0.3 } : null });
+      return;
+    }
+    set({ finding: { room: SIM_TO_PLAN[target.room_id], cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent) } });
+  }, [health, selected, preview, flaggedRoom, set]);
+
+  // The server builds the assistant's context itself; we only tell the dock which home is on screen.
+  useEffect(() => {
+    useChatContext.getState().setHome(home?.home_id ?? null);
     useChatContext.getState().setContext(
       {
-        page: "Fault Lab (simulated HH09-inspired twin)",
-        phase,
-        flagged_room: flagged ? roomName(flagged) : null,
-        flagged_room_id: flagged ? SIM_TO_PLAN[flagged] : null,
-        status: final?.status,
-        leading_cause: lead ? causeLabel(lead.fault_type) : null,
-        runner_up: final?.ranked_causes[1] ? causeLabel(final.ranked_causes[1].fault_type) : null,
-        bic_gap: bicGap(final),
-        multiplier: lead?.fitted_multiplier,
-        test: final?.test_decision?.explanation,
-        evidence: final?.evidence.map((e) => e.statement),
-        uncertainty: final?.uncertainty,
-        annual_cost: est ? fmtMoney(est.annual_cost_estimate_usd) : null,
-        annual_kwh: est?.annual_energy_estimate_kwh,
-        payback_years: est?.simple_payback_years,
-        repair_result: repair?.diagnosed_improvement,
-        revealed_truth: truth ?? "not revealed yet",
+        page: "Fault Lab: simulated HH09 twin watched night after night",
+        nights: nights.length,
+        rooms: health?.rooms.map((r) => `${r.name}: ${ROOM_STATUS[r.status].label} — ${r.headline}`),
+        selected_room: report && { name: report.name, headline: report.headline, why: report.why, what_to_do: report.what_to_do, money: report.money && { annual_cost_gbp: report.money.annual_cost_gbp, repair_cost_gbp: report.money.repair_cost_gbp, payback_years: report.money.payback_years } },
+        revealed_truth: reveal ? reveal.summary : "not revealed yet",
       },
-      phase === "start" || phase === "night"
-        ? ["What am I looking at?", "Leak vs insulation?", "Why one cold night?"]
-        : ["Why this room?", "How sure are you?", "Is it worth fixing?"],
+      ["Which room is the problem?", "Why do several nights matter?", "Is it worth fixing?"],
     );
-  }, [phase, final, flagged, money, repair, truth]);
+  }, [home, health, report, reveal, nights.length]);
 
-  const run = async <T,>(label: string, fn: () => Promise<T>) => {
-    setBusy(label);
+  const run = async <T,>(what: string, fn: () => Promise<T>) => {
+    setBusy(what);
     setError(null);
     try {
       return await fn();
@@ -266,133 +183,90 @@ export default function Lab() {
     }
   };
 
-  const start = (req: ScenarioCreateRequest, label: string) =>
-    run("Loading the night…", async () => {
-      for (const reset of [setDiag, setFits1, setExp, setFits2, setMoney, setAltMoney, setRepair, setTruth] as ((v: null) => void)[]) reset(null);
-      const created = await traced("create", "POST /scenarios", () => api.POST("/api/scenarios", { body: req }), (d) => `${d.mode} · ${d.scenario_id.slice(0, 8)}`);
-      const obs = await traced("obs", "GET /observations", () => api.GET("/api/scenarios/{id}/observations", { params: { path: { id: created.scenario_id } } }), (d) => `${Object.keys(d.nights[0].room_temperature_series).length} rooms · ${d.nights[0].weather.outdoor_temperature.values.length} readings`);
-      setScenario({ id: created.scenario_id, label });
-      setPassive(obs.nights[0]);
-      setPhase("night");
-      set({ view: "open", autoRotate: false, inset: 460 });
-      setTimeout(() => player.play(), 900);
-    });
-
-  const analyze = () =>
-    run("Fitting physics models…", async () => {
-      const id = scenario!.id;
-      const [d, f] = await Promise.all([
-        traced("diagnose", "POST /diagnose", () => api.POST("/api/scenarios/{id}/diagnose", { params: { path: { id } }, body: {} }), (d) => `${d.status} · ${roomName(d.flagged_room_id)}`),
-        traced("fits", "POST /insight/fits", () => api.POST("/api/insight/fits", { body: { nights: [passive!] } }), (r) => `${r.model_evaluations} model fits`),
-      ]);
-      setDiag(d);
-      setFits1(f);
-      setPhase("diagnosed");
-      set({ view: "thermal", focusRoom: d.flagged_room_id ? SIM_TO_PLAN[d.flagged_room_id] : null });
-      if (d.status === "confident") void priceIt(d.diagnosis_id, d.ranked_causes[1]?.fault_type);
-    });
-
-  const runTest = () =>
-    run("Running the fan test…", async () => {
-      const id = scenario!.id;
-      set({ view: "fan", fanOn: true });
-      const e = await traced("experiment", "POST /experiments", () =>
-        api.POST("/api/scenarios/{id}/experiments", { params: { path: { id } }, body: { diagnosis_id: diag!.diagnosis_id, experiment_type: "exhaust_fan_depressurization" } }),
-        (r) => `${r.updated_diagnosis.status} · ${causeLabel(r.updated_diagnosis.ranked_causes[0]?.fault_type ?? "")}`,
-      );
-      const f = await traced("fits", "POST /insight/fits", () => api.POST("/api/insight/fits", { body: { nights: [passive!, e.observations], room_ids: diag!.flagged_room_id ? [diag!.flagged_room_id] : undefined } }), (r) => `${r.model_evaluations} fits on both nights`);
-      setExp(e);
-      setFits2(f);
-      setPhase("tested");
-      setTimeout(() => player.play(), 600);
-      if (e.updated_diagnosis.status === "confident") void priceIt(e.updated_diagnosis.diagnosis_id, e.updated_diagnosis.ranked_causes[1]?.fault_type);
-    });
-
-  const priceIt = async (diagnosisId: string, runner: string | undefined, overrides?: { gas?: number | null; repair?: number | null }) => {
-    const m = await traced("money", "POST /money", () =>
-      api.POST("/api/scenarios/{id}/money", {
-        params: { path: { id: scenario!.id } },
-        body: { diagnosis_id: diagnosisId, gas_price_pence_per_kwh: overrides?.gas ?? undefined, repair_cost_gbp: overrides?.repair ?? undefined },
-      }),
-      (r) => (r.estimate ? `${fmtMoney(r.estimate.annual_cost_estimate_usd)}/yr` : "no estimate"),
-    ).catch(() => null);
-    if (m) setMoney(m);
-    // Also price the runner-up explanation, so each option can show its own numbers.
-    if (runner && runner !== "normal") {
-      const alt = await traced("money", "POST /money (other suspect)", () =>
-        api.POST("/api/scenarios/{id}/money", {
-          params: { path: { id: scenario!.id } },
-          body: { diagnosis_id: diagnosisId, fault_type: runner as "draft" | "envelope_conduction", gas_price_pence_per_kwh: overrides?.gas ?? undefined },
-        }),
-        (r) => (r.estimate ? `if ${causeLabel(runner).toLowerCase()}: ${fmtMoney(r.estimate.annual_cost_estimate_usd)}/yr` : "no estimate"),
-      ).catch(() => null);
-      setAltMoney(alt?.estimate ?? null);
-    }
+  const refresh = async (homeId: string, h: HomeHealth, focus?: string | null) => {
+    setHealth(h);
+    setHome(h.home);
+    const r = await traced("readings", "GET /homes/{id}/readings", () => api.GET("/api/homes/{home_id}/readings", { params: { path: { home_id: homeId } } }), (d) => `${d.nights.length} nights · expected-if-healthy lines`);
+    setReadings(r);
+    setNightIdx(null);
+    const room = focus ?? selected ?? h.rooms.find((x) => FLAG_STATUSES.includes(x.status))?.room_id ?? null;
+    if (room) await openRoom(homeId, room);
   };
 
-  const applyFix = () =>
-    run("Applying the fix and re-running the same night…", async () => {
-      const r = await traced("repair", "POST /repair", () =>
-        api.POST("/api/scenarios/{id}/repair", { params: { path: { id: scenario!.id } }, body: { diagnosis_id: final!.diagnosis_id, effectiveness } }),
-        (d) => d.diagnosed_improvement.split(";")[0],
-      );
-      setRepair(r);
-      setShowAfter(true);
-      setPhase("fixed");
-      set({ view: "open", fanOn: false });
-      setTimeout(() => player.play(), 500);
+  const openRoom = async (homeId: string, roomId: string) => {
+    setSelected(roomId);
+    setPreview(null);
+    set({ focusRoom: SIM_TO_PLAN[roomId] });
+    const [rep, tech] = await Promise.all([
+      traced("room", "GET /rooms/{room}", () => api.GET("/api/homes/{home_id}/rooms/{room_id}", { params: { path: { home_id: homeId, room_id: roomId } } }), (d) => ROOM_STATUS[d.status].label),
+      traced("tech", "GET /rooms/{room}/technical", () => api.GET("/api/homes/{home_id}/rooms/{room_id}/technical", { params: { path: { home_id: homeId, room_id: roomId } } }), (d) => `${d.fits.length} fits over ${d.nights_judged} nights`).catch(() => null),
+    ]);
+    setReport(rep);
+    setTechnical(tech);
+  };
+
+  const start = (req: DemoHomeCreate, name: string) =>
+    run("Setting up the house…", async () => {
+      for (const reset of [setHealth, setReadings, setReport, setTechnical, setReveal, setSelected] as ((v: null) => void)[]) reset(null);
+      const h = await traced("create", "POST /demo/homes", () => api.POST("/api/demo/homes", { body: req }), (d) => d.home_id);
+      setHome(h);
+      setLabel(name);
+      set({ view: "open", autoRotate: false, inset: 460, focusRoom: null });
+      await advance(h.home_id, 1);
     });
 
-  const reveal = () =>
+  const advance = async (homeId: string, n: number) => {
+    const h = await traced("advance", `POST /demo/homes/{id}/advance ×${n}`, () => api.POST("/api/demo/homes/{home_id}/advance", { params: { path: { home_id: homeId } }, body: { nights: n } }), (d) => `night ${d.home.nights_monitored} · ${d.home.status}`);
+    await refresh(homeId, h);
+    setTimeout(() => player.play(), 300);
+  };
+
+  const fix = (action: FixAction) =>
+    run("Recording your repair…", async () => {
+      const rep = await traced("fix", "POST /rooms/{room}/fix", () => api.POST("/api/homes/{home_id}/rooms/{room_id}/fix", { params: { path: { home_id: home!.home_id, room_id: selected! } }, body: { action } }), (d) => ROOM_STATUS[d.status].label);
+      setReport(rep);
+      const h = await traced("health", "GET /homes/{id}", () => api.GET("/api/homes/{home_id}", { params: { path: { home_id: home!.home_id } } }), (d) => d.home.status);
+      setHealth(h);
+      setHome(h.home);
+    });
+
+  const doReveal = () =>
     run("Opening the envelope…", async () => {
-      const t = await traced("reveal", "GET /reveal", () => api.GET("/api/scenarios/{id}/reveal", { params: { path: { id: scenario!.id } } }), (d) => (d.diagnosis_matched ? "matched" : "missed"));
-      setTruth(t);
-      setPhase("revealed");
+      const r = await traced("reveal", "GET /demo/homes/{id}/reveal", () => api.GET("/api/demo/homes/{home_id}/reveal", { params: { path: { home_id: home!.home_id } } }), (d) => (d.app_found_it ? "found" : "missed"));
+      setReveal(r);
     });
 
-  const flaggedFits1 = fitsFor(fits1?.rooms.find((r) => r.room_id === flagged));
-  const flaggedFits2 = fitsFor(fits2?.rooms.find((r) => r.room_id === flagged));
-  const threshold = assumption(final, "threshold_ambiguity_bic");
-  const detection = assumption(diag, "threshold_detection_bic");
-  const testRecommended = diag?.test_decision?.recommended && !exp;
-  const canFix = final?.status === "confident" && !repair;
-  const fanNight = exp?.observations;
-  const fanBand = fanNight?.protocol.fan_start && fanNight.protocol.fan_end ? { from: ms(fanNight.protocol.fan_start), to: ms(fanNight.protocol.fan_end), label: "FAN ON" } : null;
+  const sel = health?.rooms.find((r) => r.room_id === selected);
+  const roomReadings = selected && readings ? readings.rooms[selected] : null;
+  const chartData =
+    roomReadings && window_
+      ? [
+          { id: "m", label: `${roomName(selected)} measured`, color: "#f2f3f5", series: slice(roomReadings.measured, ...window_), width: 2 },
+          ...(roomReadings.expected_if_healthy ? [{ id: "e", label: "Expected if healthy", color: "#2fd18b", series: slice(roomReadings.expected_if_healthy, ...window_), dashed: true }] : []),
+          ...(outdoor ? [{ id: "o", label: "Outside", color: "#8a90a2", series: outdoor, dashed: true, width: 1.5 }] : []),
+        ]
+      : null;
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <Nav transparent />
       <HouseCanvas className="absolute inset-0" />
 
-      {phase !== "start" && (
-        <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center">
-          <ViewSwitcher views={["exterior", "thermal", "open", "inside", "fan"]} className="pointer-events-auto" />
+      {home && (
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center pr-[460px]">
+          <ViewSwitcher views={["exterior", "thermal", "open", "inside"]} className="pointer-events-auto" />
         </div>
       )}
       <AnimatePresence>
-        {preview && final && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="pointer-events-none absolute inset-x-0 top-[166px] z-20 flex justify-center pr-[460px]"
-          >
+        {preview && sel && (
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-x-0 top-[166px] z-20 flex justify-center pr-[460px]">
             <div className="glass pointer-events-auto flex items-center gap-3 rounded-full py-1.5 pl-4 pr-1.5 text-[12.5px]">
               <span>
                 Previewing <b style={{ color: CAUSE[preview].color }}>{CAUSE[preview].label.toLowerCase()}</b>
-                <span className="text-mute">
-                  {" · "}
-                  {preview === final.ranked_causes[0]?.fault_type
-                    ? "the engine's best explanation"
-                    : preview === "normal"
-                      ? "what a healthy room would look like"
-                      : final.status === "confident"
-                        ? "ruled out by the evidence"
-                        : "still a contender"}
-                </span>
+                <span className="text-mute"> · {preview === sel.likely_cause ? "the app's likely cause" : "an alternative"}</span>
               </span>
               <button onClick={() => setPreview(null)} className="rounded-full bg-ink px-3 py-1 font-semibold text-black">
-                Back to verdict
+                Back to the app's view
               </button>
             </div>
           </motion.div>
@@ -400,255 +274,114 @@ export default function Lab() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {phase === "start" && (
+        {!home && (
           <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-end gap-3 pb-[8vh]">
-            {(busy || error) && (
-              <div className={`glass rounded-full px-4 py-2 text-[13px] ${error ? "text-hot" : "text-mute"}`}>{error ?? busy}</div>
-            )}
+            {(busy || error) && <div className={`glass rounded-full px-4 py-2 text-[13px] ${error ? "text-hot" : "text-mute"}`}>{error ?? busy}</div>}
             <StartCard onStart={start} />
           </div>
         )}
       </AnimatePresence>
 
-      {phase !== "start" && (
-        <motion.aside
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="glass scroll-thin absolute bottom-4 right-4 top-16 z-30 flex w-[min(440px,calc(100vw-32px))] flex-col overflow-y-auto rounded-[26px] p-5"
-        >
+      {home && health && (
+        <motion.aside initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} className="glass scroll-thin absolute bottom-4 right-4 top-16 z-30 flex w-[min(440px,calc(100vw-32px))] flex-col overflow-y-auto rounded-[26px] p-5">
           <div className="flex items-center justify-between">
-            <Stepper phase={phase} />
+            <div>
+              <div className="eyebrow">{label} · {home.home_id}</div>
+              <div className="mt-0.5 text-[26px] font-bold tracking-tight">
+                Night {home.nights_monitored}
+                {home.last_night && <span className="ml-2 text-[13px] font-normal text-mute">{fmtDate(ms(home.last_night))}</span>}
+              </div>
+            </div>
+            <div className="flex gap-1.5">
+              <button className="btn btn-primary !px-3 !py-2" disabled={!!busy || home.nights_monitored >= 28} onClick={() => run("Simulating the next night…", () => advance(home.home_id, 1))} title="Next night">
+                <SkipForward size={15} /> Next night
+              </button>
+              <button className="btn btn-ghost !px-3 !py-2" disabled={!!busy || home.nights_monitored >= 26} onClick={() => run("Simulating 3 nights…", () => advance(home.home_id, 3))} title="Three nights">
+                <FastForward size={15} /> 3
+              </button>
+            </div>
           </div>
-          <div className="mt-1 text-[11px] text-dim">
-            {scenario?.label} · scenario {scenario?.id.slice(0, 8)} · simulated twin, real HH09-region weather
+
+          {/* nights strip */}
+          <div className="mt-3 flex flex-wrap gap-1">
+            {nights.map((n, i) => (
+              <button
+                key={n.night_id}
+                onClick={() => (setNightIdx(i), setTimeout(() => player.play(), 100))}
+                title={`${n.night_id.replace("hh09-night-", "")} · ${n.mean_outdoor_c.toFixed(1)}°C · wind ${n.mean_wind_m_s.toFixed(1)} m/s`}
+                className={`num h-7 min-w-7 rounded-md px-1.5 text-[11px] ${i === (nightIdx ?? nights.length - 1) ? "bg-ink font-semibold text-black" : "bg-white/[0.06] text-mute hover:text-ink"}`}
+              >
+                {i + 1}
+              </button>
+            ))}
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div key={phase} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mt-4 flex-1">
-              {phase === "night" && passive && (
-                <section>
-                  <h2 className="text-[26px] font-bold leading-tight tracking-tight">
-                    Heating off. <span className="text-mute">Every room cools.</span>
-                  </h2>
-                  <p className="mt-1 text-[13px] text-mute">Four sensors, one night. A fault is hidden in one room, or none.</p>
-                  <div className="mt-4">
-                    <LineChart data={nightChart(passive)} cursor={player.t} onScrub={player.setT} height={210} />
-                  </div>
-                  <button className="btn btn-primary mt-5 w-full" onClick={analyze} disabled={!!busy}>
-                    <FlaskConical size={16} /> Analyze the house
-                  </button>
-                </section>
-              )}
+          {/* rooms */}
+          <div className="mt-4 space-y-1.5">
+            {health.rooms.map((r) => (
+              <button
+                key={r.room_id}
+                onClick={() => openRoom(home.home_id, r.room_id)}
+                className={`w-full rounded-2xl border px-3 py-2.5 text-left transition ${selected === r.room_id ? "border-white/40 bg-white/[0.07]" : "border-line bg-white/[0.02] hover:border-white/25"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{r.name}</span>
+                  <StatusChip status={r.status} />
+                </div>
+                <div className="mt-0.5 text-[12px] leading-snug text-mute">{r.headline}</div>
+              </button>
+            ))}
+          </div>
 
-              {phase === "diagnosed" && diag && passive && (
-                <section className="space-y-4">
-                  <div>
-                    <div className="eyebrow">Verdict</div>
-                    <h2 className="mt-1 text-[24px] font-bold leading-tight tracking-tight">
-                      {diag.flagged_room_id && (diag.status === "confident" || diag.status === "ambiguous") ? (
-                        <>
-                          The <span className="text-warm">{roomName(diag.flagged_room_id)}</span> is losing heat{" "}
-                          <span className="text-warm">{diag.ranked_causes[0].fitted_multiplier.toFixed(1)}×</span> faster than it should.
-                        </>
-                      ) : (
-                        "Nothing the model can confidently call a fault."
-                      )}
-                    </h2>
-                  </div>
-                  <Gauge status={diag.status} gap={bicGap(diag)} threshold={threshold} />
-                  {fits1 && (
-                    <div>
-                      <div className="mb-1.5 flex justify-between text-[11px] text-mute">
-                        <span>How unusual each room is</span>
-                        <span className="num">{fits1.model_evaluations} fits · {Math.round(fits1.elapsed_ms)} ms</span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {[...fits1.rooms].sort((a, b) => b.anomaly_score - a.anomaly_score).map((r, i) => {
-                          const max = Math.max(...fits1.rooms.map((x) => x.anomaly_score), detection ?? 1);
-                          const over = detection != null && r.anomaly_score > detection;
-                          return (
-                            <button key={r.room_id} onClick={() => set({ focusRoom: SIM_TO_PLAN[r.room_id] })} className="flex w-full items-center gap-2 text-left text-[12px]">
-                              <span className="w-20 text-mute">{roomName(r.room_id)}</span>
-                              <div className="relative h-2 flex-1 rounded-full bg-white/[0.06]">
-                                <motion.div
-                                  className="h-full rounded-full"
-                                  style={{ background: over ? "#ff6a3d" : roomColor(r.room_id) }}
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${Math.max(2, (Math.max(0, r.anomaly_score) / max) * 100)}%` }}
-                                  transition={{ delay: 0.1 * i, duration: 0.8 }}
-                                />
-                                {detection != null && <div className="absolute -top-1 h-4 w-px bg-white/50" style={{ left: `${(detection / max) * 100}%` }} />}
-                              </div>
-                              <span className={`w-14 text-right num ${over ? "text-hot" : "text-dim"}`}>{over ? "abnormal" : "normal"}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="mt-1 text-[10.5px] text-dim">White tick = the engine's alarm threshold.</div>
-                    </div>
-                  )}
-                  {diag.flagged_room_id && fits1 && (
-                    <div>
-                      <div className="mb-1.5 text-[11px] text-mute">Three suspects, each fitted to the {roomName(diag.flagged_room_id)} curve</div>
-                      <Suspects
-                        fits={flaggedFits1}
-                        observed={passive.room_temperature_series[diag.flagged_room_id]}
-                        nightId={passive.night_id}
-                        leading={diag.ranked_causes[0]?.fault_type}
-                        ruledOut={["normal"]}
-                        selected={preview}
-                        onSelect={(c) => setPreview((p) => (p === c ? null : c))}
-                      />
-                    </div>
-                  )}
-                  {testRecommended && (
-                    <div className="rounded-2xl border border-[#2b3d60] bg-gradient-to-br from-[#16233b] to-transparent p-4">
-                      <div className="flex items-center gap-2 font-semibold">
-                        <WindIcon size={16} className="text-cool" /> One test would settle it
-                      </div>
-                      <p className="mt-1 text-[12.5px] text-mute">
-                        Run an extract fan for 2 h on a calm night. A leak would cool faster; insulation would barely change.
-                      </p>
-                      <button className="btn btn-primary mt-3" onClick={runTest} disabled={!!busy}>
-                        Run the fan test →
-                      </button>
-                    </div>
-                  )}
-                  {!testRecommended && diag.test_decision && !canFix && <p className="text-[12.5px] text-mute">{diag.test_decision.explanation}</p>}
-                  {canFix && FixPanel()}
-                  {!canFix && !testRecommended && (
-                    <button className="btn btn-ghost w-full" onClick={reveal}>
-                      <Eye size={15} /> Reveal what was hidden
-                    </button>
-                  )}
-                </section>
-              )}
+          {/* selected room */}
+          <RoomDetail report={report} sel={sel} technical={technical} chartData={chartData} cursor={player.t} onScrub={player.setT} preview={preview} setPreview={setPreview} busy={!!busy} fix={fix} />
 
-              {phase === "tested" && exp && passive && (
-                <section className="space-y-4">
-                  <div>
-                    <div className="eyebrow">After the fan test</div>
-                    <h2 className="mt-1 text-[24px] font-bold leading-tight tracking-tight">
-                      {exp.updated_diagnosis.status === "confident" ? (
-                        <>
-                          It's <span style={{ color: CAUSE[exp.updated_diagnosis.ranked_causes[0].fault_type as keyof typeof CAUSE]?.color }}>{causeLabel(exp.updated_diagnosis.ranked_causes[0].fault_type).toLowerCase()}</span>, not {exp.updated_diagnosis.ranked_causes[1].fault_type === "draft" ? "an air leak" : "weak insulation"}.
-                        </>
-                      ) : (
-                        "Still not sure. We won't guess."
-                      )}
-                    </h2>
+          {/* reveal */}
+          <div className="mt-4 border-t border-line pt-4">
+            {reveal ? (
+              <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`rounded-3xl border p-4 ${reveal.app_found_it ? "border-ok/60 bg-ok/10" : "border-hot/60 bg-hot/10"}`}>
+                <div className="eyebrow">The hidden answer</div>
+                <div className="mt-1 text-[17px] font-bold leading-snug">{reveal.summary}</div>
+                {reveal.room_id && readings?.rooms[reveal.room_id] && reveal.fault_free_twin[reveal.room_id] && (
+                  <div className="mt-3">
+                    <LineChart
+                      height={140}
+                      data={[
+                        { id: "m", label: "With the fault", color: "#ff6a3d", series: slice(readings.rooms[reveal.room_id].measured, ms(reveal.fault_free_twin[reveal.room_id].timestamps[0]), ms(reveal.fault_free_twin[reveal.room_id].timestamps.at(-1)!)) },
+                        { id: "t", label: "Same night, no fault", color: "#2fd18b", series: reveal.fault_free_twin[reveal.room_id], dashed: true },
+                      ]}
+                    />
                   </div>
-                  <Gauge status={exp.updated_diagnosis.status} gap={bicGap(exp.updated_diagnosis)} threshold={assumption(exp.updated_diagnosis, "threshold_ambiguity_bic")} />
-                  {flagged && fits2 && (
-                    <div>
-                      <div className="mb-1.5 text-[11px] text-mute">Fan night, {roomName(flagged)}: which story matches?</div>
-                      <Suspects
-                        fits={flaggedFits2}
-                        observed={exp.observations.room_temperature_series[flagged]}
-                        nightId={exp.observations.night_id}
-                        leading={exp.updated_diagnosis.ranked_causes[0]?.fault_type}
-                        ruledOut={exp.updated_diagnosis.status === "confident" ? ["normal", exp.updated_diagnosis.ranked_causes[1].fault_type] : ["normal"]}
-                        band={fanBand}
-                        selected={preview}
-                        onSelect={(c) => setPreview((p) => (p === c ? null : c))}
-                      />
-                    </div>
-                  )}
-                  {canFix ? (
-                    FixPanel()
-                  ) : (
-                    <button className="btn btn-ghost w-full" onClick={reveal}>
-                      <Eye size={15} /> Reveal what was hidden
-                    </button>
-                  )}
-                </section>
-              )}
-
-              {phase === "fixed" && repair && passive && flagged && (
-                <section className="space-y-4">
-                  <div>
-                    <div className="eyebrow">Same night, after the fix</div>
-                    <h2 className="mt-1 text-[24px] font-bold leading-tight tracking-tight">
-                      {repair.diagnosed_improvement.includes("no_fault") ? (
-                        <>
-                          Fixed. <span className="text-ok">The {roomName(flagged)} now cools normally.</span>
-                        </>
-                      ) : (
-                        <>The fix helped less than expected.</>
-                      )}
-                    </h2>
-                    <p className="mt-1 text-[12.5px] text-mute">{improvementLine(repair.diagnosed_improvement)}</p>
-                  </div>
-                  <div className="glass inline-flex rounded-full p-1 text-[12px]">
-                    {[true, false].map((after) => (
-                      <button key={String(after)} onClick={() => setShowAfter(after)} className={`rounded-full px-3 py-1 ${showAfter === after ? "bg-ink font-semibold text-black" : "text-mute"}`}>
-                        {after ? "After" : "Before"}
-                      </button>
-                    ))}
-                  </div>
-                  <LineChart
-                    height={190}
-                    cursor={player.t}
-                    onScrub={player.setT}
-                    data={[
-                      { id: "before", label: "Before fix", color: "#8a90a2", series: repair.original_observations[0].room_temperature_series[flagged], dashed: true },
-                      { id: "after", label: "After fix", color: "#2fd18b", series: repair.repaired_observations[0].room_temperature_series[flagged], width: 2.5 },
-                    ]}
-                  />
-                  {repair.remeasured_savings_kwh != null && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <Stat label="Re-measured saving" value={`${Math.round(repair.remeasured_savings_kwh)} kWh/yr`} tone="ok" />
-                      {repair.estimated_savings && <Stat label="Predicted" value={`${Math.round(repair.estimated_savings.annual_energy_estimate_kwh)} kWh/yr`} />}
-                    </div>
-                  )}
-                  <button className="btn btn-hot w-full" onClick={reveal}>
-                    <Eye size={15} /> Reveal what was hidden
+                )}
+                <div className="mt-2 text-[11px] text-dim">Simulated ground truth, opened only now. Synthetic test, not field validation.</div>
+                <div className="mt-3 flex gap-2">
+                  <button className="btn btn-primary flex-1" onClick={() => start({ house: "hh09", random_fault: true, seed: Math.floor(Math.random() * 2 ** 31) }, "Hidden random fault")}>
+                    <Dice5 size={15} /> Another house
                   </button>
-                </section>
-              )}
-
-              {phase === "revealed" && truth && (
-                <section className="space-y-4">
-                  <div className="eyebrow">The answer</div>
-                  <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`rounded-3xl border p-5 ${truth.diagnosis_matched ? "border-ok/60 bg-ok/10" : "border-hot/60 bg-hot/10"}`}>
-                    <div className="text-[13px] text-mute">The simulator had planted</div>
-                    <div className="mt-1 text-[26px] font-bold tracking-tight">
-                      {truth.fault_type === "none" ? "No fault at all" : `${causeLabel(truth.fault_type)} in the ${roomName(truth.actual_room_id)}`}
-                    </div>
-                    {truth.fault_type !== "none" && <div className="text-[13px] text-mute num">severity ×{truth.severity.toFixed(1)}</div>}
-                    <div className="mt-4 grid grid-cols-2 gap-2 text-[13px]">
-                      <Verdict ok={truth.diagnosis_matched} label="Diagnosis" />
-                      <Verdict ok={truth.repair_addressed_cause} label="Repair" />
-                    </div>
-                  </motion.div>
-                  <p className="text-[12px] text-dim">
-                    The engine never saw this card. It is the simulator's private record, opened only now. Synthetic evaluation, not field validation.
-                  </p>
-                  <button className="btn btn-primary w-full" onClick={() => start({ mode: "surprise", seed: Math.floor(Math.random() * 2 ** 31) }, "Surprise")}>
-                    <Dice5 size={15} /> Try another hidden fault
+                  <button className="btn btn-ghost" onClick={() => (setHome(null), setHealth(null), set({ view: "exterior", autoRotate: true, inset: 0, finding: null, focusRoom: null }))}>
+                    <RotateCcw size={15} />
                   </button>
-                  <button className="btn btn-ghost w-full" onClick={() => {
-                      setPhase("start");
-                      set({ view: "exterior", autoRotate: true, inset: 0, finding: null, focusRoom: null, fanOn: false });
-                    }}>
-                    <RotateCcw size={15} /> Start over
-                  </button>
-                </section>
-              )}
-            </motion.div>
-          </AnimatePresence>
+                </div>
+              </motion.div>
+            ) : (
+              <button className="btn btn-ghost w-full" onClick={doReveal} disabled={!!busy || home.nights_monitored < 1}>
+                <Eye size={15} /> Reveal what was hidden
+              </button>
+            )}
+          </div>
 
           {busy && (
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-[12.5px] text-mute">
+            <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-[12.5px] text-mute">
               <span className="h-2 w-2 rounded-full bg-warm pulse-dot" /> {busy}
             </div>
           )}
-          {error && <div className="mt-3 rounded-xl border border-hot/40 bg-hot/10 px3 px-3 py-2 text-[12px] text-hot">{error}</div>}
+          {error && <div className="mt-3 rounded-xl border border-hot/40 bg-hot/10 px-3 py-2 text-[12px] text-hot">{error}</div>}
+          <div className="mt-3 text-[10.5px] text-dim">{health.disclaimer}</div>
         </motion.aside>
       )}
 
-      {phase !== "start" && (
-        <div className="pointer-events-none absolute bottom-4 left-4 right-[min(470px,calc(100vw-16px))] z-20 flex flex-col gap-2">
+      {home && (
+        <div className="pointer-events-none absolute bottom-4 left-4 right-[476px] z-20 flex flex-col gap-2">
           <EngineTrace className="pointer-events-auto max-w-[520px]" />
           <Timeline
             className="pointer-events-auto max-w-[640px]"
@@ -656,144 +389,10 @@ export default function Lab() {
             onPlay={player.play}
             onPause={player.pause}
             onScrub={player.setT}
-            caption={phase === "tested" ? "Fan test night · extract fan on for the first two hours" : phase === "fixed" ? (showAfter ? "Same weather, after the fix" : "Original night") : "Passive night · heating off, doors closed"}
+            caption={night ? `Night ${(nightIdx ?? nights.length - 1) + 1} · heating off · real winter 2020-21 weather · ${night.mean_outdoor_c.toFixed(1)}°C avg` : "No nights yet"}
           />
         </div>
       )}
-    </div>
-  );
-
-  function FixPanel() {
-    const est = money?.estimate;
-    const lead = final!.ranked_causes[0];
-    const repairName = lead.fault_type === "draft" ? "Seal the drafts" : "Insulate the wall";
-    const runner = final!.ranked_causes[1];
-    const reprice = (g: number | null, r: number | null) => {
-      setGas(g);
-      setRepairCost(r);
-      void priceIt(final!.diagnosis_id, final!.ranked_causes[1]?.fault_type, { gas: g, repair: r });
-    };
-    const gasDefault = Number(est?.assumptions.find((a) => a.name === "gas_unit_price")?.value ?? 7.97);
-    const fx = Number(est?.assumptions.find((a) => a.name === "gbp_to_usd")?.value ?? 1.34);
-    return (
-      <div className="space-y-3 rounded-2xl border border-line bg-white/[0.02] p-4">
-        <div className="flex items-center gap-2 font-semibold">
-          <Wrench size={15} /> {repairName} in the {roomName(flagged)}
-        </div>
-        {est ? (
-          <>
-            <div className="grid grid-cols-3 gap-2">
-              <Stat label="Lost / year" value={fmtMoney(est.annual_cost_estimate_usd)} sub={`${Math.round(est.annual_energy_estimate_kwh)} kWh`} tone="hot" />
-              <Stat label="Repair" value={fmtMoney(est.repair_cost_usd)} sub="assumed" />
-              <Stat label="Pays back" value={est.simple_payback_years ? `${est.simple_payback_years.toFixed(1)} yr` : "–"} tone="ok" />
-            </div>
-            <label className="block text-[11.5px] text-mute">
-              Gas price <span className="num text-ink">{(gas ?? gasDefault).toFixed(1)}p/kWh</span>
-              <input type="range" min={4} max={20} step={0.5} defaultValue={gas ?? gasDefault} onMouseUp={(e) => reprice(Number((e.target as HTMLInputElement).value), repairCost)} onTouchEnd={(e) => reprice(Number((e.target as HTMLInputElement).value), repairCost)} className="mt-1 w-full" />
-            </label>
-            <label className="block text-[11.5px] text-mute">
-              Your repair quote <span className="num text-ink">£{Math.round(repairCost ?? est.repair_cost_usd / fx)}</span>
-              <input type="range" min={0} max={2000} step={25} defaultValue={repairCost ?? Math.round(est.repair_cost_usd / fx)} onMouseUp={(e) => reprice(gas, Number((e.target as HTMLInputElement).value))} onTouchEnd={(e) => reprice(gas, Number((e.target as HTMLInputElement).value))} className="mt-1 w-full" />
-            </label>
-          </>
-        ) : (
-          <div className="text-[12px] text-mute pulse-dot">Pricing the extra heat loss…</div>
-        )}
-        <div className="text-[12px]">
-          <div className="grid grid-cols-[1fr_54px_64px_58px] gap-x-2 px-2.5 pb-1 text-[10px] uppercase tracking-wider text-dim">
-            <span>Option</span>
-            <span className="text-right">Costs</span>
-            <span className="text-right">Saves/yr</span>
-            <span className="text-right">Payback</span>
-          </div>
-          <div className="space-y-1.5">
-            <Option
-              label={repairName}
-              note="recommended"
-              tone="ok"
-              cost={est ? fmtMoney(est.repair_cost_usd) : "…"}
-              saves={est ? fmtMoney(est.annual_cost_estimate_usd) : "…"}
-              payback={est?.simple_payback_years ? `${est.simple_payback_years.toFixed(1)} yr` : "–"}
-              active={preview === lead.fault_type}
-              onClick={() => setPreview(lead.fault_type as CauseKey)}
-            />
-            {runner && runner.fault_type !== "normal" && (
-              <Option
-                label={runner.fault_type === "draft" ? "Seal drafts instead" : "Insulate instead"}
-                note="ruled out by the fan test"
-                cost={altMoney ? fmtMoney(altMoney.repair_cost_usd) : "…"}
-                saves="≈ $0"
-                payback="never"
-                active={preview === runner.fault_type}
-                onClick={() => setPreview(runner.fault_type as CauseKey)}
-              />
-            )}
-            <Option label="Do nothing" note={est ? `keep losing ${fmtMoney(est.annual_cost_estimate_usd)}/yr` : ""} cost="$0" saves="$0" payback="–" active={preview === null} onClick={() => setPreview(null)} />
-          </div>
-          {runner && runner.fault_type !== "normal" && altMoney && (
-            <p className="mt-1.5 px-1 text-[10.5px] leading-snug text-dim">
-              Sealing drafts would only pay off if the loss were an air leak (then ~{fmtMoney(altMoney.annual_cost_estimate_usd)}/yr). The evidence says
-              it is the wall, so it would fix almost nothing.
-            </p>
-          )}
-        </div>
-        <label className="block text-[11.5px] text-mute">
-          Repair quality <span className="num text-ink">{Math.round(effectiveness * 100)}%</span>
-          <input type="range" min={0.2} max={1} step={0.05} value={effectiveness} onChange={(e) => setEffectiveness(Number(e.target.value))} className="mt-1 w-full" />
-        </label>
-        <button className="btn btn-hot w-full" onClick={applyFix} disabled={!!busy}>
-          Apply the fix & re-run the night
-        </button>
-        <div className="text-[10.5px] text-dim">Screening estimates from stated assumptions, not a quote or a certified audit.</div>
-      </div>
-    );
-  }
-}
-
-function improvementLine(text: string) {
-  const m = text.match(/([+-]?\d+\.\d+) degC/);
-  const delta = m ? Number(m[1]) : null;
-  return delta != null
-    ? `On average ${Math.abs(delta).toFixed(1)}°C ${delta >= 0 ? "warmer" : "colder"} through the same night, same weather.`
-    : text.split(";")[0];
-}
-
-function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "ok" | "hot" }) {
-  return (
-    <div className="rounded-xl bg-white/[0.04] px-3 py-2">
-      <div className="text-[10.5px] text-mute">{label}</div>
-      <div className={`num text-[19px] font-bold tracking-tight ${tone === "ok" ? "text-ok" : tone === "hot" ? "text-hot" : ""}`}>{value}</div>
-      {sub && <div className="num text-[10.5px] text-dim">{sub}</div>}
-    </div>
-  );
-}
-
-type OptionProps = { label: string; note: string; tone?: "ok"; active?: boolean; onClick?: () => void; cost: string; saves: string; payback: string };
-
-/** One repair option; clicking it also previews that explanation in 3D. */
-function Option({ label, note, tone, active, onClick, cost, saves, payback }: OptionProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`grid w-full grid-cols-[1fr_54px_64px_58px] items-center gap-x-2 rounded-lg px-2.5 py-1.5 text-left transition hover:bg-white/[0.07] ${tone === "ok" ? "bg-ok/10 text-ink" : "bg-white/[0.03] text-mute"} ${active ? "ring-1 ring-white/50" : ""}`}
-    >
-      <span className="min-w-0">
-        <span className="block truncate">{label}</span>
-        <span className="block truncate text-[10px] text-dim">{note}</span>
-      </span>
-      <span className="num text-right">{cost}</span>
-      <span className={`num text-right ${tone === "ok" ? "text-ok" : ""}`}>{saves}</span>
-      <span className="num text-right">{payback}</span>
-    </button>
-  );
-}
-
-function Verdict({ ok, label }: { ok: boolean | null | undefined; label: string }) {
-  return (
-    <div className={`rounded-xl px-3 py-2 ${ok ? "bg-ok/15 text-ok" : ok === false ? "bg-hot/15 text-hot" : "bg-white/5 text-mute"}`}>
-      <div className="text-[11px] opacity-80">{label}</div>
-      <div className="font-semibold">{ok ? "✓ correct" : ok === false ? "✕ missed" : "n/a"}</div>
     </div>
   );
 }
