@@ -114,7 +114,7 @@ Trust features judges can check:
 
 Optional online features: set `ANTHROPIC_API_KEY` (in the environment or in the
 git-ignored repo-root `.env`, see `.env.example`) before starting uvicorn to
-enable chat and floor-plan reading (model `claude-opus-5-5`, override with
+enable chat and floor-plan reading (model `claude-sonnet-5-5`, override with
 `HEATHUNTER_ASSISTANT_MODEL`). Without it, chat answers offline from the engine
 output on screen and plans are traced by hand. The chat answers only questions
 about HeatHunter and the home on screen; anything else gets a fixed redirect.

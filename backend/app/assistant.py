@@ -16,7 +16,7 @@ from pathlib import Path
 from .contracts import ChatAction, ChatReply, ChatRequest, FloorPlanDraft, HomePlan
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
-MODEL = os.environ.get("HEATHUNTER_ASSISTANT_MODEL", "claude-opus-5-5")
+MODEL = os.environ.get("HEATHUNTER_ASSISTANT_MODEL", "claude-sonnet-5-5")
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 
