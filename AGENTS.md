@@ -78,3 +78,8 @@ integration-owner review.
 - Public site (2026-10-24, approved by Nikhil): `/` is now a homeowner
   website with a realistic 3D house. The full research console moved
   unchanged to `/#/lab`. Frontend only; the API and science are untouched.
+- On-site assistant (2026-10-25, approved by Nikhil; the frozen spec had
+  excluded chatbots): `POST /api/chat` uses Claude with server-side limits
+  and scope rules. It only sees public, on-screen summaries, never simulator
+  truth. It is optional: with no key it returns 503 and the demo is
+  unaffected. Details in `docs/CONTRACTS.md`.

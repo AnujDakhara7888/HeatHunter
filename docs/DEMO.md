@@ -26,6 +26,24 @@ the backend, builds the frontend and starts the server. Port 8000 opens in a
 browser tab, and the whole thing runs on GitHub's machines. A public link
 instead needs the container deployment below.
 
+## Turn on the chat assistant (optional)
+
+The website has an "Ask HeatHunter" assistant (Claude). It needs an
+Anthropic API key **on the server**; the key never reaches the browser.
+
+- **Codespaces:** GitHub → Settings → Codespaces → Secrets → New secret,
+  named `ANTHROPIC_API_KEY`, with access to this repository. Then restart the
+  codespace. Alternatively, run
+  `export ANTHROPIC_API_KEY=...` in the terminal before `uvicorn`.
+- **Render or Docker:** set the `ANTHROPIC_API_KEY` environment variable on
+  the service.
+- **Without a key, or offline:** the panel says the assistant isn't
+  available and everything else works. Keep it that way for an offline
+  judging demo if the venue has no internet.
+- **Limits:** set them with `HEATHUNTER_CHAT_PER_VISITOR`,
+  `HEATHUNTER_CHAT_WINDOW_SECONDS` and `HEATHUNTER_CHAT_DAILY_LIMIT`. Edit
+  the assistant's rules in `backend/app/chat_system_prompt.md`.
+
 ## Put it on the web (one container)
 
 HeatHunter needs its Python backend (simulator, fitting, in-memory scenarios),

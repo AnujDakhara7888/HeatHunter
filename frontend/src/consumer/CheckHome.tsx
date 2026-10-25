@@ -32,6 +32,7 @@ import { useInvestigation, type InvestigationApi } from "../features/faultlab/us
 import { useTwinState } from "../features/faultlab/useTwinState";
 import { THERMAL_CSS, type CameraView, type Problem } from "./houseTypes";
 import { Report } from "./Report";
+import { setChatContext } from "./chatContext";
 import { WeatherCard } from "./WeatherCard";
 import { WhyChart, whySentence } from "./WhyChart";
 
@@ -286,6 +287,50 @@ export function CheckHome({ request, onBack, onNew, onChallenge }: { request: Sc
     if (stage === "analysing" || stage === "testing") setStage(state.diagnoses.length ? "result" : "recording");
     if (stage === "fixing" && !state.repair) setStage("result");
   }, [state.error, stage, state.diagnoses.length, state.repair]);
+
+  // Tell the assistant what is on screen: public results only, and only once shown.
+  useEffect(() => {
+    const lines = ["The visitor is running a home check on the example home (a virtual copy of a real bungalow in England)."];
+    const pre = ["loading", "evening", "recording", "analysing"].includes(stage);
+    const shown = pre ? undefined : stage === "fan" || stage === "testing" ? state.diagnoses[0] : state.diagnoses[state.diagnoses.length - 1];
+    if (pre) lines.push("Current step: the overnight test is running; no result has been shown yet.");
+    if (shown) {
+      const room = roomName(shown.flagged_room_id);
+      const names = shown.ranked_causes.map((c) => (c.fault_type === "draft" ? "a draft" : "poor insulation"));
+      lines.push(
+        shown.status === "confident"
+          ? `Result shown: HeatHunter found ${names[0]} in the ${room}${state.experimentRun ? ", confirmed by the fan test" : ""}.`
+          : shown.status === "ambiguous"
+            ? `Result shown: the ${room} is losing heat too fast; it could be ${names.join(" or ")} and HeatHunter is not sure which.`
+            : shown.status === "no_fault"
+              ? "Result shown: no room is losing heat unusually fast."
+              : "Result shown: the readings don't match any problem HeatHunter knows about, so it isn't guessing.",
+      );
+      if (shown.status === "ambiguous" && !state.experimentRun)
+        lines.push(state.diagnoses[0]?.test_decision?.recommended ? "A fan test is recommended to tell the causes apart." : "A fan test would not help here.");
+      if (stage === "fan" || stage === "testing") lines.push("The fan test night is being replayed now.");
+      if (shown.flagged_room_id)
+        for (const n of state.nights.slice(0, stage === "fan" ? 1 : undefined)) lines.push(whySentence(n, shown.flagged_room_id));
+      const m = shown.money_estimate;
+      const fx = numericAssumption(m?.assumptions, "gbp_to_usd");
+      if (m && fx)
+        lines.push(
+          `Estimated cost: about £${Math.round(m.annual_cost_estimate_usd / fx)} a year; the fix costs about £${Math.round(m.repair_cost_usd / fx)}; payback about ${m.simple_payback_years != null ? m.simple_payback_years.toFixed(1) : "unknown"} years.`,
+        );
+    }
+    if (stage === "fixed" && state.repair) {
+      lines.push(
+        `Fix tested: ${cleared ? "the problem cleared" : "no clear improvement"}; on the same night the room was ${Number.isFinite(delta) ? `${delta.toFixed(1)}°C warmer` : "about the same"} on average.`,
+      );
+    }
+    lines.push(
+      state.truth
+        ? `Hidden answer (revealed): ${state.truth.fault_type === "none" ? "no hidden problem" : `${state.truth.fault_type === "draft" ? "a draft" : "poor insulation"} in the ${roomName(state.truth.actual_room_id)}`}; HeatHunter ${state.truth.diagnosis_matched ? "was right" : "was not right"}.`
+        : "The hidden answer has NOT been revealed yet.",
+    );
+    setChatContext(lines.join("\n"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, state.diagnoses, state.repair, state.truth, state.experimentRun, state.nights]);
 
   const thermal = useMemo<[number, number]>(() => {
     const values = twin.datasets.flatMap((d) => Object.values(d.night.room_temperature_series).flatMap((s) => s.values.filter((v): v is number => v != null)));

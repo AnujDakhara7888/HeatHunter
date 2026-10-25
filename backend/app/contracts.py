@@ -431,6 +431,27 @@ class EvaluationSummary(ContractModel):
     provenance: Literal[Provenance.MODEL_ESTIMATE] = Provenance.MODEL_ESTIMATE
 
 
+class ChatTurn(ContractModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=4000)
+
+
+class ChatRequest(ContractModel):
+    """A visitor's conversation with the on-site assistant.
+
+    ``page_context`` is a plain-text summary of what the visitor can currently
+    see (public results only). It is untrusted data, never instructions.
+    """
+
+    messages: list[ChatTurn] = Field(min_length=1, max_length=40)
+    page_context: str | None = Field(default=None, max_length=4000)
+
+
+class ChatResponse(ContractModel):
+    reply: str
+    model: str
+
+
 class HealthResponse(ContractModel):
     status: Literal["ok"] = "ok"
     service: Literal["heat-hunter-api"] = "heat-hunter-api"

@@ -16,6 +16,8 @@ from fastapi.staticfiles import StaticFiles
 
 from .contracts import (
     ApiError,
+    ChatRequest,
+    ChatResponse,
     DiagnoseRequest,
     Diagnosis,
     DiagnosisStatus,
@@ -56,6 +58,8 @@ def _errors(*codes: int) -> dict[int | str, dict]:
         status.HTTP_409_CONFLICT: "The action is not valid in the scenario's current state.",
         status.HTTP_422_UNPROCESSABLE_CONTENT: "The request is invalid for this scenario.",
         status.HTTP_501_NOT_IMPLEMENTED: "The owning scientific or data service is not available.",
+        status.HTTP_429_TOO_MANY_REQUESTS: "The visitor or the site has used up its chat allowance.",
+        status.HTTP_503_SERVICE_UNAVAILABLE: "The assistant is not available (no API key or no network).",
     }
     return {code: {"model": ApiError, "description": descriptions[code]} for code in codes}
 
@@ -266,6 +270,31 @@ async def get_real_house_floor_plan() -> FileResponse:
     if not path.is_relative_to(REPOSITORY_ROOT / "data") or not path.is_file():
         raise ApiFailure(404, "NOT_FOUND", "floor-plan image is not available")
     return FileResponse(path, media_type="image/png")
+
+
+@app.post(
+    "/api/chat",
+    response_model=ChatResponse,
+    responses=_errors(422, 429, 503),
+    tags=["assistant"],
+)
+async def chat(request: ChatRequest, http: Request) -> ChatResponse:
+    """On-site assistant, restricted to HeatHunter topics (see backend/app/chat.py)."""
+
+    from starlette.concurrency import run_in_threadpool
+
+    from .chat import ChatRateLimitedError, ChatRequestError, ChatUnavailableError, get_chat_service
+
+    forwarded = http.headers.get("x-forwarded-for", "")
+    visitor = forwarded.split(",")[0].strip() or (http.client.host if http.client else "unknown")
+    try:
+        return await run_in_threadpool(get_chat_service().reply, request, visitor)
+    except ChatRequestError as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+    except ChatRateLimitedError as exc:
+        raise ApiFailure(429, "RATE_LIMITED", str(exc)) from exc
+    except ChatUnavailableError as exc:
+        raise ApiFailure(503, "CHAT_UNAVAILABLE", str(exc)) from exc
 
 
 @app.get(

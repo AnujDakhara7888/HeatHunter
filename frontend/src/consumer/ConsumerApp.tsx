@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import type { ScenarioCreateRequest } from "../lib/api";
 import { ChallengeDialog } from "./ChallengeDialog";
+import { ChatWidget } from "./ChatWidget";
+import { setChatContext } from "./chatContext";
 import { CheckHome } from "./CheckHome";
 import { RealWeek } from "./RealWeek";
 import { Intake, Landing, PickHome } from "./Screens";
@@ -45,6 +47,16 @@ export default function ConsumerApp() {
   useEffect(() => {
     document.title = "HeatHunter — find where your home is losing heat";
   }, []);
+  useEffect(() => {
+    const where: Record<Screen, string> = {
+      home: "The visitor is on the HeatHunter home page.",
+      intake: "The visitor is on the 'Tell us about your home' page. Checking their own home is coming soon; for now they can skip to an example home.",
+      pick: "The visitor is choosing an example home: a guided walkthrough, or 'Set a challenge' where they hide a problem for HeatHunter to find.",
+      check: "The visitor is starting a home check.",
+      real: "The visitor is on the 'Real data' page.",
+    };
+    setChatContext(where[screen]);
+  }, [screen]);
 
   return (
     <div className="min-h-screen bg-[#0b0f14] text-white">
@@ -94,6 +106,8 @@ export default function ConsumerApp() {
           </div>
         </footer>
       )}
+
+      <ChatWidget />
 
       {challenge && (
         <ChallengeDialog

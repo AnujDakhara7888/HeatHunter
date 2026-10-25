@@ -69,6 +69,7 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
         "/api/real/house",
         "/api/real/house/floor-plan",
         "/api/evaluation/summary",
+        "/api/chat",
     }
     assert set(schema["paths"]) == expected_paths
     observation_schema = json.dumps(schema["components"]["schemas"]["ObservationResponse"])

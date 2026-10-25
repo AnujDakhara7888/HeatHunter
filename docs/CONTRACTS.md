@@ -49,6 +49,7 @@ root-cause classification.
 | GET | `/api/real/house` | — | `RealHouse` | Anuj data, Nikhil route |
 | GET | `/api/real/house/floor-plan` | — | `image/png` | Anuj asset, Nikhil route |
 | GET | `/api/evaluation/summary` | — | `EvaluationSummary` | Anuj data, Nikhil route |
+| POST | `/api/chat` | `ChatRequest` | `ChatResponse` | Nikhil (on-site assistant, optional) |
 
 All routes are wired to the owners' services (`backend/app/runtime.py`).
 `/api/evaluation/summary` returns HTTP 501 `SERVICE_NOT_INTEGRATED` until
@@ -66,6 +67,33 @@ Both were proposed by Kailash in `docs/PHYSICS.md`.
   API returned, through `backend.engine.estimate_money` with `MoneyOverrides`.
   Non-confident diagnoses return `estimate: null` with an explanation.
 
+### On-site assistant (`POST /api/chat`)
+
+This is a scope change approved by Nikhil on 2026-10-25: the frozen spec had
+excluded chatbots. The endpoint is optional; without `ANTHROPIC_API_KEY` it
+returns 503 `CHAT_UNAVAILABLE` and nothing else depends on it.
+
+- **Request:** `messages` (alternating user/assistant turns, last one from the
+  user) and an optional `page_context`. The page context is a plain-text
+  summary of public, on-screen results; it never carries hidden truth before
+  reveal and is treated as untrusted data.
+- **Limits enforced by the server:**
+  - questions of 600 characters or fewer;
+  - only the last 12 turns are sent;
+  - 15 messages per visitor per 10 minutes;
+  - 300 messages per day across the whole site;
+  - 700-token answers.
+
+  The rate limits are configurable through `HEATHUNTER_CHAT_*` environment
+  variables. A broken limit returns 422 `INVALID_REQUEST` or 429
+  `RATE_LIMITED`.
+- **Scope:** the rules live in `backend/app/chat_system_prompt.md`. The
+  assistant answers only about HeatHunter, the visitor's check and home heat
+  loss as the site covers it. It declines anything else, never guesses the
+  hidden problem, and never invents numbers.
+- **Model:** `claude-opus-5-5` (`HEATHUNTER_CHAT_MODEL`) at low effort, with
+  server-side refusal fallbacks enabled.
+
 ### Error mapping
 
 | Service exception | HTTP | `code` |
@@ -74,6 +102,8 @@ Both were proposed by Kailash in `docs/PHYSICS.md`.
 | `ScenarioStateError` (stale/duplicate action) | 409 | `INVALID_SCENARIO_STATE` |
 | `ValueError` (invalid request for this scenario) | 422 | `INVALID_REQUEST` |
 | `EngineDependencyError`, `WeatherContractError`, missing thresholds/data | 501 | `SERVICE_NOT_INTEGRATED` |
+| Chat: over the per-visitor or daily allowance | 429 | `RATE_LIMITED` |
+| Chat: no key, rejected key, no network | 503 | `CHAT_UNAVAILABLE` |
 
 ### Diagnostic thresholds
 

@@ -4,6 +4,7 @@ import { api, type RealHouse } from "../lib/api";
 import { fmt } from "../lib/format";
 import { REAL_ROOMS, type TwinRoomId } from "../lib/rooms";
 import { THERMAL_CSS, type CameraView } from "./houseTypes";
+import { setChatContext } from "./chatContext";
 import { WeatherCard } from "./WeatherCard";
 
 const RealisticHouse = lazy(() => import("./RealisticHouse"));
@@ -79,6 +80,15 @@ export function RealWeek({ onBack, onCheck }: { onBack: () => void; onCheck: () 
   const hour = iso ? new Date(iso).getUTCHours() + new Date(iso).getUTCMinutes() / 60 : 12;
   const phase = hour >= 7.5 && hour < 17.25 ? "day" : "night";
   const wind = house ? at(house.wind_speed.values, index) : null;
+  const outdoor = house ? at(house.outdoor_temperature.values, index) : null;
+  useEffect(() => {
+    if (!iso) return;
+    const temps = rooms.map((r) => `${r.name} ${r.temp != null ? r.temp.toFixed(1) + "°C" : "no reading"}`).join(", ");
+    setChatContext(
+      `The visitor is on the "Real data" page, replaying real sensor readings from the real house (18–24 February 2021). No problem is claimed for this real home. Shown time: ${stamp(iso)}. Rooms: ${temps}. Outside: ${outdoor != null ? outdoor.toFixed(1) + "°C" : "unknown"}, wind ${wind != null ? wind.toFixed(1) + " m/s" : "unknown"}.`,
+    );
+  }, [iso, rooms, outdoor, wind]);
+
   const days = useMemo(() => {
     const out: { i: number; label: string }[] = [];
     ts.forEach((t, i) => {

@@ -78,6 +78,7 @@ export const api = {
   reveal: (id: string) => unwrap(client.GET("/api/scenarios/{id}/reveal", at(id))),
   realHouse: () => unwrap(client.GET("/api/real/house")),
   evaluation: () => unwrap(client.GET("/api/evaluation/summary")),
+  chat: (body: Schemas["ChatRequest"]) => unwrap(client.POST("/api/chat", { body })),
 };
 
 export const FLOOR_PLAN_URL = "/api/real/house/floor-plan";

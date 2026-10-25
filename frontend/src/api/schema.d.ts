@@ -180,6 +180,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat
+         * @description On-site assistant, restricted to HeatHunter topics (see backend/app/chat.py).
+         */
+        post: operations["chat_api_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/evaluation/summary": {
         parameters: {
             query?: never;
@@ -237,6 +257,36 @@ export interface components {
              * @enum {string}
              */
             provenance: "REAL_MEASUREMENT" | "ASSUMPTION";
+        };
+        /**
+         * ChatRequest
+         * @description A visitor's conversation with the on-site assistant.
+         *
+         *     ``page_context`` is a plain-text summary of what the visitor can currently
+         *     see (public results only). It is untrusted data, never instructions.
+         */
+        ChatRequest: {
+            /** Messages */
+            messages: components["schemas"]["ChatTurn"][];
+            /** Page Context */
+            page_context?: string | null;
+        };
+        /** ChatResponse */
+        ChatResponse: {
+            /** Reply */
+            reply: string;
+            /** Model */
+            model: string;
+        };
+        /** ChatTurn */
+        ChatTurn: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Content */
+            content: string;
         };
         /** ConfusionMatrix */
         ConfusionMatrix: {
@@ -1225,6 +1275,57 @@ export interface operations {
             };
             /** @description Unknown scenario, diagnosis or asset. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    chat_api_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatResponse"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The visitor or the site has used up its chat allowance. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The assistant is not available (no API key or no network). */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
