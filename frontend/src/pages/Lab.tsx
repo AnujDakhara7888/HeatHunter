@@ -7,6 +7,7 @@ import type {
   ExperimentResponse,
   GroundTruth,
   InsightResponse,
+  MoneyEstimate,
   MoneyResponse,
   NightObservations,
   RepairResult,
@@ -22,8 +23,8 @@ import { Suspects } from "../components/Suspects";
 import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
 import { assumption, bicGap, causeLabel, fitsFor, strengthOf } from "../lib/diagnosis";
-import { HH09_PLAN } from "../lib/plan";
-import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, ms, roomColor } from "../lib/rooms";
+import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
+import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, ms, roomColor, type CauseKey } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
@@ -167,22 +168,38 @@ export default function Lab() {
   const [exp, setExp] = useState<ExperimentResponse | null>(null);
   const [fits2, setFits2] = useState<InsightResponse | null>(null);
   const [money, setMoney] = useState<MoneyResponse | null>(null);
+  const [altMoney, setAltMoney] = useState<MoneyEstimate | null>(null);
   const [gas, setGas] = useState<number | null>(null);
   const [repairCost, setRepairCost] = useState<number | null>(null);
   const [effectiveness, setEffectiveness] = useState(1);
   const [repair, setRepair] = useState<RepairResult | null>(null);
   const [showAfter, setShowAfter] = useState(true);
   const [truth, setTruth] = useState<GroundTruth | null>(null);
+  // "What would it look like if…": preview any explanation in 3D without changing the verdict.
+  const [preview, setPreview] = useState<CauseKey | null>(null);
+  useEffect(() => setPreview(null), [phase]);
 
   const final = exp?.updated_diagnosis ?? diag;
   const flagged = final?.flagged_room_id ?? null;
   const playingNight: NightObservations | null =
     phase === "fixed" && repair && showAfter ? repair.repaired_observations[0] : phase === "tested" && exp ? exp.observations : passive;
   const roomsPlan = useMemo(() => (playingNight ? toPlan(playingNight) : null), [playingNight]);
-  const player = useNight(roomsPlan, playingNight?.weather.outdoor_temperature, playingNight?.weather.wind_speed, 12);
+  const [windDirs, setWindDirs] = useState<Record<string, Series | null>>({});
+  const weatherId = playingNight?.weather.night_id;
+  useEffect(() => {
+    if (!weatherId || weatherId in windDirs) return;
+    // Measured direction is a companion series (not in the frozen WeatherNight contract).
+    traced("wind", "GET /weather/{night}/wind-direction", () =>
+      api.GET("/api/weather/{night_id}/wind-direction", { params: { path: { night_id: weatherId } } }),
+      (s) => `${s.values.length} measured directions`,
+    )
+      .then((s) => setWindDirs((cur) => ({ ...cur, [weatherId]: s })))
+      .catch(() => setWindDirs((cur) => ({ ...cur, [weatherId]: null })));
+  }, [weatherId, windDirs]);
+  const player = useNight(roomsPlan, playingNight?.weather.outdoor_temperature, playingNight?.weather.wind_speed, 12, weatherId ? windDirs[weatherId] : null);
 
   useEffect(() => {
-    set({ plan: HH09_PLAN, view: "exterior", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: true, names: {}, inset: 0 });
+    set({ plan: HH09_PLAN, view: "exterior", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: true, names: {}, inset: 0, ir: false, zBearing: HH09_Z_BEARING, windFrom: null });
     useTrace.getState().clear();
   }, [set]);
 
@@ -193,12 +210,18 @@ export default function Lab() {
       set({ finding: null });
       return;
     }
+    if (preview) {
+      const fits = phase === "tested" ? flaggedFits2 : flaggedFits1;
+      const m = fits[preview]?.fitted_multiplier ?? lead.fitted_multiplier;
+      set({ finding: preview === "normal" ? null : { room: SIM_TO_PLAN[flagged], cause: preview, strength: strengthOf(m) } });
+      return;
+    }
     if (phase === "fixed" && showAfter && repair?.diagnosed_improvement.includes("no_fault")) {
       set({ finding: null });
       return;
     }
     set({ finding: { room: SIM_TO_PLAN[flagged], cause: lead.fault_type as "draft" | "envelope_conduction", strength: strengthOf(lead.fitted_multiplier) } });
-  }, [final, flagged, phase, showAfter, repair, set]);
+  }, [final, flagged, phase, showAfter, repair, set, preview, fits1, fits2]);
 
   // What the assistant may know: only what is on screen.
   useEffect(() => {
@@ -245,7 +268,7 @@ export default function Lab() {
 
   const start = (req: ScenarioCreateRequest, label: string) =>
     run("Loading the night…", async () => {
-      for (const reset of [setDiag, setFits1, setExp, setFits2, setMoney, setRepair, setTruth] as ((v: null) => void)[]) reset(null);
+      for (const reset of [setDiag, setFits1, setExp, setFits2, setMoney, setAltMoney, setRepair, setTruth] as ((v: null) => void)[]) reset(null);
       const created = await traced("create", "POST /scenarios", () => api.POST("/api/scenarios", { body: req }), (d) => `${d.mode} · ${d.scenario_id.slice(0, 8)}`);
       const obs = await traced("obs", "GET /observations", () => api.GET("/api/scenarios/{id}/observations", { params: { path: { id: created.scenario_id } } }), (d) => `${Object.keys(d.nights[0].room_temperature_series).length} rooms · ${d.nights[0].weather.outdoor_temperature.values.length} readings`);
       setScenario({ id: created.scenario_id, label });
@@ -266,7 +289,7 @@ export default function Lab() {
       setFits1(f);
       setPhase("diagnosed");
       set({ view: "thermal", focusRoom: d.flagged_room_id ? SIM_TO_PLAN[d.flagged_room_id] : null });
-      if (d.status === "confident") void priceIt(d.diagnosis_id);
+      if (d.status === "confident") void priceIt(d.diagnosis_id, d.ranked_causes[1]?.fault_type);
     });
 
   const runTest = () =>
@@ -282,10 +305,10 @@ export default function Lab() {
       setFits2(f);
       setPhase("tested");
       setTimeout(() => player.play(), 600);
-      if (e.updated_diagnosis.status === "confident") void priceIt(e.updated_diagnosis.diagnosis_id);
+      if (e.updated_diagnosis.status === "confident") void priceIt(e.updated_diagnosis.diagnosis_id, e.updated_diagnosis.ranked_causes[1]?.fault_type);
     });
 
-  const priceIt = async (diagnosisId: string, overrides?: { gas?: number | null; repair?: number | null }) => {
+  const priceIt = async (diagnosisId: string, runner: string | undefined, overrides?: { gas?: number | null; repair?: number | null }) => {
     const m = await traced("money", "POST /money", () =>
       api.POST("/api/scenarios/{id}/money", {
         params: { path: { id: scenario!.id } },
@@ -294,6 +317,17 @@ export default function Lab() {
       (r) => (r.estimate ? `${fmtMoney(r.estimate.annual_cost_estimate_usd)}/yr` : "no estimate"),
     ).catch(() => null);
     if (m) setMoney(m);
+    // Also price the runner-up explanation, so each option can show its own numbers.
+    if (runner && runner !== "normal") {
+      const alt = await traced("money", "POST /money (other suspect)", () =>
+        api.POST("/api/scenarios/{id}/money", {
+          params: { path: { id: scenario!.id } },
+          body: { diagnosis_id: diagnosisId, fault_type: runner as "draft" | "envelope_conduction", gas_price_pence_per_kwh: overrides?.gas ?? undefined },
+        }),
+        (r) => (r.estimate ? `if ${causeLabel(runner).toLowerCase()}: ${fmtMoney(r.estimate.annual_cost_estimate_usd)}/yr` : "no estimate"),
+      ).catch(() => null);
+      setAltMoney(alt?.estimate ?? null);
+    }
   };
 
   const applyFix = () =>
@@ -335,6 +369,35 @@ export default function Lab() {
           <ViewSwitcher views={["exterior", "thermal", "open", "inside", "fan"]} className="pointer-events-auto" />
         </div>
       )}
+      <AnimatePresence>
+        {preview && final && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="pointer-events-none absolute inset-x-0 top-[166px] z-20 flex justify-center pr-[460px]"
+          >
+            <div className="glass pointer-events-auto flex items-center gap-3 rounded-full py-1.5 pl-4 pr-1.5 text-[12.5px]">
+              <span>
+                Previewing <b style={{ color: CAUSE[preview].color }}>{CAUSE[preview].label.toLowerCase()}</b>
+                <span className="text-mute">
+                  {" · "}
+                  {preview === final.ranked_causes[0]?.fault_type
+                    ? "the engine's best explanation"
+                    : preview === "normal"
+                      ? "what a healthy room would look like"
+                      : final.status === "confident"
+                        ? "ruled out by the evidence"
+                        : "still a contender"}
+                </span>
+              </span>
+              <button onClick={() => setPreview(null)} className="rounded-full bg-ink px-3 py-1 font-semibold text-black">
+                Back to verdict
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {phase === "start" && (
@@ -433,6 +496,8 @@ export default function Lab() {
                         nightId={passive.night_id}
                         leading={diag.ranked_causes[0]?.fault_type}
                         ruledOut={["normal"]}
+                        selected={preview}
+                        onSelect={(c) => setPreview((p) => (p === c ? null : c))}
                       />
                     </div>
                   )}
@@ -484,6 +549,8 @@ export default function Lab() {
                         leading={exp.updated_diagnosis.ranked_causes[0]?.fault_type}
                         ruledOut={exp.updated_diagnosis.status === "confident" ? ["normal", exp.updated_diagnosis.ranked_causes[1].fault_type] : ["normal"]}
                         band={fanBand}
+                        selected={preview}
+                        onSelect={(c) => setPreview((p) => (p === c ? null : c))}
                       />
                     </div>
                   )}
@@ -604,7 +671,7 @@ export default function Lab() {
     const reprice = (g: number | null, r: number | null) => {
       setGas(g);
       setRepairCost(r);
-      void priceIt(final!.diagnosis_id, { gas: g, repair: r });
+      void priceIt(final!.diagnosis_id, final!.ranked_causes[1]?.fault_type, { gas: g, repair: r });
     };
     const gasDefault = Number(est?.assumptions.find((a) => a.name === "gas_unit_price")?.value ?? 7.97);
     const fx = Number(est?.assumptions.find((a) => a.name === "gbp_to_usd")?.value ?? 1.34);
@@ -632,10 +699,43 @@ export default function Lab() {
         ) : (
           <div className="text-[12px] text-mute pulse-dot">Pricing the extra heat loss…</div>
         )}
-        <div className="space-y-1.5 text-[12px]">
-          <Option label={repairName} note="recommended · verified below" tone="ok" />
-          {runner && <Option label={runner.fault_type === "draft" ? "Seal drafts instead" : "Insulate instead"} note="the other suspect · ruled out by the evidence" />}
-          <Option label="Do nothing" note={est ? `keep losing ~${fmtMoney(est.annual_cost_estimate_usd)}/yr` : "keep losing heat"} />
+        <div className="text-[12px]">
+          <div className="grid grid-cols-[1fr_54px_64px_58px] gap-x-2 px-2.5 pb-1 text-[10px] uppercase tracking-wider text-dim">
+            <span>Option</span>
+            <span className="text-right">Costs</span>
+            <span className="text-right">Saves/yr</span>
+            <span className="text-right">Payback</span>
+          </div>
+          <div className="space-y-1.5">
+            <Option
+              label={repairName}
+              note="recommended"
+              tone="ok"
+              cost={est ? fmtMoney(est.repair_cost_usd) : "…"}
+              saves={est ? fmtMoney(est.annual_cost_estimate_usd) : "…"}
+              payback={est?.simple_payback_years ? `${est.simple_payback_years.toFixed(1)} yr` : "–"}
+              active={preview === lead.fault_type}
+              onClick={() => setPreview(lead.fault_type as CauseKey)}
+            />
+            {runner && runner.fault_type !== "normal" && (
+              <Option
+                label={runner.fault_type === "draft" ? "Seal drafts instead" : "Insulate instead"}
+                note="ruled out by the fan test"
+                cost={altMoney ? fmtMoney(altMoney.repair_cost_usd) : "…"}
+                saves="≈ $0"
+                payback="never"
+                active={preview === runner.fault_type}
+                onClick={() => setPreview(runner.fault_type as CauseKey)}
+              />
+            )}
+            <Option label="Do nothing" note={est ? `keep losing ${fmtMoney(est.annual_cost_estimate_usd)}/yr` : ""} cost="$0" saves="$0" payback="–" active={preview === null} onClick={() => setPreview(null)} />
+          </div>
+          {runner && runner.fault_type !== "normal" && altMoney && (
+            <p className="mt-1.5 px-1 text-[10.5px] leading-snug text-dim">
+              Sealing drafts would only pay off if the loss were an air leak (then ~{fmtMoney(altMoney.annual_cost_estimate_usd)}/yr). The evidence says
+              it is the wall, so it would fix almost nothing.
+            </p>
+          )}
         </div>
         <label className="block text-[11.5px] text-mute">
           Repair quality <span className="num text-ink">{Math.round(effectiveness * 100)}%</span>
@@ -668,12 +768,24 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
   );
 }
 
-function Option({ label, note, tone }: { label: string; note: string; tone?: "ok" }) {
+type OptionProps = { label: string; note: string; tone?: "ok"; active?: boolean; onClick?: () => void; cost: string; saves: string; payback: string };
+
+/** One repair option; clicking it also previews that explanation in 3D. */
+function Option({ label, note, tone, active, onClick, cost, saves, payback }: OptionProps) {
   return (
-    <div className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 ${tone === "ok" ? "bg-ok/10 text-ink" : "bg-white/[0.03] text-mute"}`}>
-      <span>{label}</span>
-      <span className="text-[10.5px] text-dim">{note}</span>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`grid w-full grid-cols-[1fr_54px_64px_58px] items-center gap-x-2 rounded-lg px-2.5 py-1.5 text-left transition hover:bg-white/[0.07] ${tone === "ok" ? "bg-ok/10 text-ink" : "bg-white/[0.03] text-mute"} ${active ? "ring-1 ring-white/50" : ""}`}
+    >
+      <span className="min-w-0">
+        <span className="block truncate">{label}</span>
+        <span className="block truncate text-[10px] text-dim">{note}</span>
+      </span>
+      <span className="num text-right">{cost}</span>
+      <span className={`num text-right ${tone === "ok" ? "text-ok" : ""}`}>{saves}</span>
+      <span className="num text-right">{payback}</span>
+    </button>
   );
 }
 
