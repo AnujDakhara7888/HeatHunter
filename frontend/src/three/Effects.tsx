@@ -1,4 +1,3 @@
-import { Html, Line } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -94,39 +93,6 @@ export function Wind() {
     <lineSegments geometry={geo} frustumCulled={false}>
       <lineBasicMaterial ref={mat} vertexColors transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} />
     </lineSegments>
-  );
-}
-
-/** Ground compass, shown when the house orientation is documented. */
-export function Compass() {
-  const plan = useScene((s) => s.plan);
-  const zBearing = useScene((s) => s.zBearing);
-  const windFrom = useScene((s) => s.windFrom);
-  const view = useScene((s) => s.view);
-  const b = useMemo(() => planBounds(plan), [plan]);
-  if (zBearing == null || view === "inside") return null;
-  const c: [number, number] = [b.maxX + 1.6, b.minZ - 1.2];
-  const r = 0.9;
-  const [nx, nz] = bearingToPlan(0, zBearing);
-  const wind = windFrom != null ? bearingToPlan(windFrom, zBearing) : null;
-  const ring = Array.from({ length: 49 }, (_, i) => {
-    const a = (i / 48) * Math.PI * 2;
-    return new THREE.Vector3(c[0] + Math.cos(a) * r, 0.03, c[1] + Math.sin(a) * r);
-  });
-  return (
-    <group>
-      <Line points={ring} color="#ffffff" transparent opacity={0.35} lineWidth={1} />
-      <Line points={[[c[0], 0.03, c[1]], [c[0] + nx * r, 0.03, c[1] + nz * r]]} color="#ffffff" lineWidth={2} />
-      {wind && <Line points={[[c[0] + wind[0] * r * 1.6, 0.04, c[1] + wind[1] * r * 1.6], [c[0] + wind[0] * r * 0.3, 0.04, c[1] + wind[1] * r * 0.3]]} color="#7fb6ff" lineWidth={3} />}
-      <Html position={[c[0] + nx * (r + 0.35), 0.05, c[1] + nz * (r + 0.35)]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
-        <span style={{ font: "600 12px Inter Variable, sans-serif", color: "#fff" }}>N</span>
-      </Html>
-      {wind && (
-        <Html position={[c[0] + wind[0] * r * 2, 0.05, c[1] + wind[1] * r * 2]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
-          <span style={{ font: "500 10.5px Inter Variable, sans-serif", color: "#9cc8ff", whiteSpace: "nowrap" }}>wind from {Math.round(windFrom!)}°</span>
-        </Html>
-      )}
-    </group>
   );
 }
 

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, api, traced } from "../api/client";
 import type { FixAction, FloorPlanDraft, HomeHealth, HomePlan, HomeReadings, HomeSummary, RoomReport, RoomTechnical, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
-import { EngineTrace } from "../components/EngineTrace";
 import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
 import { PlanEditor } from "../components/PlanEditor";
@@ -109,7 +108,7 @@ export default function MyHome() {
   const sensed = plan.rooms.filter((r) => r.has_sensor !== false);
 
   useEffect(() => {
-    set({ view: "open", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: false, inset: 0, temps: {}, rates: {}, ir: false });
+    set({ view: "open", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: false, inset: 0, temps: {}, rates: {}, ir: false, zBearing: null, windFrom: null });
     useTrace.getState().clear();
     traced("homes", "GET /homes", () => api.GET("/api/homes"), (d) => `${d.length} homes`)
       .then((all) => setSaved(all.filter((h) => h.kind === "real")))
@@ -288,7 +287,7 @@ export default function MyHome() {
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <Nav transparent />
-      <HouseCanvas className={`absolute inset-0 ${step === "results" ? "" : "left-[min(52vw,760px)]"}`} />
+      <HouseCanvas className={`absolute inset-0 ${step === "results" ? "" : "left-[min(52vw,760px)]"}`} focusControl />
 
       <div className={`pointer-events-none absolute top-16 z-20 flex justify-center ${step === "results" ? "inset-x-0 pr-[460px]" : "left-[min(52vw,760px)] right-0"}`}>
         <ViewSwitcher views={["top", "open", "exterior", "thermal", "inside"]} className="pointer-events-auto" />
@@ -500,7 +499,6 @@ export default function MyHome() {
 
       {step === "results" && (
         <div className="pointer-events-none absolute bottom-4 left-4 right-[476px] z-20 flex flex-col gap-2">
-          <EngineTrace className="pointer-events-auto max-w-[520px]" />
           <Timeline className="pointer-events-auto max-w-[640px]" {...player} onPlay={player.play} onPause={player.pause} onScrub={player.setT} caption="Your readings, replayed through your house" />
         </div>
       )}

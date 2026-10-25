@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { api, traced } from "../api/client";
 import type { DemoHomeCreate, DemoReveal, FixAction, HomeHealth, HomeReadings, HomeSummary, RoomReport, RoomTechnical, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
-import { EngineTrace } from "../components/EngineTrace";
 import { RoomDetail } from "../components/RoomDetail";
 import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
@@ -252,7 +251,7 @@ export default function Lab() {
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <Nav transparent />
-      <HouseCanvas className="absolute inset-0" />
+      <HouseCanvas className="absolute inset-0" focusControl />
 
       {home && (
         <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center pr-[460px]">
@@ -384,7 +383,6 @@ export default function Lab() {
 
       {home && (
         <div className="pointer-events-none absolute bottom-4 left-4 right-[476px] z-20 flex flex-col gap-2">
-          <EngineTrace className="pointer-events-auto max-w-[520px]" />
           <Timeline
             className="pointer-events-auto max-w-[640px]"
             {...player}

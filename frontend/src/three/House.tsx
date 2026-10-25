@@ -293,6 +293,12 @@ export function House() {
             <planeGeometry args={[g.len, g.y1 - g.y0]} />
           </mesh>
         ))}
+        {/* Closed doors share the walls' cutaway scale, keeping their bases on the floor. */}
+        {geo.doors.map((d, i) => (
+          <mesh key={`door-${i}`} position={[d.cx, (d.y0 + d.y1) / 2, d.cz]} rotation-y={d.rot} material={thermal ? mats.tExt : mats.door} castShadow>
+            <boxGeometry args={[d.len, d.y1 - d.y0, 0.05]} />
+          </mesh>
+        ))}
       </group>
 
       <group ref={roofGroup}>
@@ -306,13 +312,6 @@ export function House() {
       </group>
 
       {isHH09 && <Furniture ir={thermal ? mats.tInt : undefined} />}
-
-      {/* exterior doors are shut for the heating-off night */}
-      {geo.doors.map((d, i) => (
-        <mesh key={`door-${i}`} position={[d.cx, 1.025, d.cz]} rotation-y={d.rot} material={thermal ? mats.tExt : mats.door} castShadow>
-          <boxGeometry args={[d.len, 2.05, 0.05]} />
-        </mesh>
-      ))}
 
       {/* sensors */}
       {!thermal &&
