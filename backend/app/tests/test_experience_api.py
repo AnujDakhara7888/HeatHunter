@@ -101,25 +101,6 @@ def test_assistant_passes_on_topic_answers_and_sees_server_context(client: TestC
     assert "<home>" in prompt and '"hidden_answer": "not revealed"' in prompt
 
 
-def test_site_assistant_answers_without_a_home(client: TestClient, monkeypatch) -> None:
-    from backend.app import assistant
-
-    seen = {}
-    reply = {"on_topic": True, "reply": "HeatHunter watches how rooms cool.", "actions": []}
-
-    def fake(**kwargs):
-        seen.update(kwargs)
-        return reply, "test-model"
-
-    monkeypatch.setattr(assistant, "_create", fake)
-    body = {"messages": [{"role": "user", "content": "What does HeatHunter do?"}]}
-    response = client.post("/api/assistant/chat", json=body)
-    assert response.status_code == 200, response.text
-    assert response.json()["reply"] == "HeatHunter watches how rooms cool."
-    assert seen["system"] == assistant.HOME_SYSTEM
-    assert '"home": "none open"' in seen["messages"][-1]["content"]
-
-
 def test_assistant_reads_key_from_env_file(monkeypatch, tmp_path) -> None:
     from backend.app import assistant
 
