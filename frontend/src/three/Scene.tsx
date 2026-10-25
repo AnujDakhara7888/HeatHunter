@@ -55,7 +55,7 @@ function useShot(): Shot {
     }
     if ((view === "open" || view === "fan") && focus && room) {
       const [rx, rz] = roomCenter(room);
-      return { pos: [rx + 4.6, 8.5, rz + 6.2], target: [rx, 0, rz] };
+      return { pos: [rx + 6, 11, rz + 8], target: [rx, 0, rz] };
     }
     return shots[view];
   }, [plan, view, focus, finding]);
