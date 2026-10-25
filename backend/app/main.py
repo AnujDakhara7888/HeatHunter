@@ -45,6 +45,7 @@ from .contracts import (
     RepairResult,
     ScenarioCreated,
     ScenarioCreateRequest,
+    Series,
     WeatherLookup,
 )
 from .runtime import (
@@ -210,10 +211,15 @@ async def estimate_money(id: str, request: MoneyRequest) -> MoneyResponse:
             estimate=None,
             explanation=f"No money estimate: the diagnosis is {diagnosis.status.value}, not confident.",
         )
+    fit = diagnosis.ranked_causes[0]
+    if request.fault_type is not None:
+        fit = next((f for f in diagnosis.ranked_causes if f.fault_type == request.fault_type), None)
+        if fit is None:
+            raise ApiFailure(422, "INVALID_REQUEST", f"{request.fault_type.value} is not a ranked cause")
     estimate = engine_estimate(
         runtime.template,
         diagnosis.flagged_room_id,
-        diagnosis.ranked_causes[0],
+        fit,
         overrides=MoneyOverrides(
             gas_price_pence_per_kwh=request.gas_price_pence_per_kwh,
             repair_cost_gbp=request.repair_cost_gbp,
@@ -401,6 +407,29 @@ async def weather_lookup(
         raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
     except OSError as exc:
         raise ApiFailure(503, "WEATHER_UNAVAILABLE", f"weather service unreachable: {exc}") from exc
+
+
+@app.get(
+    "/api/weather/{night_id}/wind-direction",
+    response_model=Series,
+    responses=_errors(404, 422),
+    tags=["homes"],
+)
+async def wind_direction(night_id: str) -> Series:
+    """Measured wind direction (degrees from north) for an HH09-region weather night.
+
+    Kept outside ``WeatherNight`` (frozen contract); read from Anuj's companion cache.
+    """
+
+    from backend.data_pipeline.weather import load_weather_wind_direction
+
+    try:
+        payload = load_weather_wind_direction(night_id)
+    except FileNotFoundError as exc:
+        raise ApiFailure(404, "NOT_FOUND", str(exc)) from exc
+    except ValueError as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+    return Series.model_validate(payload["wind_direction"])
 
 
 @app.post("/api/assistant/chat", response_model=ChatReply, responses=_errors(422, 503), tags=["assistant"])

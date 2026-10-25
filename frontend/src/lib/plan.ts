@@ -2,6 +2,11 @@ import type { HomePlan, PlanRoom } from "../api/types";
 import hh09 from "../../../shared/homes/hh09_plan.json";
 
 export const HH09_PLAN = hh09 as HomePlan;
+/**
+ * The HH09 front door (on the plan's +z wall, into the hall) faces 240° from north:
+ * SMETER_P2_WindowArea_Orientation.csv, via data/processed/hh09_twin_inputs.json.
+ */
+export const HH09_Z_BEARING = 240;
 
 export type WallOpening = { a: number; b: number; kind: "window" | "door" };
 export type WallSegment = {

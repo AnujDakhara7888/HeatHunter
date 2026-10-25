@@ -10,10 +10,13 @@ type Props = {
   leading?: string | null;
   ruledOut?: string[];
   band?: { from: number; to: number; label: string } | null;
+  /** Explanation currently previewed in 3D, if any. */
+  selected?: string | null;
+  onSelect?: (cause: CauseKey) => void;
 };
 
 /** The three competing explanations, each drawn against what was measured. */
-export function Suspects({ fits, observed, nightId, leading, ruledOut = [], band }: Props) {
+export function Suspects({ fits, observed, nightId, leading, ruledOut = [], band, selected, onSelect }: Props) {
   const order: CauseKey[] = ["draft", "envelope_conduction", "normal"];
   const rmses = order.map((c) => fits[c]?.residual_rmse_deg_c ?? 1);
   const worst = Math.max(...rmses, 0.3);
@@ -28,12 +31,15 @@ export function Suspects({ fits, observed, nightId, leading, ruledOut = [], band
         const curve = fit.predicted[nightId];
         const quality = 1 - fit.residual_rmse_deg_c / worst;
         return (
-          <motion.div
+          <motion.button
+            type="button"
             key={cause}
+            onClick={() => onSelect?.(cause)}
+            title={onSelect ? `Show "${meta.label}" in 3D` : undefined}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: out ? 0.5 : 1, y: 0 }}
             transition={{ delay: 0.15 + i * 0.12 }}
-            className={`rounded-2xl border p-2.5 ${win ? "border-[color:var(--c)] bg-[color:var(--c)]/10" : "border-line bg-white/[0.02]"}`}
+            className={`rounded-2xl border p-2.5 text-left transition ${onSelect ? "cursor-pointer hover:border-white/30" : "cursor-default"} ${win ? "border-[color:var(--c)] bg-[color:var(--c)]/10" : "border-line bg-white/[0.02]"} ${selected === cause ? "ring-2 ring-white/70" : ""}`}
             style={{ ["--c" as string]: meta.color }}
           >
             <div className="flex items-center justify-between text-[12px]">
@@ -67,7 +73,7 @@ export function Suspects({ fits, observed, nightId, leading, ruledOut = [], band
                 transition={{ delay: 0.4 + i * 0.12, duration: 0.8 }}
               />
             </div>
-          </motion.div>
+          </motion.button>
         );
       })}
     </div>

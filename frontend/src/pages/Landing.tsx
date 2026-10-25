@@ -6,7 +6,7 @@ import { api, traced } from "../api/client";
 import type { RealHouse, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
 import { Nav } from "../components/Nav";
-import { HH09_PLAN } from "../lib/plan";
+import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
 import { coolingRate, fmtTime, ms, valueAt } from "../lib/rooms";
 import { useScene, type View } from "../store/scene";
 import { HouseCanvas } from "../three/Scene";
@@ -108,7 +108,7 @@ export default function Landing() {
   const refs = useRef<(HTMLElement | null)[]>([]);
 
   useEffect(() => {
-    set({ plan: HH09_PLAN, view: "exterior", autoRotate: true, finding: null, focusRoom: null, fanOn: false, labels: true, inset: 0, names: {} });
+    set({ plan: HH09_PLAN, view: "exterior", autoRotate: true, finding: null, focusRoom: null, fanOn: false, labels: true, inset: 0, names: {}, ir: false, zBearing: HH09_Z_BEARING, windFrom: null });
     traced("real", "GET /real/house", () => api.GET("/api/real/house"), (h) => `${Object.keys(h.room_temperature_series).length} real sensors`)
       .then(setHouse)
       .catch(() => null);

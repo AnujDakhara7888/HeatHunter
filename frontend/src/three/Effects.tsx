@@ -1,3 +1,4 @@
+import { Html, Line } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -19,10 +20,22 @@ const dot = (() => {
   return new THREE.CanvasTexture(c);
 })();
 
-/** Wind streaks blowing past the house; speed follows the measured wind. */
+/** Plan-space unit vector (x, z) for a compass bearing, given the bearing the plan's +z faces. */
+export function bearingToPlan(bearing: number, zBearing: number): [number, number] {
+  const a = ((bearing - zBearing) * Math.PI) / 180;
+  return [-Math.sin(a), Math.cos(a)];
+}
+
+/**
+ * Wind streaks blowing past the house. Speed follows the measured wind; the
+ * direction follows the measured wind direction when the night has one,
+ * relative to the house's documented orientation.
+ */
 export function Wind() {
   const plan = useScene((s) => s.plan);
   const wind = useScene((s) => s.wind);
+  const windFrom = useScene((s) => s.windFrom);
+  const zBearing = useScene((s) => s.zBearing);
   const view = useScene((s) => s.view);
   const b = useMemo(() => planBounds(plan), [plan]);
   const COUNT = 140;
@@ -30,9 +43,9 @@ export function Wind() {
   const state = useMemo(() => {
     const span = Math.max(b.w, b.d) * 4 + 16;
     return Array.from({ length: COUNT }, (_, i) => ({
-      x: b.cx - span / 2 + Math.random() * span,
+      u: -span / 2 + Math.random() * span,
+      w: -span / 2 + Math.random() * span,
       y: 0.3 + Math.random() * (i % 3 === 0 ? 6 : 3.4),
-      z: b.cz - span / 2 + Math.random() * span,
       speed: 0.6 + Math.random() * 0.8,
       phase: Math.random() * 10,
       span,
@@ -46,19 +59,33 @@ export function Wind() {
     g.setAttribute("color", new THREE.BufferAttribute(col, 3));
     return g;
   }, []);
+  const dir = useRef<[number, number]>([1, 0]);
   const mat = useRef<THREE.LineBasicMaterial>(null);
   useFrame((st, dt) => {
-    const w = Math.max(0.6, wind ?? 2);
+    const speed = Math.max(0.6, wind ?? 2);
+    // ease the streak direction toward the measured one so changes read as a gust, not a jump
+    const target = windFrom != null && zBearing != null ? bearingToPlan(windFrom + 180, zBearing) : ([1, 0] as [number, number]);
+    const k = 1 - Math.exp(-dt * 1.5);
+    let [dx, dz] = [dir.current[0] + (target[0] - dir.current[0]) * k, dir.current[1] + (target[1] - dir.current[1]) * k];
+    const n = Math.hypot(dx, dz) || 1;
+    dx /= n;
+    dz /= n;
+    dir.current = [dx, dz];
+    const px = -dz;
+    const pz = dx;
     const pos = geo.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < COUNT; i++) {
       const p = state[i];
-      p.x += dt * p.speed * w * 1.6;
-      if (p.x > b.cx + p.span / 2) p.x -= p.span;
-      const inside = p.x > b.minX - 0.6 && p.x < b.maxX + 0.6 && p.z > b.minZ - 0.6 && p.z < b.maxZ + 0.6 && p.y < 3.6;
+      p.u += dt * p.speed * speed * 1.6;
+      if (p.u > p.span / 2) p.u -= p.span;
+      const x = b.cx + dx * p.u + px * p.w;
+      const z = b.cz + dz * p.u + pz * p.w;
+      const inside = x > b.minX - 0.6 && x < b.maxX + 0.6 && z > b.minZ - 0.6 && z < b.maxZ + 0.6 && p.y < 3.6;
       const y = inside ? 3.9 + (p.y % 1) : p.y;
       const wob = Math.sin(st.clock.elapsedTime * 1.4 + p.phase) * 0.08;
-      pos.setXYZ(i * 2, p.x - LEN * (0.5 + w * 0.08), y + wob, p.z);
-      pos.setXYZ(i * 2 + 1, p.x, y + wob, p.z + wob);
+      const len = LEN * (0.5 + speed * 0.08);
+      pos.setXYZ(i * 2, x - dx * len, y + wob, z - dz * len);
+      pos.setXYZ(i * 2 + 1, x + px * wob, y + wob, z + pz * wob);
     }
     pos.needsUpdate = true;
     if (mat.current) mat.current.opacity = THREE.MathUtils.damp(mat.current.opacity, view === "inside" ? 0 : view === "thermal" ? 0.25 : 0.55, 3, dt);
@@ -67,6 +94,39 @@ export function Wind() {
     <lineSegments geometry={geo} frustumCulled={false}>
       <lineBasicMaterial ref={mat} vertexColors transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} />
     </lineSegments>
+  );
+}
+
+/** Ground compass, shown when the house orientation is documented. */
+export function Compass() {
+  const plan = useScene((s) => s.plan);
+  const zBearing = useScene((s) => s.zBearing);
+  const windFrom = useScene((s) => s.windFrom);
+  const view = useScene((s) => s.view);
+  const b = useMemo(() => planBounds(plan), [plan]);
+  if (zBearing == null || view === "inside") return null;
+  const c: [number, number] = [b.maxX + 1.6, b.minZ - 1.2];
+  const r = 0.9;
+  const [nx, nz] = bearingToPlan(0, zBearing);
+  const wind = windFrom != null ? bearingToPlan(windFrom, zBearing) : null;
+  const ring = Array.from({ length: 49 }, (_, i) => {
+    const a = (i / 48) * Math.PI * 2;
+    return new THREE.Vector3(c[0] + Math.cos(a) * r, 0.03, c[1] + Math.sin(a) * r);
+  });
+  return (
+    <group>
+      <Line points={ring} color="#ffffff" transparent opacity={0.35} lineWidth={1} />
+      <Line points={[[c[0], 0.03, c[1]], [c[0] + nx * r, 0.03, c[1] + nz * r]]} color="#ffffff" lineWidth={2} />
+      {wind && <Line points={[[c[0] + wind[0] * r * 1.6, 0.04, c[1] + wind[1] * r * 1.6], [c[0] + wind[0] * r * 0.3, 0.04, c[1] + wind[1] * r * 0.3]]} color="#7fb6ff" lineWidth={3} />}
+      <Html position={[c[0] + nx * (r + 0.35), 0.05, c[1] + nz * (r + 0.35)]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
+        <span style={{ font: "600 12px Inter Variable, sans-serif", color: "#fff" }}>N</span>
+      </Html>
+      {wind && (
+        <Html position={[c[0] + wind[0] * r * 2, 0.05, c[1] + wind[1] * r * 2]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
+          <span style={{ font: "500 10.5px Inter Variable, sans-serif", color: "#9cc8ff", whiteSpace: "nowrap" }}>wind from {Math.round(windFrom!)}°</span>
+        </Html>
+      )}
+    </group>
   );
 }
 
@@ -160,7 +220,7 @@ export function HeatFlux() {
   useFrame((st, dt) => {
     if (!geom) return;
     geom.m.uniforms.uTime.value = st.clock.elapsedTime;
-    const target = view === "exterior" || view === "top" ? 0.35 : 1;
+    const target = view === "exterior" || view === "top" ? 0.35 : view === "inside" ? 0.4 : 1;
     geom.m.uniforms.uAlpha.value = THREE.MathUtils.damp(geom.m.uniforms.uAlpha.value, target, 2, dt);
   });
   if (!geom) return null;

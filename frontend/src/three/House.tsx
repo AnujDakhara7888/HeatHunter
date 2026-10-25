@@ -78,9 +78,11 @@ function useHeatTexture(plan: HomePlan) {
   return texture;
 }
 
-function Furniture() {
-  const mat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#a7a49d", roughness: 0.9 }), []);
-  const soft = useMemo(() => new THREE.MeshStandardMaterial({ color: "#6c7a91", roughness: 1 }), []);
+function Furniture({ ir }: { ir?: THREE.Material }) {
+  const plainMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#c9c4bb", roughness: 0.9 }), []);
+  const softMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#7d8ba3", roughness: 1 }), []);
+  const mat = ir ?? plainMat;
+  const soft = ir ?? softMat;
   const F = (x0: number, z0: number, x1: number, z1: number, h: number, m = mat, y = 0) => (
     <mesh position={[(x0 + x1) / 2, y + h / 2, (z0 + z1) / 2]} castShadow receiveShadow material={m} key={`${x0}${z0}${h}`}>
       <boxGeometry args={[x1 - x0, h, z1 - z0]} />
@@ -129,8 +131,9 @@ export function House() {
   const labels = useScene((s) => s.labels);
   const temps = useScene((s) => s.temps);
   const finding = useScene((s) => s.finding);
-  const focus = useScene((s) => s.focusRoom);
-  const thermal = view === "thermal";
+  const ir = useScene((s) => s.ir);
+  const thermal = view === "thermal" || ir;
+  const inside = view === "inside";
   const lowered = view === "open" || view === "fan" || view === "top";
   const isHH09 = plan.plan_id === "smeter-hh09";
 
@@ -141,10 +144,12 @@ export function House() {
 
   const mats = useMemo(
     () => ({
-      ext: new THREE.MeshStandardMaterial({ color: "#c79f80", roughness: 0.92 }),
-      int: new THREE.MeshStandardMaterial({ color: "#efebe4", roughness: 0.95 }),
+      ext: new THREE.MeshStandardMaterial({ color: "#e6d3bd", roughness: 0.85, side: THREE.DoubleSide }),
+      int: new THREE.MeshStandardMaterial({ color: "#f4f1ec", roughness: 0.9 }),
+      ceil: new THREE.MeshStandardMaterial({ color: "#f6f4f0", roughness: 1, side: THREE.DoubleSide }),
+      door: new THREE.MeshStandardMaterial({ color: "#5a3a26", roughness: 0.7 }),
       cap: new THREE.MeshBasicMaterial({ color: "#cfd3db", transparent: true, opacity: 0 }),
-      roof: new THREE.MeshStandardMaterial({ color: "#2c313b", roughness: 0.75, transparent: true, side: THREE.DoubleSide }),
+      roof: new THREE.MeshStandardMaterial({ color: "#5b6474", roughness: 0.7, transparent: true, side: THREE.DoubleSide }),
       glass: new THREE.MeshStandardMaterial({
         color: "#0e1726",
         emissive: new THREE.Color("#ffbf73"),
@@ -156,7 +161,7 @@ export function House() {
       tExt: createThermalMaterial(0.3),
       tInt: createThermalMaterial(0.36),
       tRoof: createThermalMaterial(0.15),
-      tGlass: new THREE.MeshBasicMaterial({ color: "#d1442c", side: THREE.DoubleSide }),
+      tGlass: createThermalMaterial(0.62),
     }),
     [],
   );
@@ -177,6 +182,7 @@ export function House() {
       if (!spots.length) for (const s of segs) spots.push(new THREE.Vector3((s.x0 + s.x1) / 2, 0.3, (s.z0 + s.z1) / 2));
     }
     for (const m of [mats.tExt, mats.tInt, mats.tRoof]) {
+      m.uniforms.uInside.value = inside ? 1 : 0;
       const conduction = finding?.cause === "envelope_conduction";
       m.uniforms.uSegCount.value = conduction ? segs.length : 0;
       segs.forEach((s, i) => (m.uniforms.uSegs.value[i] as THREE.Vector4).set(s.x0, s.z0, s.x1, s.z1));
@@ -184,14 +190,19 @@ export function House() {
       spots.slice(0, 8).forEach((p, i) => (m.uniforms.uSpots.value[i] as THREE.Vector3).copy(p));
       m.uniforms.uStrength.value = finding ? 0.5 + 0.5 * finding.strength : 0;
     }
-  }, [finding, geo, mats]);
+    // Seen from inside, walls are warm and glass is cold; from outside the reverse.
+    mats.tExt.uniforms.uBase.value = inside ? 0.7 : 0.3;
+    mats.tInt.uniforms.uBase.value = inside ? 0.74 : 0.4;
+    mats.tRoof.uniforms.uBase.value = inside ? 0.66 : 0.2;
+    mats.tGlass.uniforms.uBase.value = inside ? 0.12 : 0.62;
+  }, [finding, geo, mats, inside]);
 
   const walls = useRef<THREE.Group>(null);
   const roofGroup = useRef<THREE.Group>(null);
   const floor = useRef<THREE.MeshBasicMaterial>(null);
   useFrame((state, dt) => {
     const k = Math.min(dt, 0.5);
-    for (const m of [mats.tExt, mats.tInt, mats.tRoof]) m.uniforms.uTime.value = state.clock.elapsedTime;
+    for (const m of [mats.tExt, mats.tInt, mats.tRoof, mats.tGlass]) m.uniforms.uTime.value = state.clock.elapsedTime;
     if (walls.current) walls.current.scale.y = damp(walls.current.scale.y, lowered ? LOWERED : 1, 4, k);
     if (roofGroup.current) {
       const hide = lowered;
@@ -233,11 +244,32 @@ export function House() {
     <group>
       {/* floor slab + heat map */}
       {plan.rooms.map((r) => (
-        <mesh key={r.room_id} position={[r.x + r.width / 2, 0.005, r.z + r.depth / 2]} rotation-x={-Math.PI / 2} receiveShadow>
+        <mesh
+          key={r.room_id}
+          position={[r.x + r.width / 2, 0.005, r.z + r.depth / 2]}
+          rotation-x={-Math.PI / 2}
+          receiveShadow
+          onDoubleClick={(e) => {
+            // Double-click any room to walk into it.
+            e.stopPropagation();
+            const st = useScene.getState();
+            // Inside: walk to the clicked spot. Elsewhere: step into that room.
+            if (st.view === "inside") st.set({ walkTo: [e.point.x, e.point.z] });
+            else st.set({ focusRoom: r.room_id, view: "inside", fanOn: false });
+          }}
+          onPointerOver={() => (document.body.style.cursor = "pointer")}
+          onPointerOut={() => (document.body.style.cursor = "")}
+        >
           <planeGeometry args={[r.width, r.depth]} />
-          <meshStandardMaterial color={thermal ? "#1d0b33" : "#2a2622"} roughness={0.9} />
+          <meshStandardMaterial color={thermal ? (inside ? "#e0661a" : "#120a40") : "#4a4038"} roughness={0.9} />
         </mesh>
       ))}
+      {inside &&
+        plan.rooms.map((r) => (
+          <mesh key={`c-${r.room_id}`} position={[r.x + r.width / 2, WALL_H - 0.002, r.z + r.depth / 2]} rotation-x={Math.PI / 2} material={thermal ? mats.tRoof : mats.ceil}>
+            <planeGeometry args={[r.width, r.depth]} />
+          </mesh>
+        ))}
       <mesh position={[bounds.cx, 0.02, bounds.cz]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[bounds.w, bounds.d]} />
         <meshBasicMaterial ref={floor} map={heat} transparent opacity={0} depthWrite={false} color="#d8d8d8" />
@@ -273,7 +305,14 @@ export function House() {
         ))}
       </group>
 
-      {isHH09 && !thermal && <Furniture />}
+      {isHH09 && <Furniture ir={thermal ? mats.tInt : undefined} />}
+
+      {/* exterior doors are shut for the heating-off night */}
+      {geo.doors.map((d, i) => (
+        <mesh key={`door-${i}`} position={[d.cx, 1.025, d.cz]} rotation-y={d.rot} material={thermal ? mats.tExt : mats.door} castShadow>
+          <boxGeometry args={[d.len, 2.05, 0.05]} />
+        </mesh>
+      ))}
 
       {/* sensors */}
       {!thermal &&
@@ -301,11 +340,12 @@ export function House() {
       {labels &&
         !thermal &&
         view !== "exterior" &&
+        view !== "inside" &&
         plan.rooms
-          .filter((r) => r.has_sensor !== false && (view !== "inside" || r.room_id === focus || r.room_id === finding?.room))
+          .filter((r) => r.has_sensor !== false)
           .map((r) => {
             const [x, z] = roomCenter(r);
-            return <RoomLabel key={r.room_id} id={r.room_id} position={[x, view === "inside" ? 1.95 : WALL_H * LOWERED + 0.75, z]} />;
+            return <RoomLabel key={r.room_id} id={r.room_id} position={[x, WALL_H * LOWERED + 0.75, z]} />;
           })}
     </group>
   );
