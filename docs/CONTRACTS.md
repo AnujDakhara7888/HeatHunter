@@ -25,10 +25,12 @@ Allowed provenance values are `REAL_MEASUREMENT`, `SIMULATED_MEASUREMENT`,
 
 ## Safety boundary
 
-Public scenario creation and observation responses never contain `GroundTruth`,
-hidden fault severity, or private simulator coefficients. The diagnosis service
-accepts only public templates, observations, weather, and protocol information.
-Only `GET /api/scenarios/{scenario_id}/reveal` returns `GroundTruth`.
+No home, room, readings or assistant response contains the planted fault, its
+severity, or private simulator coefficients; they stay inside
+`backend/simulation/demo_home.py`. The flag rule receives only public templates,
+observations and weather. Only `GET /api/demo/homes/{home_id}/reveal` returns
+the hidden answer (`DemoReveal`), and a contract test keeps it off every other
+route. The assistant is told the answer only after that reveal.
 
 The Real Homes response has no room-level fault label. Its disclaimer must state
 that it demonstrates real measurements and does not validate synthetic
@@ -36,80 +38,22 @@ root-cause classification.
 
 ## HTTP surface
 
-| Method | Path | Request | Response | Owning implementation |
-|---|---|---|---|---|
-| GET | `/api/health` | — | `HealthResponse` | Nikhil/integration |
-| POST | `/api/scenarios` | `ScenarioCreateRequest` | `ScenarioCreated` | Mihir |
-| GET | `/api/scenarios/{id}/observations` | — | `ObservationResponse` | Mihir |
-| POST | `/api/scenarios/{id}/diagnose` | `DiagnoseRequest` | `Diagnosis` | Mihir using Kailash fits |
-| POST | `/api/scenarios/{id}/experiments` | `ExperimentRequest` | `ExperimentResponse` | Mihir |
-| POST | `/api/scenarios/{id}/money` | `MoneyRequest` | `MoneyResponse` | Kailash `estimate_money` |
-| POST | `/api/scenarios/{id}/repair` | `RepairRequest` | `RepairResult` | Mihir using Kailash savings |
-| GET | `/api/scenarios/{id}/reveal` | — | `GroundTruth` | Mihir private truth store |
-| GET | `/api/real/house` | — | `RealHouse` | Anuj data, Nikhil route |
-| GET | `/api/real/house/floor-plan` | — | `image/png` | Anuj asset, Nikhil route |
-| GET | `/api/evaluation/summary` | — | `EvaluationSummary` | Anuj data, Nikhil route |
+| Method | Path | Response | Notes |
+|---|---|---|---|
+| GET | `/api/health` | `HealthResponse` | |
+| GET | `/api/homes` and the other API v2 routes | see "API v2" below | Demo and real homes |
+| GET | `/api/real/house` | `RealHouse` | Real HH09 week (Real tab only; not monitored) |
+| GET | `/api/real/house/floor-plan` | `image/png` | Original floor plan |
+| GET | `/api/homes/sample-plan` | `HomePlan` | HH09 plan in the upload format |
+| POST | `/api/assistant/floor-plan` | `FloorPlanDraft` | Claude reads an uploaded plan |
+| GET | `/api/weather/lookup` | `WeatherLookup` | Open-Meteo by place name |
+| GET | `/api/evaluation/summary` | `EvaluationSummary` | 501 until the held-out report exists |
 
-All routes are wired to the owners' services (`backend/app/runtime.py`).
-`/api/evaluation/summary` returns HTTP 501 `SERVICE_NOT_INTEGRATED` until
-`reports/evaluation/summary.json` exists; it never returns fake results.
-
-### Contract changes approved by the integration owner (2026-10-24)
-
-Both were proposed by Kailash in `docs/PHYSICS.md`.
-
-- `RepairRequest.effectiveness` (0–1, default 1.0): drives the UI slider and is
-  passed to `HH09ScenarioService.apply_repair(..., effectiveness=)`.
-- `POST /api/scenarios/{id}/money` with `MoneyRequest {diagnosis_id,
-  gas_price_pence_per_kwh?, repair_cost_gbp?}` → `MoneyResponse {diagnosis_id,
-  estimate: MoneyEstimate | null, explanation}`. It re-prices a diagnosis this
-  API returned, through `backend.engine.estimate_money` with `MoneyOverrides`.
-  Non-confident diagnoses return `estimate: null` with an explanation.
-
-### Error mapping
-
-| Service exception | HTTP | `code` |
-|---|---|---|
-| `KeyError` (unknown scenario/diagnosis) | 404 | `NOT_FOUND` |
-| `ScenarioStateError` (stale/duplicate action) | 409 | `INVALID_SCENARIO_STATE` |
-| `ValueError` (invalid request for this scenario) | 422 | `INVALID_REQUEST` |
-| `EngineDependencyError`, `WeatherContractError`, missing thresholds/data | 501 | `SERVICE_NOT_INTEGRATED` |
-
-### Diagnostic thresholds
-
-The API uses `backend.simulation.runtime.build_runtime_components()` once per
-process. This is the same validated factory used by the simulator's offline
-workflow. It loads `backend/diagnosis/decision_settings.json` and selects
-`passive` rules for the initial night and `post_fan` rules for combined evidence.
-The public template, controller, fan policy, and disclosed settings all come
-from that one immutable configuration snapshot; no second settings read occurs.
-
-`HEATHUNTER_THRESHOLDS_PATH` remains supported, but must now point to the complete
-versioned settings document (both profiles, provenance, asset fingerprints and
-fan policy). Old flat files and the historical PoC report are rejected, not used
-as a fallback. Missing/malformed/stale settings return HTTP 501 for scientific
-routes; health remains available. Changes to settings require process restart.
-
-Every initial/updated diagnosis discloses its `decision_phase` and the actual
-`threshold_detection_bic`, `threshold_ambiguity_bic`, `threshold_adequacy_rmse`,
-`threshold_separation`, `measurement_noise`, `confidence_enabled`, and
-`fan_max_wind_speed` as existing `ASSUMPTION` entries. The source labels these
-as TRAINING calibration, not held-out or real-home validation. Fan eligibility
-uses the existing calm-weather policy; this integration changes no coefficients.
-
-### Guided scenario defaults
-
-The API no longer injects a universal seed. Each guided ID uses its own manifest
-when `seed` is omitted:
-
-| Guided ID | Default seed | Purpose |
-|---|---|---|
-| `hh09-guided-insulation-v1` | 961029 | Curated TRAINING full loop: ambiguous → calm fan → identified wall heat loss → repair → no-fault recheck |
-| `hh09-guided-v1` (also `synthetic-guided-draft-01`) | 20261024 | Draft uncertainty example; no forced confident result or repair |
-
-An explicitly supplied `seed` is preserved. Such variations need not reproduce
-the curated outcome. No seed, planted fault or private physics parameters are
-passed to the diagnosis engine. See `docs/DEMO.md` for the exact API walkthrough.
+The single-night Fault Lab routes (`/api/scenarios/*`), `/api/insight/*`,
+`/api/homes/template`, `/api/homes/analyze` and `/api/assistant/chat` were
+removed on 2026-10-24 in favour of API v2. The simulator's
+`HH09ScenarioService` and the single-night diagnosis controller remain in the
+code base for research and evaluation, but no route serves them.
 
 ## API v2: homes monitored night after night (implemented 2026-10-24)
 
@@ -166,12 +110,8 @@ Only four routes are demo-only.
 | 11 | GET | `/api/demo/homes/{home_id}/reveal` | demo | Show the hidden fault and whether the app got it right |
 | 12 | POST | `/api/homes/{home_id}/assistant` | all | Chat about this home (Claude; sees public data only) |
 
-Kept unchanged: `/api/health`, `/api/real/house`, `/api/real/house/floor-plan`,
-`/api/homes/sample-plan`, `/api/assistant/floor-plan`, `/api/weather/lookup`.
-
-**To be removed after the UI moves over:** `/api/scenarios/*` (diagnose,
-experiments, money, repair, reveal), `/api/insight/*`, `/api/homes/analyze`,
-`/api/homes/template`, `/api/assistant/chat`.
+The single-night routes it replaced were removed on 2026-10-24 (see "HTTP
+surface" above).
 
 ### Shapes (abridged; all fields `snake_case`, times UTC ISO)
 
@@ -304,24 +244,6 @@ data. Claude only; returns 503 without an API key.
 404 unknown home or room · 409 wrong state (e.g. advance a real home, reveal
 before any night) · 422 invalid input · 501 stale/missing settings ·
 503 Claude or weather unavailable.
-
-## Python service interfaces
-
-The exact async boundaries are defined as protocols in `backend/app/services.py`:
-
-```python
-ScenarioService.create_scenario(request: ScenarioCreateRequest) -> ScenarioCreated
-ScenarioService.get_observations(scenario_id: str) -> ObservationResponse
-ScenarioService.diagnose(scenario_id: str, request: DiagnoseRequest) -> Diagnosis
-ScenarioService.run_experiment(scenario_id: str, request: ExperimentRequest) -> ExperimentResponse
-ScenarioService.apply_repair(scenario_id: str, request: RepairRequest) -> RepairResult
-ScenarioService.reveal(scenario_id: str) -> GroundTruth
-RealHouseService.get_selected_house() -> RealHouse
-EvaluationService.get_summary() -> EvaluationSummary
-```
-
-Internal modules may remain synchronous; the adapter at the API boundary owns
-conversion to these async interfaces and public models.
 
 ## OpenAPI and TypeScript
 

@@ -1,7 +1,7 @@
 """Claude-backed assistant: plain-language chat and floor-plan reading (Nikhil).
 
-The chat sees only what the UI has already shown the user (the ``context``
-object it sends). The API layer never adds simulator truth to it. Replies use
+The chat context is built by the server from a home's public health and room
+reports; simulator truth is added only after a demo home's reveal. Replies use
 structured output so the UI can also move the 3D camera.
 """
 
@@ -12,7 +12,7 @@ import json
 import os
 import re
 
-from .contracts import ChatAction, ChatMessage, ChatReply, ChatRequest, FloorPlanDraft, HomePlan
+from .contracts import ChatAction, ChatMessage, ChatReply, FloorPlanDraft, HomePlan
 
 MODEL = os.environ.get("HEATHUNTER_ASSISTANT_MODEL", "claude-opus-5-5")
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
@@ -50,23 +50,6 @@ def _create(**kwargs):
     return json.loads(text), response.model
 
 
-CHAT_SYSTEM = """You are HeatHunter's guide inside a 3D home-heat-loss app.
-HeatHunter fits three explanations to how each room cools overnight with the heating off:
-normal behaviour, an air leak (draft), or weak insulation (envelope conduction). It compares them by
-fit quality (BIC; lower is better, a gap above ~10 is a strong preference) and, when two explanations
-tie, recommends a controlled exhaust-fan test: a fan depressurises the house, which speeds cooling
-a lot if the room leaks air but barely changes cooling through walls.
-
-Rules:
-- Answer in plain, friendly language for a homeowner. 1-4 short sentences. No markdown headings.
-- Use ONLY numbers present in the context. Never invent measurements, prices or results.
-- Fault Lab results are on a simulated twin of a real UK home (HH09); never claim the real house has a fault.
-- Money figures are screening estimates with stated assumptions, not quotes.
-- If the hidden answer has not been revealed in the context, you do not know it; say so if asked.
-- When it helps, add actions to steer the 3D view: focus_room (target = a room_id from the context),
-  set_view (target = exterior | thermal | open | inside | fan), set_time (target = ISO time in the night).
-"""
-
 CHAT_SCHEMA = {
     "type": "object",
     "properties": {
@@ -87,23 +70,6 @@ CHAT_SCHEMA = {
     "required": ["reply", "actions"],
     "additionalProperties": False,
 }
-
-
-def chat(request: ChatRequest) -> ChatReply:
-    context = json.dumps(request.context, default=str, sort_keys=True)[:60000]
-    messages = [{"role": m.role, "content": m.content} for m in request.messages]
-    messages[-1] = {
-        "role": "user",
-        "content": f"<app_state>{context}</app_state>\n\n{messages[-1]['content']}",
-    }
-    data, model = _create(
-        max_tokens=2000,
-        system=CHAT_SYSTEM,
-        messages=messages,
-        output_config={"effort": "low", "format": {"type": "json_schema", "schema": CHAT_SCHEMA}},
-    )
-    actions = [ChatAction.model_validate(a) for a in data.get("actions", [])[:3]]
-    return ChatReply(reply=data["reply"], actions=actions, model=model)
 
 
 HOME_SYSTEM = """You are HeatHunter's assistant. HeatHunter watches a home night after night while the

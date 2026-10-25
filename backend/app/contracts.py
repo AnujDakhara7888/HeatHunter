@@ -342,20 +342,6 @@ class RepairRequest(ContractModel):
     effectiveness: Probability = 1.0
 
 
-class MoneyRequest(ContractModel):
-    """User what-if overrides for the screening money estimate of a confident diagnosis."""
-
-    diagnosis_id: str
-    gas_price_pence_per_kwh: PositiveFloat | None = None
-    repair_cost_gbp: NonNegativeFloat | None = None
-
-
-class MoneyResponse(ContractModel):
-    diagnosis_id: str
-    estimate: MoneyEstimate | None
-    explanation: str
-
-
 class RepairResult(ContractModel):
     repair_type: FaultType
     effectiveness: Probability
@@ -447,54 +433,6 @@ class ApiError(ContractModel):
 # ---------------------------------------------------------------------------
 
 
-class FitCurve(ContractModel):
-    """One fitted hypothesis for one room, with its predicted readings per night."""
-
-    fault_type: HypothesisType
-    fitted_multiplier: PositiveFloat
-    bic: float
-    residual_rmse_deg_c: NonNegativeFloat
-    sensor_offset_deg_c: float
-    converged: bool
-    predicted: dict[str, Series]
-    warnings: list[str] = Field(default_factory=list)
-
-
-class RoomInsight(ContractModel):
-    room_id: str
-    fits: list[FitCurve]
-    anomaly_score: float  # BIC(normal) - BIC(best fault); larger = less normal
-
-
-class InsightRequest(ContractModel):
-    nights: list[NightObservations] = Field(min_length=1)
-    room_ids: list[str] | None = None
-    template: PublicTemplate | None = None
-
-
-class InsightResponse(ContractModel):
-    template_id: str
-    rooms: list[RoomInsight]
-    model_evaluations: int
-    elapsed_ms: float
-
-
-class PredictionRequest(ContractModel):
-    """Out-of-sample check: predict a later night from fits made on earlier nights."""
-
-    room_id: str
-    causes: list[HypothesisFit] = Field(min_length=2)
-    night: NightObservations
-    template: PublicTemplate | None = None
-
-
-class PredictionResponse(ContractModel):
-    room_id: str
-    night_id: str
-    predictions: dict[str, Series]
-    elapsed_ms: float
-
-
 class PlanRoom(ContractModel):
     """Axis-aligned rectangular room on the plan, in metres (x right, z down)."""
 
@@ -532,27 +470,6 @@ class HomeTemplate(ContractModel):
     assumptions: list[Assumption]
 
 
-class HomeAnalyzeRequest(ContractModel):
-    plan: HomePlan
-    room_temperature_series: dict[str, Series]
-    outdoor_temperature: Series
-    wind_speed: Series | None = None
-    location_name: str | None = None
-
-
-class HomeAnalysis(ContractModel):
-    status: DiagnosisStatus
-    flagged_room_id: str | None
-    ranked_causes: list[HypothesisFit]
-    rooms: list[RoomInsight]
-    money_estimate: MoneyEstimate | None
-    nights: list[NightObservations]
-    home: HomeTemplate
-    evidence: list[Evidence]
-    uncertainty: list[str]
-    elapsed_ms: float
-
-
 class WeatherLookup(ContractModel):
     location: Location
     outdoor_temperature: Series
@@ -563,11 +480,6 @@ class WeatherLookup(ContractModel):
 class ChatMessage(ContractModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=4000)
-
-
-class ChatRequest(ContractModel):
-    messages: list[ChatMessage] = Field(min_length=1, max_length=40)
-    context: dict[str, object] = Field(default_factory=dict)
 
 
 class ChatAction(ContractModel):
@@ -820,7 +732,6 @@ def public_contract_models() -> dict[str, type[BaseModel]]:
             HypothesisFit,
             Diagnosis,
             MoneyEstimate,
-            MoneyResponse,
             RepairResult,
             GroundTruth,
             RealHouse,

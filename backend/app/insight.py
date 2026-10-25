@@ -1,35 +1,27 @@
-"""Fitted-curve explanations for the UI (Nikhil, integration layer).
+"""Fitted curves for the UI: what a fitted hypothesis predicts each night.
 
-The diagnosis contract reports each hypothesis as a score. The UI also needs to
-*draw* what each hypothesis predicts, so this module re-runs the public engine's
-own fit and evaluates its prediction at the fitted parameters. It reads public
-observations and the public template only; it never touches simulator truth.
+Used for the "expected if healthy" line in API v2 readings. It evaluates the
+public engine's own prediction at a fit's parameters, from public observations
+and the public template only; it never touches simulator truth.
 """
 
 from __future__ import annotations
 
-import time
 from datetime import timedelta
-
-import numpy as np
 
 from backend.engine.fitting import (
     FitSettings,
-    fit_hypothesis_detailed,
     hypothesis_physics,
     predict_room_air,
     prepare_room_night,
 )
-from backend.engine.model import AUTO, Forcing, ModelExtension, TemplateArrays, resolve_extension
-from backend.engine.prediction import predict_experiment
+from backend.engine.model import Forcing, ModelExtension, TemplateArrays
 
 from .contracts import (
-    FitCurve,
     HypothesisType,
     NightObservations,
     Provenance,
     PublicTemplate,
-    RoomInsight,
     Series,
 )
 
@@ -73,70 +65,3 @@ def predicted_series(
             provenance=Provenance.MODEL_ESTIMATE,
         )
     return out
-
-
-def room_insights(
-    nights: list[NightObservations],
-    template: PublicTemplate,
-    room_ids: list[str] | None = None,
-    *,
-    extension: ModelExtension | None | object = AUTO,
-    settings: FitSettings | None = None,
-) -> tuple[list[RoomInsight], int, float]:
-    """Fit all three hypotheses per room and return their predicted curves."""
-
-    started = time.perf_counter()
-    settings = settings or FitSettings()
-    layer = resolve_extension(template, extension)
-    ids = room_ids or [room.room_id for room in template.rooms]
-    insights: list[RoomInsight] = []
-    evaluations = 0
-    for room_id in ids:
-        fits: list[FitCurve] = []
-        for cause in HypothesisType:
-            detail = fit_hypothesis_detailed(nights, room_id, template, cause, settings, layer)
-            evaluations += 1
-            fits.append(
-                FitCurve(
-                    fault_type=cause,
-                    fitted_multiplier=detail.fit.fitted_multiplier,
-                    bic=detail.fit.bic,
-                    residual_rmse_deg_c=detail.fit.residual_rmse_deg_c,
-                    sensor_offset_deg_c=detail.sensor_offset_deg_c,
-                    converged=detail.converged,
-                    predicted=predicted_series(nights, template, room_id, cause, detail, settings, layer),
-                    warnings=list(detail.warnings),
-                )
-            )
-        normal = next(f for f in fits if f.fault_type == HypothesisType.NORMAL)
-        best_fault = min(f.bic for f in fits if f.fault_type != HypothesisType.NORMAL)
-        insights.append(RoomInsight(room_id=room_id, fits=fits, anomaly_score=normal.bic - best_fault))
-    return insights, evaluations, (time.perf_counter() - started) * 1000
-
-
-def predict_night(
-    template: PublicTemplate,
-    room_id: str,
-    causes,
-    night: NightObservations,
-    *,
-    extension: ModelExtension | None | object = AUTO,
-) -> dict[str, Series]:
-    """Forward-predict a night under each competing hypothesis, from its first readings."""
-
-    initial = {}
-    for rid, series in night.room_temperature_series.items():
-        first = next((v for v in series.values if v is not None and np.isfinite(v)), None)
-        if first is None:
-            raise ValueError(f"room {rid} has no readings to initialize the prediction")
-        initial[rid] = float(first)
-    predictions = predict_experiment(
-        template,
-        room_id,
-        list(causes),
-        night.weather,
-        night.protocol,
-        initial,
-        resolve_extension(template, extension),
-    )
-    return {fit.fault_type.value: series for fit, series in zip(causes, predictions, strict=False)}

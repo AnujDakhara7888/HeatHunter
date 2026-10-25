@@ -21,128 +21,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/scenarios": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Scenario */
-        post: operations["create_scenario_api_scenarios_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/scenarios/{id}/observations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Observations */
-        get: operations["get_observations_api_scenarios__id__observations_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/scenarios/{id}/diagnose": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Diagnose */
-        post: operations["diagnose_api_scenarios__id__diagnose_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/scenarios/{id}/experiments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Run Experiment */
-        post: operations["run_experiment_api_scenarios__id__experiments_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/scenarios/{id}/money": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Estimate Money
-         * @description Re-price a diagnosis with user tariff/repair-cost overrides via the public engine.
-         */
-        post: operations["estimate_money_api_scenarios__id__money_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/scenarios/{id}/repair": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Apply Repair */
-        post: operations["apply_repair_api_scenarios__id__repair_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/scenarios/{id}/reveal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Reveal */
-        get: operations["reveal_api_scenarios__id__reveal_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/real/house": {
         parameters: {
             query?: never;
@@ -197,46 +75,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/insight/fits": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Insight Fits
-         * @description Fit normal / draft / insulation per room and return each hypothesis's predicted curve.
-         */
-        post: operations["insight_fits_api_insight_fits_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/insight/predict": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Insight Predict
-         * @description Forward-predict a night under competing fitted hypotheses (out-of-sample check).
-         */
-        post: operations["insight_predict_api_insight_predict_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/homes/sample-plan": {
         parameters: {
             query?: never;
@@ -257,43 +95,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/homes/template": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Home Template */
-        post: operations["home_template_api_homes_template_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/homes/analyze": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Home Analyze
-         * @description Screen a user's own readings with the public engine (no fault labels exist for real homes).
-         */
-        post: operations["home_analyze_api_homes_analyze_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/weather/lookup": {
         parameters: {
             query?: never;
@@ -308,23 +109,6 @@ export interface paths {
         get: operations["weather_lookup_api_weather_lookup_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/assistant/chat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Assistant Chat */
-        post: operations["assistant_chat_api_assistant_chat_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -639,15 +423,6 @@ export interface components {
             /** Model */
             model: string;
         };
-        /** ChatRequest */
-        ChatRequest: {
-            /** Messages */
-            messages: components["schemas"]["ChatMessage"][];
-            /** Context */
-            context?: {
-                [key: string]: unknown;
-            };
-        };
         /** ConfusionMatrix */
         ConfusionMatrix: {
             /** Actual Labels */
@@ -718,34 +493,6 @@ export interface components {
              */
             provenance: "SIMULATED_GROUND_TRUTH";
         };
-        /** DiagnoseRequest */
-        DiagnoseRequest: {
-            /** Observation Night Ids */
-            observation_night_ids?: string[] | null;
-        };
-        /** Diagnosis */
-        Diagnosis: {
-            /** Diagnosis Id */
-            diagnosis_id: string;
-            status: components["schemas"]["DiagnosisStatus"];
-            /** Flagged Room Id */
-            flagged_room_id: string | null;
-            /** Ranked Causes */
-            ranked_causes: components["schemas"]["HypothesisFit"][];
-            /** Evidence */
-            evidence: components["schemas"]["Evidence"][];
-            /** Uncertainty */
-            uncertainty: string[];
-            test_decision: components["schemas"]["TestDecision"] | null;
-            money_estimate: components["schemas"]["MoneyEstimate"] | null;
-            /** Assumptions */
-            assumptions: components["schemas"]["Assumption"][];
-        };
-        /**
-         * DiagnosisStatus
-         * @enum {string}
-         */
-        DiagnosisStatus: "no_fault" | "unexplained" | "ambiguous" | "confident";
         /** EvaluationSummary */
         EvaluationSummary: {
             /** Benchmark Id */
@@ -784,62 +531,11 @@ export interface components {
              */
             provenance: "MODEL_ESTIMATE";
         };
-        /** Evidence */
-        Evidence: {
-            /** Statement */
-            statement: string;
-            /**
-             * Relationship
-             * @enum {string}
-             */
-            relationship: "supports" | "contradicts" | "limits";
-            provenance: components["schemas"]["Provenance"];
-        };
-        /** ExperimentRequest */
-        ExperimentRequest: {
-            /** Diagnosis Id */
-            diagnosis_id: string;
-            /**
-             * Experiment Type
-             * @constant
-             */
-            experiment_type: "exhaust_fan_depressurization";
-        };
-        /** ExperimentResponse */
-        ExperimentResponse: {
-            /** Scenario Id */
-            scenario_id: string;
-            observations: components["schemas"]["NightObservations"];
-            updated_diagnosis: components["schemas"]["Diagnosis"];
-        };
         /**
          * FaultType
          * @enum {string}
          */
         FaultType: "draft" | "envelope_conduction" | "none";
-        /**
-         * FitCurve
-         * @description One fitted hypothesis for one room, with its predicted readings per night.
-         */
-        FitCurve: {
-            fault_type: components["schemas"]["HypothesisType"];
-            /** Fitted Multiplier */
-            fitted_multiplier: number;
-            /** Bic */
-            bic: number;
-            /** Residual Rmse Deg C */
-            residual_rmse_deg_c: number;
-            /** Sensor Offset Deg C */
-            sensor_offset_deg_c: number;
-            /** Converged */
-            converged: boolean;
-            /** Predicted */
-            predicted: {
-                [key: string]: components["schemas"]["Series"];
-            };
-            /** Warnings */
-            warnings?: string[];
-        };
         /**
          * FixAction
          * @enum {string}
@@ -878,24 +574,6 @@ export interface components {
             /** Model */
             model: string;
         };
-        /** GroundTruth */
-        GroundTruth: {
-            fault_type: components["schemas"]["FaultType"];
-            /** Actual Room Id */
-            actual_room_id: string | null;
-            /** Severity */
-            severity: number;
-            /** Diagnosis Matched */
-            diagnosis_matched: boolean;
-            /** Repair Addressed Cause */
-            repair_addressed_cause: boolean | null;
-            /**
-             * Provenance
-             * @default SIMULATED_GROUND_TRUTH
-             * @constant
-             */
-            provenance: "SIMULATED_GROUND_TRUTH";
-        };
         /** HealthResponse */
         HealthResponse: {
             /**
@@ -931,38 +609,6 @@ export interface components {
              * @default Europe/London
              */
             timezone: string;
-        };
-        /** HomeAnalysis */
-        HomeAnalysis: {
-            status: components["schemas"]["DiagnosisStatus"];
-            /** Flagged Room Id */
-            flagged_room_id: string | null;
-            /** Ranked Causes */
-            ranked_causes: components["schemas"]["HypothesisFit"][];
-            /** Rooms */
-            rooms: components["schemas"]["RoomInsight"][];
-            money_estimate: components["schemas"]["MoneyEstimate"] | null;
-            /** Nights */
-            nights: components["schemas"]["NightObservations"][];
-            home: components["schemas"]["HomeTemplate"];
-            /** Evidence */
-            evidence: components["schemas"]["Evidence"][];
-            /** Uncertainty */
-            uncertainty: string[];
-            /** Elapsed Ms */
-            elapsed_ms: number;
-        };
-        /** HomeAnalyzeRequest */
-        HomeAnalyzeRequest: {
-            plan: components["schemas"]["HomePlan"];
-            /** Room Temperature Series */
-            room_temperature_series: {
-                [key: string]: components["schemas"]["Series"];
-            };
-            outdoor_temperature: components["schemas"]["Series"];
-            wind_speed?: components["schemas"]["Series"] | null;
-            /** Location Name */
-            location_name?: string | null;
         };
         /** HomeChatRequest */
         HomeChatRequest: {
@@ -1049,38 +695,6 @@ export interface components {
              */
             created_at: string;
         };
-        /** HomeTemplate */
-        HomeTemplate: {
-            template: components["schemas"]["PublicTemplate"];
-            /** Exterior Wall Length M */
-            exterior_wall_length_m: {
-                [key: string]: number;
-            };
-            /** Window Area M2 */
-            window_area_m2: {
-                [key: string]: number;
-            };
-            /** Assumptions */
-            assumptions: components["schemas"]["Assumption"][];
-        };
-        /** HypothesisFit */
-        HypothesisFit: {
-            fault_type: components["schemas"]["HypothesisType"];
-            /** Fitted Multiplier */
-            fitted_multiplier: number;
-            /** Sse */
-            sse: number;
-            /** Bic */
-            bic: number;
-            /** Residual Rmse Deg C */
-            residual_rmse_deg_c: number;
-            /**
-             * Provenance
-             * @default MODEL_ESTIMATE
-             * @constant
-             */
-            provenance: "MODEL_ESTIMATE";
-        };
         /** HypothesisSummary */
         HypothesisSummary: {
             fault_type: components["schemas"]["HypothesisType"];
@@ -1096,34 +710,6 @@ export interface components {
          * @enum {string}
          */
         HypothesisType: "normal" | "draft" | "envelope_conduction";
-        /** InsightRequest */
-        InsightRequest: {
-            /** Nights */
-            nights: components["schemas"]["NightObservations"][];
-            /** Room Ids */
-            room_ids?: string[] | null;
-            template?: components["schemas"]["PublicTemplate"] | null;
-        };
-        /** InsightResponse */
-        InsightResponse: {
-            /** Template Id */
-            template_id: string;
-            /** Rooms */
-            rooms: components["schemas"]["RoomInsight"][];
-            /** Model Evaluations */
-            model_evaluations: number;
-            /** Elapsed Ms */
-            elapsed_ms: number;
-        };
-        /** InterRoomCoupling */
-        InterRoomCoupling: {
-            /** Room A Id */
-            room_a_id: string;
-            /** Room B Id */
-            room_b_id: string;
-            /** Conductance W Per K */
-            conductance_w_per_k: number;
-        };
         /** Location */
         Location: {
             /** Name */
@@ -1152,47 +738,6 @@ export interface components {
              * @constant
              */
             provenance: "REAL_MEASUREMENT";
-        };
-        /** MoneyEstimate */
-        MoneyEstimate: {
-            /** Excess Conductance W Per K */
-            excess_conductance_w_per_k: number;
-            /** Annual Energy Estimate Kwh */
-            annual_energy_estimate_kwh: number;
-            /** Annual Cost Estimate Usd */
-            annual_cost_estimate_usd: number;
-            /** Repair Cost Usd */
-            repair_cost_usd: number;
-            /** Simple Payback Years */
-            simple_payback_years: number | null;
-            /** Assumptions */
-            assumptions: components["schemas"]["Assumption"][];
-            /**
-             * Provenance
-             * @default MODEL_ESTIMATE
-             * @constant
-             */
-            provenance: "MODEL_ESTIMATE";
-        };
-        /**
-         * MoneyRequest
-         * @description User what-if overrides for the screening money estimate of a confident diagnosis.
-         */
-        MoneyRequest: {
-            /** Diagnosis Id */
-            diagnosis_id: string;
-            /** Gas Price Pence Per Kwh */
-            gas_price_pence_per_kwh?: number | null;
-            /** Repair Cost Gbp */
-            repair_cost_gbp?: number | null;
-        };
-        /** MoneyResponse */
-        MoneyResponse: {
-            /** Diagnosis Id */
-            diagnosis_id: string;
-            estimate: components["schemas"]["MoneyEstimate"] | null;
-            /** Explanation */
-            explanation: string;
         };
         /** NightEvidence */
         NightEvidence: {
@@ -1230,29 +775,6 @@ export interface components {
             mean_outdoor_c: number;
             /** Mean Wind M S */
             mean_wind_m_s: number;
-        };
-        /** NightObservations */
-        NightObservations: {
-            /** Night Id */
-            night_id: string;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "passive" | "fan_test";
-            /** Room Temperature Series */
-            room_temperature_series: {
-                [key: string]: components["schemas"]["Series"];
-            };
-            weather: components["schemas"]["WeatherNight"];
-            protocol: components["schemas"]["Protocol"];
-        };
-        /** ObservationResponse */
-        ObservationResponse: {
-            /** Scenario Id */
-            scenario_id: string;
-            /** Nights */
-            nights: components["schemas"]["NightObservations"][];
         };
         /** PlanOpening */
         PlanOpening: {
@@ -1304,71 +826,10 @@ export interface components {
             exposed_roof: boolean;
         };
         /**
-         * PredictionRequest
-         * @description Out-of-sample check: predict a later night from fits made on earlier nights.
-         */
-        PredictionRequest: {
-            /** Room Id */
-            room_id: string;
-            /** Causes */
-            causes: components["schemas"]["HypothesisFit"][];
-            night: components["schemas"]["NightObservations"];
-            template?: components["schemas"]["PublicTemplate"] | null;
-        };
-        /** PredictionResponse */
-        PredictionResponse: {
-            /** Room Id */
-            room_id: string;
-            /** Night Id */
-            night_id: string;
-            /** Predictions */
-            predictions: {
-                [key: string]: components["schemas"]["Series"];
-            };
-            /** Elapsed Ms */
-            elapsed_ms: number;
-        };
-        /** Protocol */
-        Protocol: {
-            /** Heating Off */
-            heating_off: boolean;
-            /** Doors Closed */
-            doors_closed: boolean;
-            /** Fan On */
-            fan_on: boolean;
-            /** Fan Airflow M3 Per H */
-            fan_airflow_m3_per_h?: number | null;
-            /** Fan Start */
-            fan_start?: string | null;
-            /** Fan End */
-            fan_end?: string | null;
-        };
-        /**
          * Provenance
          * @enum {string}
          */
         Provenance: "REAL_MEASUREMENT" | "SIMULATED_MEASUREMENT" | "SIMULATED_GROUND_TRUTH" | "MODEL_ESTIMATE" | "ASSUMPTION";
-        /** PublicTemplate */
-        PublicTemplate: {
-            /** Template Id */
-            template_id: string;
-            /** Rooms */
-            rooms: components["schemas"]["RoomTemplate"][];
-            /** Inter Room Couplings */
-            inter_room_couplings: components["schemas"]["InterRoomCoupling"][];
-            /**
-             * Calibrated From Split
-             * @default training
-             * @constant
-             */
-            calibrated_from_split: "training";
-            /**
-             * Provenance
-             * @default MODEL_ESTIMATE
-             * @constant
-             */
-            provenance: "MODEL_ESTIMATE";
-        };
         /** ReadingsUpload */
         ReadingsUpload: {
             /** Room Temperature Series */
@@ -1410,37 +871,6 @@ export interface components {
             /** Scientific Disclaimer */
             scientific_disclaimer: string;
         };
-        /** RepairRequest */
-        RepairRequest: {
-            /** Diagnosis Id */
-            diagnosis_id: string;
-            /**
-             * Effectiveness
-             * @default 1
-             */
-            effectiveness: number;
-        };
-        /** RepairResult */
-        RepairResult: {
-            repair_type: components["schemas"]["FaultType"];
-            /** Effectiveness */
-            effectiveness: number;
-            /** Original Observations */
-            original_observations: components["schemas"]["NightObservations"][];
-            /** Repaired Observations */
-            repaired_observations: components["schemas"]["NightObservations"][];
-            /** Diagnosed Improvement */
-            diagnosed_improvement: string;
-            estimated_savings: components["schemas"]["MoneyEstimate"] | null;
-            /** Remeasured Savings Kwh */
-            remeasured_savings_kwh: number | null;
-            /**
-             * Provenance
-             * @default SIMULATED_MEASUREMENT
-             * @constant
-             */
-            provenance: "SIMULATED_MEASUREMENT";
-        };
         /** RoomHealthView */
         RoomHealthView: {
             /** Room Id */
@@ -1458,15 +888,6 @@ export interface components {
             annual_cost_gbp: number | null;
             /** Nights Seen */
             nights_seen: number;
-        };
-        /** RoomInsight */
-        RoomInsight: {
-            /** Room Id */
-            room_id: string;
-            /** Fits */
-            fits: components["schemas"]["FitCurve"][];
-            /** Anomaly Score */
-            anomaly_score: number;
         };
         /** RoomMoney */
         RoomMoney: {
@@ -1532,56 +953,6 @@ export interface components {
             /** Rule */
             rule: components["schemas"]["Assumption"][];
         };
-        /** RoomTemplate */
-        RoomTemplate: {
-            /** Room Id */
-            room_id: string;
-            /** Room Name */
-            room_name: string;
-            /** Volume M3 */
-            volume_m3: number;
-            /** Nominal Capacitance J Per K */
-            nominal_capacitance_j_per_k: number;
-            /** Nominal Envelope Conductance W Per K */
-            nominal_envelope_conductance_w_per_k: number;
-            /** Nominal Infiltration Conductance W Per K */
-            nominal_infiltration_conductance_w_per_k: number;
-            /** Wind Sensitivity S Per M */
-            wind_sensitivity_s_per_m: number;
-            /** Nominal Leakage Share */
-            nominal_leakage_share: number;
-        };
-        /** ScenarioCreateRequest */
-        ScenarioCreateRequest: {
-            mode: components["schemas"]["ScenarioMode"];
-            /** Guided Scenario Id */
-            guided_scenario_id?: string | null;
-            judge_fault_type?: components["schemas"]["FaultType"] | null;
-            /** Judge Room Id */
-            judge_room_id?: string | null;
-            /** Severity */
-            severity?: number | null;
-            /** Seed */
-            seed?: number | null;
-        };
-        /** ScenarioCreated */
-        ScenarioCreated: {
-            /** Scenario Id */
-            scenario_id: string;
-            mode: components["schemas"]["ScenarioMode"];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Available Actions */
-            available_actions: ("observations" | "diagnose")[];
-        };
-        /**
-         * ScenarioMode
-         * @enum {string}
-         */
-        ScenarioMode: "guided" | "judge" | "surprise";
         /** Series */
         Series: {
             /** Timestamps */
@@ -1613,89 +984,12 @@ export interface components {
             /** Station Name */
             station_name?: string | null;
         };
-        /**
-         * Split
-         * @enum {string}
-         */
-        Split: "training" | "heldout";
-        /** TestDecision */
-        TestDecision: {
-            /** Recommended */
-            recommended: boolean;
-            /** Experiment Type */
-            experiment_type?: "exhaust_fan_depressurization" | null;
-            /** Separation Score */
-            separation_score?: number | null;
-            /** Explanation */
-            explanation: string;
-            /** Safety Warning */
-            safety_warning?: string | null;
-            /**
-             * Provenance
-             * @default MODEL_ESTIMATE
-             * @constant
-             */
-            provenance: "MODEL_ESTIMATE";
-        };
-        /** UtcWindow */
-        UtcWindow: {
-            /**
-             * Start
-             * Format: date-time
-             */
-            start: string;
-            /**
-             * End
-             * Format: date-time
-             */
-            end: string;
-            /** Note */
-            note?: string | null;
-        };
         /** WeatherLookup */
         WeatherLookup: {
             location: components["schemas"]["Location"];
             outdoor_temperature: components["schemas"]["Series"];
             wind_speed: components["schemas"]["Series"];
             source: components["schemas"]["SourceMetadata"];
-        };
-        /** WeatherNight */
-        WeatherNight: {
-            /**
-             * Schema Version
-             * @default 1
-             * @constant
-             */
-            schema_version: 1;
-            /** Night Id */
-            night_id: string;
-            source: components["schemas"]["SourceMetadata"];
-            location: components["schemas"]["Location"];
-            outdoor_temperature: components["schemas"]["Series"];
-            wind_speed: components["schemas"]["Series"];
-            train_or_heldout_split: components["schemas"]["Split"];
-            /** Local Night Date */
-            local_night_date?: string | null;
-            utc_window?: components["schemas"]["UtcWindow"] | null;
-            selection_metadata?: components["schemas"]["WeatherSelectionMetadata"] | null;
-        };
-        /** WeatherSelectionMetadata */
-        WeatherSelectionMetadata: {
-            /**
-             * Weather Regime
-             * @enum {string}
-             */
-            weather_regime: "calm" | "moderate" | "windy";
-            /** Mean Temperature Deg C */
-            mean_temperature_deg_c: number;
-            /** Mean Wind Speed M S */
-            mean_wind_speed_m_s: number;
-            /** Observation Count */
-            observation_count: number;
-            /** Temperature Quality Flags */
-            temperature_quality_flags: string[];
-            /** Wind Quality Flags */
-            wind_quality_flags: string[];
         };
     };
     responses: never;
@@ -1722,430 +1016,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
-                };
-            };
-        };
-    };
-    create_scenario_api_scenarios_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScenarioCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScenarioCreated"];
-                };
-            };
-            /** @description Unknown scenario, diagnosis or asset. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The action is not valid in the scenario's current state. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    get_observations_api_scenarios__id__observations_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ObservationResponse"];
-                };
-            };
-            /** @description Unknown scenario, diagnosis or asset. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The action is not valid in the scenario's current state. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    diagnose_api_scenarios__id__diagnose_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DiagnoseRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Diagnosis"];
-                };
-            };
-            /** @description Unknown scenario, diagnosis or asset. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The action is not valid in the scenario's current state. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    run_experiment_api_scenarios__id__experiments_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExperimentRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExperimentResponse"];
-                };
-            };
-            /** @description Unknown scenario, diagnosis or asset. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The action is not valid in the scenario's current state. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    estimate_money_api_scenarios__id__money_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MoneyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MoneyResponse"];
-                };
-            };
-            /** @description Unknown scenario, diagnosis or asset. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The action is not valid in the scenario's current state. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    apply_repair_api_scenarios__id__repair_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RepairRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RepairResult"];
-                };
-            };
-            /** @description Unknown scenario, diagnosis or asset. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The action is not valid in the scenario's current state. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    reveal_api_scenarios__id__reveal_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GroundTruth"];
-                };
-            };
-            /** @description Unknown scenario, diagnosis or asset. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The action is not valid in the scenario's current state. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -2197,7 +1067,7 @@ export interface operations {
                     "image/png": unknown;
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2237,90 +1107,6 @@ export interface operations {
             };
         };
     };
-    insight_fits_api_insight_fits_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["InsightRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InsightResponse"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    insight_predict_api_insight_predict_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PredictionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PredictionResponse"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
     sample_plan_api_homes_sample_plan_get: {
         parameters: {
             query?: never;
@@ -2337,81 +1123,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HomePlan"];
-                };
-            };
-        };
-    };
-    home_template_api_homes_template_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HomePlan"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HomeTemplate"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    home_analyze_api_homes_analyze_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HomeAnalyzeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HomeAnalysis"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -2438,49 +1149,7 @@ export interface operations {
                     "application/json": components["schemas"]["WeatherLookup"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description An optional online service (Claude, weather) is unavailable. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    assistant_chat_api_assistant_chat_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChatRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChatReply"];
-                };
-            };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2522,7 +1191,7 @@ export interface operations {
                     "application/json": components["schemas"]["FloorPlanDraft"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2560,7 +1229,7 @@ export interface operations {
                     "application/json": components["schemas"]["HomeSummary"][];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2569,7 +1238,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2578,7 +1247,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2629,7 +1298,7 @@ export interface operations {
                     "application/json": components["schemas"]["HomeSummary"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2638,7 +1307,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2647,7 +1316,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2698,7 +1367,7 @@ export interface operations {
                     "application/json": components["schemas"]["HomeSummary"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2707,7 +1376,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2716,7 +1385,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2765,7 +1434,7 @@ export interface operations {
                     "application/json": components["schemas"]["HomeHealth"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2774,7 +1443,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2783,7 +1452,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2836,7 +1505,7 @@ export interface operations {
                     "application/json": components["schemas"]["HomeReadings"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2845,7 +1514,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2854,7 +1523,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2907,7 +1576,7 @@ export interface operations {
                     "application/json": components["schemas"]["HomeHealth"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2916,7 +1585,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2925,7 +1594,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2975,7 +1644,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoomReport"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2984,7 +1653,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2993,7 +1662,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -3043,7 +1712,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoomTechnical"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3052,7 +1721,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3061,7 +1730,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -3115,7 +1784,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoomReport"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3124,7 +1793,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3133,7 +1802,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -3186,7 +1855,7 @@ export interface operations {
                     "application/json": components["schemas"]["HomeHealth"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3195,7 +1864,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3204,7 +1873,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -3253,7 +1922,7 @@ export interface operations {
                     "application/json": components["schemas"]["DemoReveal"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3262,7 +1931,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3271,7 +1940,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -3324,7 +1993,7 @@ export interface operations {
                     "application/json": components["schemas"]["ChatReply"];
                 };
             };
-            /** @description Unknown scenario, diagnosis or asset. */
+            /** @description Unknown home, room or asset. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3333,7 +2002,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The action is not valid in the scenario's current state. */
+            /** @description The action is not valid for this home now. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3342,7 +2011,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request is invalid for this scenario. */
+            /** @description The request is invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;

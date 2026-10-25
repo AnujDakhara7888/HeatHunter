@@ -1,15 +1,13 @@
-"""Experience API: fitted curves, custom homes and assistant fallbacks."""
+"""Kept experience routes: sample plan, plan validation and assistant fallbacks."""
 
 from __future__ import annotations
-
-import json
-from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.app.contracts import HomePlan
+from backend.app.homes import build_home
 from backend.app.main import app
-from backend.app.tests.test_api_integration import assert_no_truth
 
 
 @pytest.fixture(scope="module")
@@ -17,42 +15,14 @@ def client() -> TestClient:
     return TestClient(app)
 
 
-@pytest.fixture(scope="module")
-def guided(client: TestClient) -> dict:
-    created = client.post(
-        "/api/scenarios", json={"mode": "guided", "guided_scenario_id": "hh09-guided-insulation-v1"}
-    ).json()
-    path = f"/api/scenarios/{created['scenario_id']}"
-    observations = client.get(path + "/observations").json()
-    diagnosis = client.post(path + "/diagnose", json={}).json()
-    return {"observations": observations, "diagnosis": diagnosis}
-
-
-def test_fit_curves_reproduce_the_diagnosis(client: TestClient, guided: dict) -> None:
-    response = client.post("/api/insight/fits", json={"nights": guided["observations"]["nights"]})
-    assert response.status_code == 200
-    body = response.json()
-    assert_no_truth(body)
-    flagged = guided["diagnosis"]["flagged_room_id"]
-    room = next(r for r in body["rooms"] if r["room_id"] == flagged)
-    assert room["anomaly_score"] == max(r["anomaly_score"] for r in body["rooms"])
-    by_cause = {f["fault_type"]: f for f in room["fits"]}
-    for cause in guided["diagnosis"]["ranked_causes"]:
-        assert by_cause[cause["fault_type"]]["bic"] == pytest.approx(cause["bic"], rel=1e-6)
-    night_id = guided["observations"]["nights"][0]["night_id"]
-    curve = by_cause["envelope_conduction"]["predicted"][night_id]
-    assert curve["provenance"] == "MODEL_ESTIMATE" and len(curve["values"]) > 50
-
-
 def test_sample_plan_builds_a_template(client: TestClient) -> None:
-    plan = client.get("/api/homes/sample-plan").json()
-    response = client.post("/api/homes/template", json=plan)
-    assert response.status_code == 200
-    home = response.json()
-    rooms = {r["room_id"] for r in home["template"]["rooms"]}
+    plan = HomePlan.model_validate(client.get("/api/homes/sample-plan").json())
+    home, extension = build_home(plan)
+    rooms = {r.room_id for r in home.template.rooms}
     assert rooms == {"bedroom", "kitchen", "living_room", "hall", "bathroom"}  # closet has no sensor
-    assert home["exterior_wall_length_m"]["living_room"] == pytest.approx(7.5, abs=0.05)
-    assert any(a["name"] == "envelope_conductance_per_exposed_m2" for a in home["assumptions"])
+    assert home.exterior_wall_length_m["living_room"] == pytest.approx(7.5, abs=0.05)
+    assert any(a.name == "envelope_conductance_per_exposed_m2" for a in home.assumptions)
+    assert set(extension.window_conductance_w_per_k) == rooms
 
 
 def test_overlapping_rooms_are_rejected(client: TestClient) -> None:
@@ -64,56 +34,17 @@ def test_overlapping_rooms_are_rejected(client: TestClient) -> None:
             {"room_id": "b", "name": "B", "x": 1, "z": 1, "width": 3, "depth": 3},
         ],
     }
-    assert client.post("/api/homes/template", json=plan).status_code == 422
-
-
-def _series(start: datetime, values: list[float], provenance: str = "REAL_MEASUREMENT") -> dict:
-    return {
-        "timestamps": [(start + timedelta(minutes=30 * i)).isoformat() for i in range(len(values))],
-        "values": values,
-        "unit": "degC",
-        "provenance": provenance,
-    }
-
-
-def test_home_analysis_screens_user_readings(client: TestClient) -> None:
-    plan = {
-        "plan_id": "two-room",
-        "name": "Two rooms",
-        "rooms": [
-            {"room_id": "lounge", "name": "Lounge", "x": 0, "z": 0, "width": 4, "depth": 4},
-            {"room_id": "bed", "name": "Bed", "x": 4, "z": 0, "width": 3, "depth": 4},
-        ],
-        "openings": [{"kind": "window", "x0": 1, "z0": 0, "x1": 3, "z1": 0}],
-    }
-    start = datetime(2026, 1, 10, 22, tzinfo=UTC)
-    n = 17
-    lounge = [20 - 3 * (1 - 0.88**i) for i in range(n)]
-    bed = [20 - 6 * (1 - 0.85**i) for i in range(n)]
-    body = {
-        "plan": plan,
-        "room_temperature_series": {"lounge": _series(start, lounge), "bed": _series(start, bed)},
-        "outdoor_temperature": _series(start, [3.0] * n, "MODEL_ESTIMATE"),
-        "wind_speed": {**_series(start, [1.0] * n, "MODEL_ESTIMATE"), "unit": "m/s"},
-    }
-    response = client.post("/api/homes/analyze", json=body)
-    assert response.status_code == 200, response.text
-    result = response.json()
-    assert result["status"] in {"no_fault", "unexplained", "ambiguous", "confident"}
-    assert {r["room_id"] for r in result["rooms"]} == {"lounge", "bed"}
-    assert result["nights"][0]["room_temperature_series"]["bed"]["provenance"] == "REAL_MEASUREMENT"
-    assert any("no verified fault labels" in u for u in result["uncertainty"])
+    body = {"name": "Bad plan", "plan": plan, "latitude": 53.0, "longitude": -2.5}
+    response = client.post("/api/homes", json=body)
+    assert response.status_code == 422 and "overlap" in response.json()["detail"]
 
 
 def test_assistant_reports_unavailable_without_credentials(client: TestClient, monkeypatch) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
-    response = client.post("/api/assistant/chat", json={"messages": [{"role": "user", "content": "hi"}]})
+    home = client.post("/api/demo/homes", json={"seed": 3}).json()["home_id"]
+    response = client.post(
+        f"/api/homes/{home}/assistant", json={"messages": [{"role": "user", "content": "hi"}]}
+    )
     assert response.status_code == 503
     assert response.json()["code"] == "ASSISTANT_UNAVAILABLE"
-
-
-def test_openapi_lists_experience_routes(client: TestClient) -> None:
-    paths = json.loads(client.get("/openapi.json").text)["paths"]
-    for route in ("/api/insight/fits", "/api/homes/analyze", "/api/assistant/chat"):
-        assert route in paths

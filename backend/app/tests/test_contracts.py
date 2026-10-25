@@ -59,23 +59,11 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
     schema = app.openapi()
     expected_paths = {
         "/api/health",
-        "/api/scenarios",
-        "/api/scenarios/{id}/observations",
-        "/api/scenarios/{id}/diagnose",
-        "/api/scenarios/{id}/experiments",
-        "/api/scenarios/{id}/money",
-        "/api/scenarios/{id}/repair",
-        "/api/scenarios/{id}/reveal",
         "/api/real/house",
         "/api/real/house/floor-plan",
         "/api/evaluation/summary",
-        "/api/insight/fits",
-        "/api/insight/predict",
         "/api/homes/sample-plan",
-        "/api/homes/template",
-        "/api/homes/analyze",
         "/api/weather/lookup",
-        "/api/assistant/chat",
         "/api/assistant/floor-plan",
         "/api/homes",
         "/api/demo/homes",
@@ -89,14 +77,10 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
         "/api/homes/{home_id}/assistant",
     }
     assert set(schema["paths"]) == expected_paths
-    for path in expected_paths - {"/api/scenarios/{id}/reveal"}:
+    for path in expected_paths:
         assert "GroundTruth" not in json.dumps(schema["paths"][path]), path
     for path in expected_paths - {"/api/demo/homes/{home_id}/reveal"}:
         assert "DemoReveal" not in json.dumps(schema["paths"][path]), path
-    observation_schema = json.dumps(schema["components"]["schemas"]["ObservationResponse"])
-    scenario_schema = json.dumps(schema["components"]["schemas"]["ScenarioCreated"])
-    assert "GroundTruth" not in observation_schema
-    assert "GroundTruth" not in scenario_schema
 
 
 def test_checked_in_openapi_matches_application() -> None:
