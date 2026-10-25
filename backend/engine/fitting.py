@@ -84,6 +84,7 @@ class RoomPhysics:
     fan_share: float
     air_fabric: float
     leakage_law: LeakageLaw | None = None
+    window: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,7 @@ class NeighbourPhysics:
     fan_share: float
     air_fabric: float
     leakage_law: LeakageLaw | None = None
+    window: float = 0.0
 
 
 def recurrence(initial: float, dt: np.ndarray, a: np.ndarray, c: np.ndarray) -> np.ndarray:
@@ -123,14 +125,14 @@ def predict_room_air(
     factor = leakage_factor(
         room.wind_sensitivity, room.leakage_law, block.wind, block.own_mid - block.outdoor
     )
-    air_side = air_side_conductance(room.infiltration, factor, room.fan_share, block.fan)
+    air_side = air_side_conductance(room.infiltration, factor, room.fan_share, block.fan, room.window)
     loss = room.conduction + series_conductance(room.air_fabric, air_side)
     neighbour_total = 0.0
     neighbour_heat = np.zeros_like(block.dt)
     for n in neighbours:
         measured = block.neighbour_mid[n.index]
         n_factor = leakage_factor(n.wind_sensitivity, n.leakage_law, block.wind, measured - block.outdoor)
-        n_air_side = air_side_conductance(n.infiltration, n_factor, n.fan_share, block.fan)
+        n_air_side = air_side_conductance(n.infiltration, n_factor, n.fan_share, block.fan, n.window)
         fraction = air_fraction(n.air_fabric, n_air_side)
         fabric = (measured - fraction * block.outdoor) / (1.0 - fraction)
         neighbour_total += n.coupling
@@ -141,7 +143,9 @@ def predict_room_air(
     obs_factor = leakage_factor(
         room.wind_sensitivity, room.leakage_law, block.obs_wind, block.observed - block.obs_outdoor
     )
-    obs_air_side = air_side_conductance(room.infiltration, obs_factor, room.fan_share, block.obs_fan)
+    obs_air_side = air_side_conductance(
+        room.infiltration, obs_factor, room.fan_share, block.obs_fan, room.window
+    )
     fraction = air_fraction(room.air_fabric, obs_air_side)
     return fabric_path - fraction * (fabric_path - block.obs_outdoor) + offset
 
@@ -255,6 +259,7 @@ def hypothesis_physics(
         fan_share=leakage_m * shares[i] / normalizer,
         air_fabric=arrays.air_fabric[i],
         leakage_law=arrays.leakage_law,
+        window=arrays.window[i],
     )
     neighbours = [
         NeighbourPhysics(
@@ -265,6 +270,7 @@ def hypothesis_physics(
             fan_share=shares[j] / normalizer,
             air_fabric=arrays.air_fabric[j],
             leakage_law=arrays.leakage_law,
+            window=arrays.window[j],
         )
         for j in np.nonzero(arrays.coupling[i])[0]
     ]

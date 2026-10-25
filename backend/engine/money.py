@@ -10,9 +10,10 @@
 
 For envelope conduction, excess_H = (m - 1) x H_cond, exactly as in the
 specification. A draft's leakage path runs through the room-air layer in
-series, so excess_H = H_ser(m H_inf) - H_ser(H_inf), evaluated at the seasonal
-mean wind and the leakage law's reference indoor-outdoor difference.
-Without an air layer this reduces to (m - 1) x H_inf at those conditions.
+series, alongside the windows, so excess_H = H_ser(H_win + m H_inf) -
+H_ser(H_win + H_inf), evaluated at the seasonal mean wind and the leakage
+law's reference indoor-outdoor difference. Without an air layer this reduces
+to (m - 1) x H_inf at those conditions.
 These are screening estimates resting on explicit, sourced assumptions, not
 audited savings. Unsupported cases return ``None`` and never a fabricated
 number.
@@ -70,8 +71,8 @@ def excess_conductance(
         nominal = arrays.infiltration[i] * float(
             leakage_factor(arrays.wind_sensitivity[i], law, mean_wind, delta_t)
         )
-        after = series_conductance(arrays.air_fabric[i], multiplier * nominal)
-        before = series_conductance(arrays.air_fabric[i], nominal)
+        after = series_conductance(arrays.air_fabric[i], arrays.window[i] + multiplier * nominal)
+        before = series_conductance(arrays.air_fabric[i], arrays.window[i] + nominal)
         return float(after - before)
     raise ValueError("only fault hypotheses have an excess heat-loss path")
 

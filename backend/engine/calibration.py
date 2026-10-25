@@ -17,6 +17,10 @@ neighbour temperatures drive the coupling. The fitted parameters are:
   contract;
 * one air-fabric coefficient per house (W/K per m2 of floor area), fixed by
   the fast air dip on healthy fan nights;
+* NOT fitted: window conductance = published SAP glazing U-value x documented
+  window area, on the air side in parallel with infiltration. Without it the
+  fit folds glazing into H_inf0, so a draft multiplier would scale the windows
+  too and windy nights would wrongly make glazing loss wind-dependent;
 * nuisance: a start fabric temperature per (night, room) and a sensor offset
   per room.
 
@@ -76,6 +80,7 @@ class RoomGeometry:
     name: str
     volume_m3: float
     floor_area_m2: float
+    window_area_m2: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -102,6 +107,7 @@ def twin_geometry(twin: dict[str, Any] | None = None) -> tuple[list[RoomGeometry
             name=room["display_name"],
             volume_m3=float(room["geometry"]["volume"]["value"]),
             floor_area_m2=float(room["geometry"]["floor_area"]["value"]),
+            window_area_m2=float(sum(w["area_m2"] for w in room["windows"]["value"])),
         )
         for room in twin["rooms"]
     ]
@@ -123,6 +129,13 @@ def room_capacitances(rooms: Sequence[RoomGeometry], assumptions: dict[str, Any]
     tmp = value(assumptions, "physical", "thermal_mass_parameter")
     air = value(assumptions, "physical", "air_volumetric_heat_capacity")
     return np.array([tmp * room.floor_area_m2 + air * room.volume_m3 for room in rooms])
+
+
+def window_conductances(rooms: Sequence[RoomGeometry], assumptions: dict[str, Any]) -> np.ndarray:
+    """Glazing conductance (W/K): published SAP double-glazing U-value x documented window area."""
+
+    u_value = value(assumptions, "physical", "window_u_value")
+    return np.array([u_value * room.window_area_m2 for room in rooms])
 
 
 def fixed_couplings(edges: Sequence[SharedWall], assumptions: dict[str, Any]) -> np.ndarray:
@@ -167,6 +180,7 @@ def _fit_house(
     rooms: list[RoomGeometry],
     coupling: np.ndarray,
     capacitance: np.ndarray,
+    glazing: np.ndarray,
     beta: float,
     law: LeakageLaw,
     settings: FitSettings,
@@ -183,6 +197,7 @@ def _fit_house(
         coupling=coupling,
         air_fabric=np.full(r_count, np.inf),
         leakage_law=law,
+        window=glazing,
     )
     blocks = [[prepare_room_night(night, arrays, r, settings) for r in range(r_count)] for night in nights]
     neighbours_of = [np.nonzero(coupling[r])[0] for r in range(r_count)]
@@ -197,9 +212,13 @@ def _fit_house(
         chunks = []
         for n, night_blocks in enumerate(blocks):
             for r, block in enumerate(night_blocks):
-                room = RoomPhysics(capacitance[r], h_cond[r], h_inf[r], beta, shares[r], h_af[r], law)
+                room = RoomPhysics(
+                    capacitance[r], h_cond[r], h_inf[r], beta, shares[r], h_af[r], law, glazing[r]
+                )
                 neighbours = [
-                    NeighbourPhysics(int(j), coupling[r, j], h_inf[j], beta, shares[j], h_af[j], law)
+                    NeighbourPhysics(
+                        int(j), coupling[r, j], h_inf[j], beta, shares[j], h_af[j], law, glazing[j]
+                    )
                     for j in neighbours_of[r]
                 ]
                 prediction = predict_room_air(
@@ -283,6 +302,7 @@ def calibrate_public_template(
     rooms, edges = twin_geometry(twin)
     houses = _validate_training(healthy_training_nights, {room.room_id for room in rooms})
     capacitance = room_capacitances(rooms, assumptions)
+    window = window_conductances(rooms, assumptions)
     couplings = fixed_couplings(edges, assumptions)
     index = {room.room_id: i for i, room in enumerate(rooms)}
     coupling = np.zeros((len(rooms), len(rooms)))
@@ -291,7 +311,9 @@ def calibrate_public_template(
         coupling[a, b] = coupling[b, a] = h
     beta = wind_sensitivity(assumptions)
     law = LeakageLaw(*stack_wind_ratio(assumptions))
-    fits = [_fit_house(nights, rooms, coupling, capacitance, beta, law, settings) for nights in houses]
+    fits = [
+        _fit_house(nights, rooms, coupling, capacitance, window, beta, law, settings) for nights in houses
+    ]
 
     envelope = np.array([fit["envelope"] for fit in fits])
     infiltration = np.array([fit["infiltration"] for fit in fits])
@@ -329,14 +351,17 @@ def calibrate_public_template(
         template_id=template_id,
         air_fabric_conductance_w_per_k={room.room_id: float(air_fabric[r]) for r, room in enumerate(rooms)},
         leakage_law=law,
+        window_conductance_w_per_k={room.room_id: float(window[r]) for r, room in enumerate(rooms)},
         note=(
             "Air-fabric: median per-house coefficient x documented floor area (healthy TRAINING fan nights). "
-            "Leakage law: ASHRAE/LBL one-storey shelter-class-3 stack+wind relation (config assumptions)."
+            "Leakage law: ASHRAE/LBL one-storey shelter-class-3 stack+wind relation (config assumptions). "
+            "Windows: SAP 2012 Table 6e double-glazing U-value x documented window area (not fitted)."
         ),
     )
     mean_wind = value(assumptions, "economic", "heating_season_mean_wind_speed")
     seasonal_factor = float(leakage_factor(beta, law, mean_wind, law.reference_delta_t_k))
-    seasonal = envelope_nominal + series_conductance(air_fabric, infiltration_nominal * seasonal_factor)
+    seasonal_air_side = window + infiltration_nominal * seasonal_factor
+    seasonal = envelope_nominal + series_conductance(air_fabric, seasonal_air_side)
     report = {
         "template_id": template_id,
         "method": "per-house joint fit of healthy simulated TRAINING passive + fan nights; median of houses",
@@ -356,6 +381,7 @@ def calibrate_public_template(
                 "envelope_conductance_w_per_k": _summary(envelope[:, r]),
                 "infiltration_conductance_w_per_k": _summary(infiltration[:, r]),
                 "air_fabric_conductance_w_per_k": float(air_fabric[r]),
+                "window_conductance_w_per_k": float(window[r]),
                 "leakage_share": float(shares[r]),
                 "seasonal_effective_conductance_w_per_k": float(seasonal[r]),
             }
@@ -365,6 +391,9 @@ def calibrate_public_template(
             f"{wall.room_a}|{wall.room_b}": float(h) for wall, h in zip(edges, couplings, strict=True)
         },
         "coupling_basis": "ASSUMPTION: partition U-value x plan-derived shared wall area; not fitted",
+        "window_basis": (
+            "ASSUMPTION: SAP 2012 Table 6e double-glazing U-value x documented window area; not fitted"
+        ),
         "per_house_rmse_deg_c": _summary(np.array([fit["rmse_deg_c"] for fit in fits])),
         "unconverged_houses": sum(not fit["converged"] for fit in fits),
         "four_room_total_conductance_at_season_mean_wind_w_per_k": float(seasonal.sum()),

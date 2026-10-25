@@ -20,74 +20,78 @@
   },
   "capacitance_anchor": "SAP 2012 Table 1f medium TMP x documented floor area + air capacity",
   "air_fabric_w_per_m2_k": {
-    "median": 15.40537196999342,
-    "q1": 14.922540536506371,
-    "q3": 15.830146611210637
+    "median": 17.302888543960975,
+    "q1": 16.493669436037155,
+    "q3": 17.81439022084917
   },
   "rooms": {
     "living_room": {
       "capacitance_j_per_k": 3310199.2,
       "envelope_conductance_w_per_k": {
-        "median": 39.16996508758537,
-        "q1": 36.16399508396285,
-        "q3": 42.183821192286935
+        "median": 32.11816857039254,
+        "q1": 29.18572096896128,
+        "q3": 35.44019848229641
       },
       "infiltration_conductance_w_per_k": {
-        "median": 11.521754701310133,
-        "q1": 10.738993733532013,
-        "q3": 12.201205740072371
+        "median": 11.498594643159972,
+        "q1": 10.91103030130527,
+        "q3": 12.563107219082152
       },
-      "air_fabric_conductance_w_per_k": 201.65631908721386,
-      "leakage_share": 0.3918228398603521,
-      "seasonal_effective_conductance_w_per_k": 53.82765111623287
+      "air_fabric_conductance_w_per_k": 226.49481104044915,
+      "window_conductance_w_per_k": 7.929599999999999,
+      "leakage_share": 0.3817310932122089,
+      "seasonal_effective_conductance_w_per_k": 53.576796433350054
     },
     "kitchen": {
       "capacitance_j_per_k": 1454060.0,
       "envelope_conductance_w_per_k": {
-        "median": 16.560095660739158,
-        "q1": 15.59114941168048,
-        "q3": 18.25010238371853
+        "median": 14.360333510485367,
+        "q1": 12.87959045565442,
+        "q3": 15.510542317943878
       },
       "infiltration_conductance_w_per_k": {
-        "median": 5.118509715790484,
-        "q1": 4.8117037107780956,
-        "q3": 5.409424379497733
+        "median": 5.402424235247424,
+        "q1": 4.985887915706697,
+        "q3": 5.64443343449644
       },
-      "air_fabric_conductance_w_per_k": 88.58088882746216,
-      "leakage_share": 0.17406628284368708,
-      "seasonal_effective_conductance_w_per_k": 23.06637238542494
+      "air_fabric_conductance_w_per_k": 99.4916091277756,
+      "window_conductance_w_per_k": 2.9814399999999996,
+      "leakage_share": 0.17935003131394758,
+      "seasonal_effective_conductance_w_per_k": 23.77034232388374
     },
     "bedroom_1": {
       "capacitance_j_per_k": 2981455.2,
       "envelope_conductance_w_per_k": {
-        "median": 36.18695186999879,
-        "q1": 34.32841564326539,
-        "q3": 37.76043832547568
+        "median": 29.939137071325206,
+        "q1": 27.07376806839912,
+        "q3": 31.684872935383314
       },
       "infiltration_conductance_w_per_k": {
-        "median": 10.101191450382636,
-        "q1": 9.61132058198342,
-        "q3": 10.86777787092899
+        "median": 10.484648134894577,
+        "q1": 10.008710939951836,
+        "q3": 11.655489798173676
       },
-      "air_fabric_conductance_w_per_k": 181.6293355262224,
-      "leakage_share": 0.34351343373175486,
-      "seasonal_effective_conductance_w_per_k": 49.062351364505645
+      "air_fabric_conductance_w_per_k": 204.00105593329988,
+      "window_conductance_w_per_k": 7.8635199999999985,
+      "leakage_share": 0.34807003105022605,
+      "seasonal_effective_conductance_w_per_k": 49.99885815922154
     },
     "bedroom_2": {
       "capacitance_j_per_k": 687833.6,
       "envelope_conductance_w_per_k": {
-        "median": 6.671382446364538,
-        "q1": 6.214709455599967,
-        "q3": 7.142978537260123
+        "median": 7.248731917840829,
+        "q1": 6.7738547513064855,
+        "q3": 7.676772088941824
       },
       "infiltration_conductance_w_per_k": {
-        "median": 2.6640650189881754,
-        "q1": 2.5145344076667593,
-        "q3": 2.764404445301747
+        "median": 2.736570466493169,
+        "q1": 2.584398198546695,
+        "q3": 2.8852960918467074
       },
-      "air_fabric_conductance_w_per_k": 41.90261175838211,
-      "leakage_share": 0.09059744356420597,
-      "seasonal_effective_conductance_w_per_k": 10.032989543023483
+      "air_fabric_conductance_w_per_k": 47.06385683957386,
+      "window_conductance_w_per_k": 0.0,
+      "leakage_share": 0.0908488444236175,
+      "seasonal_effective_conductance_w_per_k": 10.725659079710454
     }
   },
   "couplings_fixed_w_per_k": {
@@ -98,13 +102,14 @@
     "bedroom_1|bedroom_2": 6.84
   },
   "coupling_basis": "ASSUMPTION: partition U-value x plan-derived shared wall area; not fitted",
+  "window_basis": "ASSUMPTION: SAP 2012 Table 6e double-glazing U-value x documented window area; not fitted",
   "per_house_rmse_deg_c": {
-    "median": 0.15790940345310966,
-    "q1": 0.15648503025166938,
-    "q3": 0.16059285821652136
+    "median": 0.16139860379141457,
+    "q1": 0.16001456398332564,
+    "q3": 0.16378782655908877
   },
   "unconverged_houses": 0,
-  "four_room_total_conductance_at_season_mean_wind_w_per_k": 135.98936440918695,
+  "four_room_total_conductance_at_season_mean_wind_w_per_k": 138.0716559961658,
   "reference_check": "HH09's measured co-heating HTC is 172 W/K for the whole dwelling, including the bathroom and closets the four-room twin omits. It is a reference sanity check only; it was not used to fit.",
   "warnings": [],
   "provenance": "MODEL_ESTIMATE",
@@ -113,7 +118,7 @@
     910039
   ],
   "runtime_seconds": {
-    "simulation": 20.6,
-    "calibration": 97.9
+    "simulation": 20.7,
+    "calibration": 116.1
   }
 }

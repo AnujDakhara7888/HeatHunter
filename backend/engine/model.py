@@ -5,7 +5,7 @@ mass) T_f. The measured room air is a quasi-steady layer. It settles within
 minutes between the fabric and the incoming outdoor air, so it is algebraic,
 not a second dynamic state. SI units: degC, W/K, J/K, seconds.
 
-    H_air,i(t) = m_l H_inf0,i f_i(w, dT) + fan(t) 0.33 Q share_i
+    H_air,i(t) = H_win,i + m_l H_inf0,i f_i(w, dT) + fan(t) 0.33 Q share_i
     H_ser,i    = H_af,i H_air,i / (H_af,i + H_air,i)      (air path in series)
     C_i dT_f,i/dt = -[m_c H_cond,i + H_ser,i(t)] (T_f,i - T_out)
                     + sum_j H_ij (T_f,j - T_f,i)
@@ -19,9 +19,14 @@ The leakage law f is either:
   ``sqrt((dT + (Cw/Cs) w^2) / dT_ref)``, where leakage also rises with the
   indoor-outdoor difference dT.
 
-The engine-owned ``ModelExtension`` (calibrated air-fabric conductance H_af and
-the leakage law) is keyed by ``template_id``. Without an extension, H_af is
-infinite and the law is linear, so the model reduces exactly to the
+Windows (H_win = published glazing U-value x documented window area) cool
+the room air directly, in parallel with infiltration: glass has negligible
+thermal mass. A draft multiplier scales infiltration only, never the glazing.
+
+The engine-owned ``ModelExtension`` (calibrated air-fabric conductance H_af,
+the leakage law and the fixed window conductances) is keyed by
+``template_id``. Without an extension, H_af is infinite, there is no separate
+window path and the law is linear, so the model reduces exactly to the
 specification's single-node form with T_air = T_f.
 
 This module reads only public inputs. It never imports simulator code or truth.
@@ -98,7 +103,7 @@ def leakage_factor(wind_sensitivity, law: LeakageLaw | None, wind, delta_t):
 
 @dataclass(frozen=True)
 class ModelExtension:
-    """Engine-owned physics for one template: air-fabric conductances and leakage law.
+    """Engine-owned physics for one template: air-fabric and window conductances, leakage law.
 
     It is kept outside the canonical ``PublicTemplate`` contract, which has no
     fields for it, and is keyed by ``template_id`` so it cannot be paired with
@@ -110,11 +115,15 @@ class ModelExtension:
     leakage_law: LeakageLaw | None = None
     provenance: str = Provenance.MODEL_ESTIMATE.value
     note: str = ""
+    window_conductance_w_per_k: Mapping[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for room_id, value in self.air_fabric_conductance_w_per_k.items():
             if isinstance(value, bool) or not math.isfinite(value) or value <= 0:
                 raise PublicModelError(f"air-fabric conductance for {room_id} must be finite and positive")
+        for room_id, value in self.window_conductance_w_per_k.items():
+            if isinstance(value, bool) or not math.isfinite(value) or value < 0:
+                raise PublicModelError(f"window conductance for {room_id} must be finite and non-negative")
 
     def save(self, path: Path | None = None) -> Path:
         path = Path(path or DEFAULT_EXTENSION_PATH)
@@ -122,6 +131,7 @@ class ModelExtension:
         payload = {
             "template_id": self.template_id,
             "air_fabric_conductance_w_per_k": dict(self.air_fabric_conductance_w_per_k),
+            "window_conductance_w_per_k": dict(self.window_conductance_w_per_k),
             "leakage_law": None
             if self.leakage_law is None
             else {
@@ -151,6 +161,9 @@ def load_model_extension(path: str | Path | None = None) -> ModelExtension:
         leakage_law=None if law is None else LeakageLaw(**law),
         provenance=payload.get("provenance", Provenance.MODEL_ESTIMATE.value),
         note=payload.get("note", ""),
+        window_conductance_w_per_k={
+            k: float(v) for k, v in payload.get("window_conductance_w_per_k", {}).items()
+        },
     )
 
 
@@ -188,6 +201,11 @@ class TemplateArrays:
     coupling: np.ndarray  # symmetric W/K matrix with zero diagonal
     air_fabric: np.ndarray  # W/K; inf means no air layer (single-node limit)
     leakage_law: LeakageLaw | None = None
+    window: np.ndarray | None = None  # W/K glazing on the air side; None means no separate path
+
+    def __post_init__(self) -> None:
+        if self.window is None:
+            object.__setattr__(self, "window", np.zeros(len(self.room_ids)))
 
     @classmethod
     def from_template(
@@ -205,6 +223,7 @@ class TemplateArrays:
                 raise PublicModelError("template contains a duplicate coupling")
             coupling[a, b] = coupling[b, a] = edge.conductance_w_per_k
         air_fabric = np.full(len(room_ids), np.inf)
+        window = np.zeros(len(room_ids))
         law = None
         if extension is not None:
             if extension.template_id != template.template_id:
@@ -213,6 +232,10 @@ class TemplateArrays:
                 if set(extension.air_fabric_conductance_w_per_k) != set(room_ids):
                     raise PublicModelError("model extension must cover exactly the template rooms")
                 air_fabric = np.array([extension.air_fabric_conductance_w_per_k[r] for r in room_ids], float)
+            if extension.window_conductance_w_per_k:
+                if set(extension.window_conductance_w_per_k) != set(room_ids):
+                    raise PublicModelError("model extension windows must cover exactly the template rooms")
+                window = np.array([extension.window_conductance_w_per_k[r] for r in room_ids], float)
             law = extension.leakage_law
         return cls(
             room_ids=room_ids,
@@ -226,6 +249,7 @@ class TemplateArrays:
             coupling=coupling,
             air_fabric=air_fabric,
             leakage_law=law,
+            window=window,
         )
 
     def index(self, room_id: str) -> int:
@@ -249,10 +273,10 @@ def leakage_shares(nominal_shares: np.ndarray, leakage_multipliers: np.ndarray) 
     return weighted / total
 
 
-def air_side_conductance(infiltration, factor, fan_share, fan_flow):
-    """Infiltration (scaled by the leakage law factor) + fan conductance on the room air (W/K)."""
+def air_side_conductance(infiltration, factor, fan_share, fan_flow, window=0.0):
+    """Glazing + infiltration (scaled by the leakage law factor) + fan conductance on the room air (W/K)."""
 
-    return infiltration * factor + SENSIBLE_AIR_FACTOR * fan_flow * fan_share
+    return window + infiltration * factor + SENSIBLE_AIR_FACTOR * fan_flow * fan_share
 
 
 def series_conductance(air_fabric, air_side):
@@ -402,7 +426,7 @@ def simulate_trajectory(
 
     def air_side(wind, fan, delta_t):
         factor = leakage_factor(arrays.wind_sensitivity, law, wind, delta_t)
-        return air_side_conductance(infiltration, factor, shares, fan)
+        return air_side_conductance(infiltration, factor, shares, fan, arrays.window)
 
     fan_obs = forcing.fan_at_readings(forcing.seconds)
     fraction0 = air_fraction(
