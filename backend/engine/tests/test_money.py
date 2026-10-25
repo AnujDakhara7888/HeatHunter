@@ -52,6 +52,7 @@ def test_draft_excess_uses_stack_wind_law_and_the_air_layer_in_series():
     template = load_public_template()
     extension = load_model_extension()
     air = extension.air_fabric_conductance_w_per_k["living_room"]
+    window = extension.window_conductance_w_per_k["living_room"]
     law = extension.leakage_law
     room = next(r for r in template.rooms if r.room_id == "living_room")
     mean_wind = load_assumptions()["economic"]["heating_season_mean_wind_speed"]["value"]
@@ -63,7 +64,8 @@ def test_draft_excess_uses_stack_wind_law_and_the_air_layer_in_series():
     def series(h):
         return air * h / (air + h)
 
-    expected = series(3 * nominal) - series(nominal)
+    # Glazing sits on the air side too, but the draft multiplier never scales it.
+    expected = series(window + 3 * nominal) - series(window + nominal)
     estimate = estimate_money(template, "living_room", fit(HypothesisType.DRAFT, 3.0))
     assert estimate.excess_conductance_w_per_k == pytest.approx(expected)
     # Without the extension it reduces to the specification's linear (m - 1) x path conductance.

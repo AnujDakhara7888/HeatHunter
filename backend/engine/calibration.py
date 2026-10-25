@@ -24,7 +24,7 @@ neighbour temperatures drive the coupling. The fitted parameters are:
 * nuisance: a start fabric temperature per (night, room) and a sensor offset
   per room.
 
-Inter-room coupling is NOT fitted. Passive cooling cannot identify it: rooms
+Inter-room coupling acts air to air and is NOT fitted. Passive cooling cannot identify it: rooms
 cool in near-lockstep, and the sensor offsets absorb the small temperature
 differences. It is fixed at an assumed partition U-value x plan-derived wall
 area. The nominal template is the median of the per-house estimates.
@@ -215,12 +215,7 @@ def _fit_house(
                 room = RoomPhysics(
                     capacitance[r], h_cond[r], h_inf[r], beta, shares[r], h_af[r], law, glazing[r]
                 )
-                neighbours = [
-                    NeighbourPhysics(
-                        int(j), coupling[r, j], h_inf[j], beta, shares[j], h_af[j], law, glazing[j]
-                    )
-                    for j in neighbours_of[r]
-                ]
+                neighbours = [NeighbourPhysics(int(j), coupling[r, j]) for j in neighbours_of[r]]
                 prediction = predict_room_air(
                     block, room, neighbours, x[t0_start + n * r_count + r], x[offset_start + r]
                 )

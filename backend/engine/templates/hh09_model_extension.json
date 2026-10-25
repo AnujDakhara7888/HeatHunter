@@ -1,10 +1,10 @@
 {
   "template_id": "hh09-public-template-v1",
   "air_fabric_conductance_w_per_k": {
-    "living_room": 226.49481104044915,
-    "kitchen": 99.4916091277756,
-    "bedroom_1": 204.00105593329988,
-    "bedroom_2": 47.06385683957386
+    "living_room": 229.28890529064523,
+    "kitchen": 100.71896145311003,
+    "bedroom_1": 206.51766183168124,
+    "bedroom_2": 47.644447852601616
   },
   "window_conductance_w_per_k": {
     "living_room": 7.929599999999999,
