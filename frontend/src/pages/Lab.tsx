@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, CalendarDays, Fan, FastForward, Gavel, HeartPulse, Home as HomeIcon, Lock, Play, Plus, SkipForward, Square, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { BarChart3, CalendarDays, Fan, FastForward, Gavel, HeartPulse, Home as HomeIcon, Lock, PencilRuler, Play, Plus, SkipForward, Square, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, traced } from "../api/client";
-import type { DemoHomeCreate, DemoWeek, FixAction, HomeHealth, HomeHistory, HomeReadings, HomeSummary, RoomHealthView, RoomReport, RoomTechnical, Series } from "../api/types";
+import type { DemoHomeCreate, DemoWeek, FixAction, HouseShape, HomeHealth, HomeHistory, HomeReadings, HomeSummary, RoomHealthView, RoomReport, RoomTechnical, Series } from "../api/types";
 import { Analytics } from "../components/Analytics";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { useChatContext } from "../components/ChatDock";
@@ -43,7 +44,40 @@ function saveLabel(id: string, label: string) {
 const weekName = (w: DemoWeek) =>
   `${new Date(w.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${new Date(w.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 
-function StartCard({ onStart, houses, onOpen, onDelete }: { onStart: (req: DemoHomeCreate, label: string) => void; houses: HomeSummary[]; onOpen: (h: HomeSummary) => void; onDelete: (h: HomeSummary) => void }) {
+/** A plan drawn small: every room as a rectangle, sensed rooms filled. */
+function ShapeThumb({ shape }: { shape: HouseShape }) {
+  const rooms = shape.plan.rooms;
+  const maxX = Math.max(...rooms.map((r) => r.x + r.width));
+  const maxZ = Math.max(...rooms.map((r) => r.z + r.depth));
+  const k = 64 / Math.max(maxX, maxZ);
+  return (
+    <svg width={Math.max(8, maxX * k)} height={Math.max(8, maxZ * k)} aria-hidden className="shrink-0">
+      {rooms.map((r) => (
+        <rect key={r.room_id} x={r.x * k + 0.5} y={r.z * k + 0.5} width={r.width * k - 1} height={r.depth * k - 1} rx={1.5} fill={r.has_sensor === false ? "#ffffff0a" : "#ffffff26"} stroke="#ffffff55" strokeWidth={0.8} />
+      ))}
+    </svg>
+  );
+}
+
+/** Rooms a fault can be planted in: the twin's four simulator rooms, or a plan's sensed rooms. */
+function plantableRooms(shape: HouseShape): { id: string; name: string }[] {
+  return shape.kind === "twin"
+    ? Object.keys(SIM_TO_PLAN).map((id) => ({ id, name: ROOM_NAMES[id] }))
+    : shape.plan.rooms.filter((r) => r.has_sensor !== false).map((r) => ({ id: r.room_id, name: r.name }));
+}
+
+type StartProps = {
+  onStart: (req: DemoHomeCreate, label: string) => void;
+  houses: HomeSummary[];
+  onOpen: (h: HomeSummary) => void;
+  onDelete: (h: HomeSummary) => void;
+  shapes: HouseShape[];
+  shape: HouseShape | null;
+  onShape: (s: HouseShape) => void;
+  onDeleteShape: (s: HouseShape) => void;
+};
+
+function StartCard({ onStart, houses, onOpen, onDelete, shapes, shape, onShape, onDeleteShape }: StartProps) {
   const [weeks, setWeeks] = useState<DemoWeek[]>([]);
   const [week, setWeek] = useState<DemoWeek | null>(null);
   useEffect(() => {
@@ -51,18 +85,23 @@ function StartCard({ onStart, houses, onOpen, onDelete }: { onStart: (req: DemoH
       .then(setWeeks)
       .catch(() => null);
   }, []);
-  const go = (req: DemoHomeCreate, label: string) => onStart({ ...req, start_date: week?.start_date ?? null }, `${label} · ${week ? weekName(week) : "random week"}`);
+  const house = shape?.shape_id ?? "hh09";
+  const go = (req: Omit<DemoHomeCreate, "house">, label: string) => onStart({ ...req, house, start_date: week?.start_date ?? null }, `${shape?.name ?? "HH09"} · ${label} · ${week ? weekName(week) : "random week"}`);
   const [judge, setJudge] = useState(false);
+  const rooms = shape ? plantableRooms(shape) : [];
   const [room, setRoom] = useState("bedroom_1");
+  useEffect(() => {
+    if (shape && !plantableRooms(shape).some((r) => r.id === room)) setRoom(plantableRooms(shape)[0]?.id ?? "");
+  }, [shape, room]);
   const [fault, setFault] = useState<"draft" | "envelope_conduction">("draft");
-  const [severity, setSeverity] = useState(1.8);
+  const [severity, setSeverity] = useState(1.2); // extra heat loss on the faulty path: 1.2 = 2.2x normal
   const cards = [
     { icon: <Gavel size={18} />, title: "Judge mode", line: "You plant the fault. The app has to find it.", go: () => setJudge(true) },
-    { icon: <HeartPulse size={18} />, title: "Healthy house", line: "No fault. Does the app stay calm?", go: () => go({ house: "hh09", fault: null, random_fault: false, seed: Math.floor(Math.random() * 2 ** 31) }, "Healthy house") },
+    { icon: <HeartPulse size={18} />, title: "Healthy house", line: "No fault. Does the app stay calm?", go: () => go({ fault: null, random_fault: false, seed: Math.floor(Math.random() * 2 ** 31) }, "Healthy house") },
   ];
   return (
-    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} className="glass pointer-events-auto mx-auto w-[min(760px,calc(100vw-32px))] rounded-[28px] p-6">
-      <div className="eyebrow">Fault Lab · digital twin of a real UK home · real winter 2020-21 weather</div>
+    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} className="glass scroll-thin pointer-events-auto mx-auto max-h-[calc(100vh-96px)] w-[min(820px,calc(100vw-32px))] overflow-y-auto rounded-[28px] p-6">
+      <div className="eyebrow">Fault Lab · simulated houses · real winter 2020-21 weather</div>
       <h1 className="mt-2 text-[34px] font-bold leading-[1.05] tracking-[-0.03em]">
         Watch a home, night after night. <span className="text-mute">Catch the leak.</span>
       </h1>
@@ -81,6 +120,34 @@ function StartCard({ onStart, houses, onOpen, onDelete }: { onStart: (req: DemoH
           ))}
         </div>
       )}
+      <div className="mt-4">
+        <div className="flex items-center gap-1.5 text-[12px] text-mute">
+          <HomeIcon size={13} /> Which house? <span className="text-dim">Every shape runs the same physics and the same flag rule.</span>
+        </div>
+        <div className="scroll-thin mt-2 flex gap-1.5 overflow-x-auto pb-1">
+          {shapes.map((s) => (
+            <div key={s.shape_id} className={`relative flex shrink-0 items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-[11.5px] ${shape?.shape_id === s.shape_id ? "border-white/60 bg-white/10 text-ink" : "border-line text-mute hover:text-ink"}`}>
+              <button onClick={() => onShape(s)} className="flex items-center gap-2.5 text-left" aria-pressed={shape?.shape_id === s.shape_id}>
+                <ShapeThumb shape={s} />
+                <span>
+                  <span className="block font-semibold">{s.name}</span>
+                  <span className="block text-dim">
+                    {s.sensed_rooms} rooms · {s.kind === "twin" ? "real home's twin" : s.kind === "saved" ? "your drawing" : "preset"}
+                  </span>
+                </span>
+              </button>
+              {s.kind === "saved" && (
+                <button onClick={() => onDeleteShape(s)} className="absolute right-1 top-1 rounded-full p-0.5 text-dim hover:text-hot" aria-label="Delete this saved shape" title="Delete this saved shape">
+                  <X size={11} />
+                </button>
+              )}
+            </div>
+          ))}
+          <Link to="/home" className="flex shrink-0 items-center gap-1.5 rounded-xl border border-dashed border-line px-3 py-2 text-[11.5px] text-mute hover:text-ink" title="Draw a plan in Your home, then save it as a house shape">
+            <PencilRuler size={14} /> Draw your own
+          </Link>
+        </div>
+      </div>
       <div className="mt-4">
         <div className="flex items-center gap-1.5 text-[12px] text-mute">
           <CalendarDays size={13} /> Start in which week of winter 2020-21? <span className="text-dim">Windy weeks reveal leaks faster.</span>
@@ -107,7 +174,7 @@ function StartCard({ onStart, houses, onOpen, onDelete }: { onStart: (req: DemoH
       {!judge ? (
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           {cards.map((c) => (
-            <button key={c.title} onClick={c.go} className="rounded-2xl border border-line bg-white/[0.03] p-4 text-left transition hover:border-white/30 hover:bg-white/[0.06]">
+            <button key={c.title} onClick={c.go} disabled={!shape} className="rounded-2xl border border-line bg-white/[0.03] p-4 text-left transition hover:border-white/30 hover:bg-white/[0.06] disabled:opacity-50">
               <div className="grid h-9 w-9 place-items-center rounded-full bg-white/10">{c.icon}</div>
               <div className="mt-3 font-semibold">{c.title}</div>
               <div className="mt-1 text-[13px] leading-snug text-mute">{c.line}</div>
@@ -118,9 +185,9 @@ function StartCard({ onStart, houses, onOpen, onDelete }: { onStart: (req: DemoH
         <div className="mt-6 space-y-4">
           <div className="text-sm text-mute">Pick a room and a fault. The monitoring engine is never told; it has to find it from the nights alone.</div>
           <div className="flex flex-wrap gap-2">
-            {Object.keys(SIM_TO_PLAN).map((id) => (
-              <button key={id} onClick={() => setRoom(id)} className={`btn !py-1.5 ${room === id ? "btn-primary" : "btn-ghost"}`}>
-                {ROOM_NAMES[id]}
+            {rooms.map((r) => (
+              <button key={r.id} onClick={() => setRoom(r.id)} className={`btn !py-1.5 ${room === r.id ? "btn-primary" : "btn-ghost"}`}>
+                {r.name}
               </button>
             ))}
           </div>
@@ -133,11 +200,11 @@ function StartCard({ onStart, houses, onOpen, onDelete }: { onStart: (req: DemoH
           </div>
           <label className="flex items-center gap-3 text-sm text-mute">
             Severity
-            <input type="range" min={1.2} max={3} step={0.1} value={severity} onChange={(e) => setSeverity(Number(e.target.value))} className="w-48" />
-            <span className="num text-ink">×{severity.toFixed(1)}</span>
+            <input type="range" min={0.6} max={2} step={0.1} value={severity} onChange={(e) => setSeverity(Number(e.target.value))} className="w-48" />
+            <span className="num text-ink">×{(1 + severity).toFixed(1)} normal</span>
           </label>
           <div className="flex gap-2">
-            <button className="btn btn-hot" onClick={() => go({ house: "hh09", fault: { type: fault, room_id: room, severity }, random_fault: false, seed: Math.floor(Math.random() * 2 ** 31) }, "Judge mode")}>
+            <button className="btn btn-hot" disabled={!room} onClick={() => go({ fault: { type: fault, room_id: room, severity }, random_fault: false, seed: Math.floor(Math.random() * 2 ** 31) }, "Judge mode")}>
               <Lock size={15} /> Hide it & start
             </button>
             <button className="btn btn-ghost" onClick={() => setJudge(false)}>
@@ -180,6 +247,32 @@ export default function Lab() {
   const [weekPlay, setWeekPlay] = useState<number | null>(null);
   const [history, setHistory] = useState<HomeHistory | null>(null);
   const [analytics, setAnalytics] = useState(false);
+  const [shapes, setShapes] = useState<HouseShape[]>([]);
+  const [shape, setShape] = useState<HouseShape | null>(null);
+  // The HH09 twin's simulator rooms have their own ids (bedroom_1 = the plan's bedroom); plan shapes use plan ids.
+  const isTwin = !shape || shape.kind === "twin";
+  const toPlan = useCallback((id: string) => (isTwin ? SIM_TO_PLAN[id] ?? id : id), [isTwin]);
+
+  const loadShapes = () =>
+    traced("shapes", "GET /house-shapes", () => api.GET("/api/house-shapes"), (d) => `${d.length} house shapes`)
+      .then((all) => {
+        setShapes(all);
+        setShape((cur) => all.find((x) => x.shape_id === cur?.shape_id) ?? all.find((x) => x.kind === "twin") ?? null);
+        return all;
+      })
+      .catch(() => [] as HouseShape[]);
+  useEffect(() => {
+    void loadShapes();
+  }, []);
+  // The 3D house follows the chosen shape (and the twin keeps its documented compass bearing).
+  useEffect(() => {
+    if (!shape) return;
+    set({
+      plan: shape.kind === "twin" ? HH09_PLAN : shape.plan,
+      zBearing: shape.kind === "twin" ? HH09_Z_BEARING : null,
+      names: shape.kind === "twin" ? {} : Object.fromEntries(shape.plan.rooms.map((r) => [r.room_id, r.name])),
+    });
+  }, [shape, set]);
 
   const loadHouses = () =>
     traced("homes", "GET /homes", () => api.GET("/api/homes"), (d) => `${d.length} houses`)
@@ -200,7 +293,7 @@ export default function Lab() {
   const window_ = night ? ([ms(night.start), ms(night.end)] as [number, number]) : null;
   const roomsPlan = useMemo(() => {
     if (!readings || !window_) return null;
-    return Object.fromEntries(Object.entries(readings.rooms).map(([k, r]) => [SIM_TO_PLAN[k] ?? k, slice(r.measured, ...window_)]));
+    return Object.fromEntries(Object.entries(readings.rooms).map(([k, r]) => [toPlan(k), slice(r.measured, ...window_)]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readings, window_?.[0]]);
   const outdoor = useMemo(() => (readings && window_ ? slice(readings.outdoor_temperature, ...window_) : null), [readings, window_?.[0]]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -213,7 +306,7 @@ export default function Lab() {
       .catch(() => setWindDirs((c) => ({ ...c, [id]: null })));
   }, [night?.night_id, windDirs]);
   const player = useNight(roomsPlan, outdoor, wind, weekPlay != null ? 6 : 10, night ? windDirs[night.night_id] : null);
-  useEffect(() => set({ insulation: readings?.insulation ? toInsulation(readings.insulation, SIM_TO_PLAN) : null }), [readings, set]);
+  useEffect(() => set({ insulation: readings?.insulation ? toInsulation(readings.insulation, isTwin ? SIM_TO_PLAN : {}) : null }), [readings, isTwin, set]);
   useEffect(() => {
     if (weekPlay == null || player.playing || !player.range || player.t == null || player.t < player.range[1] - 1) return;
     const next = (nightIdx ?? nights.length - 1) + 1;
@@ -253,18 +346,18 @@ export default function Lab() {
     const r = selected ? rooms.find((x) => x.room_id === selected) : flaggedRoom;
     const target = r && FLAG_STATUSES.includes(r.status) ? r : flaggedRoom;
     if (!target || target.status === "verifying") {
-      set({ finding: target ? { room: SIM_TO_PLAN[target.room_id], cause: null, strength: 0.3 } : null });
+      set({ finding: target ? { room: toPlan(target.room_id), cause: null, strength: 0.3 } : null });
       return;
     }
-    set({ finding: { room: SIM_TO_PLAN[target.room_id], cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent), extra: (target.extra_heat_loss_percent ?? 0) / 100 } });
-  }, [rooms, selected, flaggedRoom, set]);
+    set({ finding: { room: toPlan(target.room_id), cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent), extra: (target.extra_heat_loss_percent ?? 0) / 100 } });
+  }, [rooms, selected, flaggedRoom, toPlan, set]);
 
   // The server builds the assistant's context itself; we only tell the dock which home is on screen.
   useEffect(() => {
     useChatContext.getState().setHome(home?.home_id ?? null);
     useChatContext.getState().setContext(
       {
-        page: "Fault Lab: simulated HH09 twin watched night after night",
+        page: `Fault Lab: simulated ${shape?.name ?? "HH09 twin"} watched night after night`,
         nights: nights.length,
         selected_room_id: report?.room_id,
         visible_window: night ? { start: night.start, end: night.end } : undefined,
@@ -273,7 +366,7 @@ export default function Lab() {
       },
       ["Which room is the problem?", "Why do several nights matter?", "Is it worth fixing?"],
     );
-  }, [home, health, report, nights.length, night?.night_id]);
+  }, [home, health, report, nights.length, night?.night_id, shape?.name]);
 
   const run = async <T,>(what: string, fn: () => Promise<T>) => {
     setBusy(what);
@@ -304,7 +397,7 @@ export default function Lab() {
 
   const openRoom = async (homeId: string, roomId: string) => {
     setSelected(roomId);
-    set({ focusRoom: SIM_TO_PLAN[roomId] });
+    set({ focusRoom: toPlan(roomId) });
     const [rep, tech] = await Promise.all([
       traced("room", "GET /rooms/{room}", () => api.GET("/api/homes/{home_id}/rooms/{room_id}", { params: { path: { home_id: homeId, room_id: roomId } } }), (d) => ROOM_STATUS[d.status].label),
       traced("tech", "GET /rooms/{room}/technical", () => api.GET("/api/homes/{home_id}/rooms/{room_id}/technical", { params: { path: { home_id: homeId, room_id: roomId } } }), (d) => `${d.fits.length} fits over ${d.nights_judged} nights`).catch(() => null),
@@ -338,6 +431,7 @@ export default function Lab() {
       for (const reset of [setReport, setTechnical, setSelected, setHistory] as ((v: null) => void)[]) reset(null);
       setPicking(false);
       setLabel(loadLabels()[h.home_id] ?? h.name);
+      setShape(shapes.find((x) => x.shape_id === (h.shape_id ?? "hh09")) ?? shapes.find((x) => x.kind === "twin") ?? null);
       set({ view: "open", autoRotate: false, inset: 460, focusRoom: null });
       const hh = await traced("health", "GET /homes/{id}", () => api.GET("/api/homes/{home_id}", { params: { path: { home_id: h.home_id } } }), (d) => `${d.home.nights_monitored} nights · ${d.home.status}`);
       if (hh.home.nights_monitored === 0) await advance(h.home_id, 1);
@@ -402,6 +496,16 @@ export default function Lab() {
     });
   };
 
+  /** Delete a saved house shape (refused while a demo house still uses it). */
+  const removeShape = (x: HouseShape) => {
+    if (!window.confirm(`Delete the saved shape "${x.name}"?`)) return;
+    void run("Deleting the shape…", async () => {
+      const { response, error: body } = await api.DELETE("/api/house-shapes/{shape_id}", { params: { path: { shape_id: x.shape_id } } });
+      if (!response.ok) throw new Error((body as { detail?: string } | undefined)?.detail ?? `Could not delete the shape (HTTP ${response.status})`);
+      await loadShapes();
+    });
+  };
+
   const sel = rooms.find((r) => r.room_id === selected);
   const canFix = latest && sel && ["issue", "issue_cause_unclear", "still_an_issue"].includes(sel.status);
 
@@ -432,6 +536,7 @@ export default function Lab() {
             report={report}
             technical={technical}
             onClose={() => setAnalytics(false)}
+            planRoom={toPlan}
           />
           </ErrorBoundary>
         )}
@@ -441,7 +546,7 @@ export default function Lab() {
         {!home && (
           <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-end gap-3 pb-[8vh]">
             {(busy || error) && <div className={`glass rounded-full px-4 py-2 text-[13px] ${error ? "text-hot" : "text-mute"}`}>{error ?? busy}</div>}
-            <StartCard onStart={start} houses={houses} onOpen={openHouse} onDelete={removeHouse} />
+            <StartCard onStart={start} houses={houses} onOpen={openHouse} onDelete={removeHouse} shapes={shapes} shape={shape} onShape={setShape} onDeleteShape={removeShape} />
           </div>
         )}
       </AnimatePresence>
@@ -559,7 +664,7 @@ export default function Lab() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="flex items-center gap-2 font-semibold">
-                      <i className="h-2 w-2 rounded-full" style={{ background: roomColor(SIM_TO_PLAN[r.room_id] ?? r.room_id) }} />
+                      <i className="h-2 w-2 rounded-full" style={{ background: roomColor(toPlan(r.room_id)) }} />
                       {r.name}
                     </span>
                     <StatusChip status={r.status} />

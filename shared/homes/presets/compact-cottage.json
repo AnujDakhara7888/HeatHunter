@@ -1,0 +1,119 @@
+{
+  "plan_id": "compact-cottage",
+  "name": "Compact cottage",
+  "ceiling_height_m": 2.4,
+  "rooms": [
+    {
+      "room_id": "living_room",
+      "name": "Living room",
+      "x": 0,
+      "z": 0,
+      "width": 4.2,
+      "depth": 4.0
+    },
+    {
+      "room_id": "bedroom",
+      "name": "Bedroom",
+      "x": 4.2,
+      "z": 0,
+      "width": 3.4,
+      "depth": 4.0
+    },
+    {
+      "room_id": "kitchen",
+      "name": "Kitchen",
+      "x": 0,
+      "z": 4.0,
+      "width": 4.2,
+      "depth": 2.8
+    },
+    {
+      "room_id": "bathroom",
+      "name": "Bathroom",
+      "x": 4.2,
+      "z": 4.0,
+      "width": 3.4,
+      "depth": 2.8,
+      "has_sensor": false
+    }
+  ],
+  "openings": [
+    {
+      "kind": "window",
+      "x0": 0.8,
+      "z0": 0,
+      "x1": 3.0,
+      "z1": 0
+    },
+    {
+      "kind": "door",
+      "x0": 3.3,
+      "z0": 0,
+      "x1": 4.1,
+      "z1": 0
+    },
+    {
+      "kind": "window",
+      "x0": 4.9,
+      "z0": 0,
+      "x1": 6.9,
+      "z1": 0
+    },
+    {
+      "kind": "window",
+      "x0": 7.6,
+      "z0": 1.0,
+      "x1": 7.6,
+      "z1": 2.6
+    },
+    {
+      "kind": "window",
+      "x0": 0.9,
+      "z0": 6.8,
+      "x1": 2.9,
+      "z1": 6.8
+    },
+    {
+      "kind": "door",
+      "x0": 3.2,
+      "z0": 6.8,
+      "x1": 4.0,
+      "z1": 6.8
+    },
+    {
+      "kind": "window",
+      "x0": 0,
+      "z0": 4.6,
+      "x1": 0,
+      "z1": 5.8
+    },
+    {
+      "kind": "window",
+      "x0": 5.6,
+      "z0": 6.8,
+      "x1": 6.4,
+      "z1": 6.8
+    },
+    {
+      "kind": "door",
+      "x0": 4.2,
+      "z0": 1.2,
+      "x1": 4.2,
+      "z1": 2.0
+    },
+    {
+      "kind": "door",
+      "x0": 1.6,
+      "z0": 4.0,
+      "x1": 2.4,
+      "z1": 4.0
+    },
+    {
+      "kind": "door",
+      "x0": 4.2,
+      "z0": 5.6,
+      "x1": 4.2,
+      "z1": 6.4
+    }
+  ]
+}

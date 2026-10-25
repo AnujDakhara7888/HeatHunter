@@ -557,6 +557,22 @@ class HomeSummary(ContractModel):
     nights_monitored: int = Field(ge=0)
     last_night: date | None
     created_at: datetime
+    shape_id: str | None = None  # a demo house's shape (see /api/house-shapes); "hh09" is the twin
+
+
+class HouseShape(ContractModel):
+    """A single-storey house a demo can be simulated on: the HH09 twin, a preset or a saved plan."""
+
+    shape_id: str
+    name: str
+    kind: Literal["twin", "preset", "saved"]
+    sensed_rooms: int = Field(ge=1)
+    plan: HomePlan
+
+
+class HouseShapeCreate(ContractModel):
+    name: str = Field(min_length=1, max_length=80)
+    plan: HomePlan
 
 
 class DemoFault(ContractModel):
@@ -566,7 +582,7 @@ class DemoFault(ContractModel):
 
 
 class DemoHomeCreate(ContractModel):
-    house: Literal["hh09"] = "hh09"
+    house: str = Field(default="hh09", pattern=r"^[a-z0-9-]{1,48}$")  # a HouseShape.shape_id
     fault: DemoFault | None = None
     random_fault: bool = False
     start_date: date | None = None

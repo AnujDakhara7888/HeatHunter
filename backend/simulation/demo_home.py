@@ -1,6 +1,7 @@
 """Hidden-fault demo home for the monitoring API (simulation workstream).
 
-A demo home is one simulated HH09-twin house watched over consecutive real
+A demo home is one simulated house (the HH09 twin, or any single-storey plan
+built by ``plan_house``) watched over consecutive real
 weather nights from the HELD-OUT winter, so the demo is never shown on the
 data the flag rule was tuned on. Its planted fault, house parameters and
 sensor seed stay inside this object. Callers only receive public
@@ -19,11 +20,12 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Literal
 
-from backend.app.contracts import FaultType, NightObservations, Split
+from backend.app.contracts import FaultType, HomePlan, NightObservations, Split
 from backend.data_pipeline.weather_timeline import night_dates, timeline_night
 
 from .observations import fan_protocol, nighttime_weather, passive_protocol, simulate_night, sub_seed
 from .physics import Fault, build_house, checked_seed, inject_fault, repair_house
+from .plan_house import build_plan_house
 
 MAX_NIGHTS = 28
 RANDOM_SEVERITIES = (0.6, 1.2, 2.0)
@@ -47,12 +49,14 @@ class DemoHome:
         fault: Fault | None = None,
         random_fault: bool = False,
         start_date: date | None = None,
+        plan: HomePlan | None = None,
     ) -> None:
         checked_seed(seed)
         if fault is not None and random_fault:
             raise ValueError("give a fault or ask for a random one, not both")
         rng = random.Random(sub_seed(seed, "demo-selection"))
-        healthy = build_house(sub_seed(seed, "demo-house") % 2**63)
+        house_seed = sub_seed(seed, "demo-house") % 2**63
+        healthy = build_plan_house(plan, house_seed) if plan is not None else build_house(house_seed)
         rooms = [room.room_id for room in healthy.rooms]
         if random_fault:
             fault_type = rng.choice(list(FaultType))

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, BarChart3, FileUp, Home, MapPin, PencilRuler, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, FileUp, FlaskConical, Home, MapPin, PencilRuler, Sparkles, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, api, traced } from "../api/client";
 import { Analytics } from "../components/Analytics";
@@ -204,6 +204,16 @@ export default function MyHome() {
     }
   };
 
+  /** Keep this layout as a house shape the Fault Lab can simulate (single storey, up to 8 sensed rooms). */
+  const saveShape = () => {
+    const name = window.prompt("Name this house shape", plan.name && plan.name !== "My home" ? plan.name : "My house");
+    if (!name?.trim()) return;
+    void run("Saving the house shape…", async () => {
+      const saved = await traced("shape", "POST /house-shapes", () => api.POST("/api/house-shapes", { body: { name: name.trim().slice(0, 80), plan } }), (d) => d.shape_id);
+      setNotes([`Saved "${saved.name}". Pick it under "Which house?" in the Fault Lab to plant faults on it.`]);
+    });
+  };
+
   const useHH09 = () => {
     setPlan(HH09_PLAN);
     setBg(null);
@@ -361,9 +371,14 @@ export default function MyHome() {
                 <div className="mt-3 min-h-0 flex-1">
                   <PlanEditor plan={plan} onChange={(p) => setPlan(p)} background={bg} />
                 </div>
-                <button className="btn btn-primary mt-4" onClick={() => (setStep("setup"), set({ view: "exterior" }))} disabled={!sensed.length}>
-                  Next: where and when <ArrowRight size={15} />
-                </button>
+                <div className="mt-4 flex gap-2">
+                  <button className="btn btn-ghost" onClick={saveShape} disabled={!sensed.length || !!busy} title="Reuse this layout in the Fault Lab to simulate faults on it">
+                    <FlaskConical size={15} /> Save as a house shape
+                  </button>
+                  <button className="btn btn-primary flex-1" onClick={() => (setStep("setup"), set({ view: "exterior" }))} disabled={!sensed.length}>
+                    Next: where and when <ArrowRight size={15} />
+                  </button>
+                </div>
               </>
             )}
 
@@ -518,6 +533,7 @@ export default function MyHome() {
             report={report}
             technical={technical}
             onClose={() => setAnalytics(false)}
+            planRoom={(id) => id}
           />
           </ErrorBoundary>
         )}

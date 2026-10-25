@@ -34,7 +34,7 @@
     "backend/diagnosis/controller.py": "151d51a8518727e7052326975aeb72510da55a2f3e49dd6434812cdffc989644"
   },
   "simulator_assets": {
-    "backend/simulation/physics.py": "10eb4afd83d545bd5c2a049fcc9378badd449b44cd2dcd8485be66cce2cd2515",
+    "backend/simulation/physics.py": "cebfca8f8b126ea43dc6a66a3c398af44e407b7f4492be1eee3de34b98e0e6d1",
     "backend/simulation/observations.py": "bad3a149555e7c038d49b75688341483d1b457a7806dda5340e0f623bc465634",
     "data/processed/hh09_twin_inputs.json": "992952b3d291a148283ad83b132e761c6f6140d9f15766067c4095b7655e011d"
   },

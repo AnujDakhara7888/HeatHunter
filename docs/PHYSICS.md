@@ -549,6 +549,17 @@ fan test, none wrongly, and no room changed status because of it. Simulated
 results only, not real-home accuracy; in a real home the occupant runs the fan
 (not with an open-flued appliance) and uploads that night.
 
+### House shapes (2026-10-25)
+
+Demo houses can run on the HH09 twin or on single-storey plans: four presets in
+`shared/homes/presets/` and plans users save. `backend/simulation/plan_house.py`
+builds the truth house with the twin's per-geometry ASSUMPTIONs (fabric loss per
+exposed m2 transferred from the twin); the engine template and flag rule are
+transferred exactly as for real homes. Held-out demo check (each sensed room,
+leak and weak insulation x2.2, 2 houses, 7 nights): HH09 14/16 found, compact
+cottage 10/12, L-shaped 17/20, ranch 18/20, open-plan 14/16; 1-2 named wrong per
+shape, all leaks read as insulation, as on HH09. Simulated results only.
+
 ## Calibration (`calibrate_public_template`)
 
 - **Inputs:** healthy, simulated, TRAINING-split observations only. 40 houses

@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ChevronLeft, ChevronRight, Cpu, Eye, Fan, Flag, MessageCircle, Search, Sparkles, Wrench } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { HomeHistory, HomeReadings, RoomHistory, RoomNightSnapshot, RoomReport, RoomStatus, RoomTechnical, Series } from "../api/types";
 import { ROOM_STATUS, causeLabel } from "../lib/diagnosis";
 import { bicWeights, milestones, shortDate, snapAt, statusStrip } from "../lib/history";
@@ -20,7 +20,11 @@ type Props = {
   report: RoomReport | null;
   technical: RoomTechnical | null;
   onClose: () => void;
+  /** API room id -> the plan room id the 3D house and room colours use (the HH09 twin maps bedroom_1 -> bedroom). */
+  planRoom?: (id: string) => string;
 };
+
+const RoomColor = createContext<(id: string) => string>((id) => roomColor(SIM_TO_PLAN[id] ?? id));
 
 const gbp = (v: number) => `£${v < 100 ? v.toFixed(0) : Math.round(v).toLocaleString()}`;
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${Math.round(v)}%`;
@@ -37,7 +41,7 @@ function slice(s: Series, a: number, b: number): Series {
 }
 
 /** Two layers over a home's analysis as of one night: the story, then the engine underneath. */
-export function Analytics({ label, history, readings, asOf, setAsOf, room, setRoom, report, technical, onClose }: Props) {
+export function Analytics({ label, history, readings, asOf, setAsOf, room, setRoom, report, technical, onClose, planRoom }: Props) {
   const [layer, setLayer] = useState<"story" | "tech">("story");
   const page = useRef<HTMLDivElement>(null);
   const switchLayer = (k: "story" | "tech") => {
@@ -50,6 +54,7 @@ export function Analytics({ label, history, readings, asOf, setAsOf, room, setRo
   const rooms = history.rooms;
   const focus = rooms.find((r) => r.room_id === room) ?? rooms.find((r) => FLAGGED.includes(snapAt(r, n)?.status ?? "healthy")) ?? rooms[0];
   const night = history.nights[n - 1];
+  const colorOf = (id: string) => roomColor(planRoom ? planRoom(id) : SIM_TO_PLAN[id] ?? id);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -62,6 +67,7 @@ export function Analytics({ label, history, readings, asOf, setAsOf, room, setRo
   }, [n, total, onClose, setAsOf]);
 
   return (
+    <RoomColor.Provider value={colorOf}>
     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} ref={page} className="fixed inset-0 z-[60] overflow-y-auto bg-[#05070bf5] backdrop-blur-xl scroll-thin">
       {/* top bar */}
       <div className="sticky top-0 z-20 border-b border-line bg-[#05070bd9] backdrop-blur-xl">
@@ -113,7 +119,7 @@ export function Analytics({ label, history, readings, asOf, setAsOf, room, setRo
               const s = snapAt(r, n)?.status ?? "not_enough_data";
               return (
                 <button key={r.room_id} onClick={() => setRoom(r.room_id)} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] ${focus.room_id === r.room_id ? "border-white/50 bg-white/10 text-ink" : "border-line text-mute hover:text-ink"}`}>
-                  <i className="h-2 w-2 rounded-full" style={{ background: roomColor(SIM_TO_PLAN[r.room_id] ?? r.room_id) }} />
+                  <i className="h-2 w-2 rounded-full" style={{ background: colorOf(r.room_id) }} />
                   {r.name}
                   <span style={{ color: ROOM_STATUS[s].color }} aria-label={ROOM_STATUS[s].label}>
                     {ROOM_STATUS[s].icon}
@@ -149,6 +155,7 @@ export function Analytics({ label, history, readings, asOf, setAsOf, room, setRo
         </AnimatePresence>
       </div>
     </motion.div>
+    </RoomColor.Provider>
   );
 }
 
@@ -210,7 +217,7 @@ function Story({ history, room, n, setAsOf, setRoom, report }: { history: HomeHi
   const status = snap?.status ?? "not_enough_data";
   const flagged = FLAGGED.includes(status) || status === "watching";
   const weights = snap ? bicWeights(snap.fits) : {};
-  const color = roomColor(SIM_TO_PLAN[room.room_id] ?? room.room_id);
+  const color = useContext(RoomColor)(room.room_id);
   const advice = snap?.named_cause ? history.advice[snap.named_cause] : status === "issue_cause_unclear" ? [history.advice.draft[0], history.advice.envelope_conduction[0]] : [];
   const costs = strip.map((s) => s.snap?.annual_cost_gbp ?? null);
 
@@ -396,6 +403,7 @@ function StoryRail({ history, room, n, setAsOf }: { history: HomeHistory; room: 
 }
 
 function Swimlane({ history, n, focus, setAsOf, setRoom }: { history: HomeHistory; n: number; focus: string; setAsOf: (n: number) => void; setRoom: (id: string) => void }) {
+  const colorOf = useContext(RoomColor);
   const total = history.nights.length;
   const seen = new Set<RoomStatus>();
   return (
@@ -418,7 +426,7 @@ function Swimlane({ history, n, focus, setAsOf, setRoom }: { history: HomeHistor
               <tr key={r.room_id}>
                 <td>
                   <button onClick={() => setRoom(r.room_id)} className={`flex items-center gap-1.5 text-left text-[12.5px] ${focus === r.room_id ? "font-semibold text-ink" : "text-mute hover:text-ink"}`}>
-                    <i className="h-2 w-2 rounded-full" style={{ background: roomColor(SIM_TO_PLAN[r.room_id] ?? r.room_id) }} />
+                    <i className="h-2 w-2 rounded-full" style={{ background: colorOf(r.room_id) }} />
                     {r.name}
                   </button>
                 </td>
@@ -557,7 +565,7 @@ function Card({ title, sub, children, className = "" }: { title: string; sub?: s
 function Tech({ history, readings, room, n, setAsOf, report, technical }: { history: HomeHistory; readings: HomeReadings; room: RoomHistory; n: number; setAsOf: (n: number) => void; report: RoomReport | null; technical: RoomTechnical | null }) {
   const info = history.nights[n - 1];
   const rr = readings.rooms[room.room_id];
-  const color = roomColor(SIM_TO_PLAN[room.room_id] ?? room.room_id);
+  const color = useContext(RoomColor)(room.room_id);
   const a = ms(info.start);
   const b = ms(info.end);
   const strip = statusStrip(room, n);

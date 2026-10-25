@@ -26,6 +26,7 @@ export type DemoHomeCreate = S["DemoHomeCreate"];
 export type FixAction = S["FixAction"];
 export type HomeCreate = S["HomeCreate"];
 export type DemoWeek = S["DemoWeek"];
+export type HouseShape = S["HouseShape"];
 export type HomeHistory = S["HomeHistory"];
 export type RoomHistory = S["RoomHistory"];
 export type RoomNightSnapshot = S["RoomNightSnapshot"];

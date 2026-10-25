@@ -65,6 +65,7 @@ from .contracts import (
     HomeHealth,
     HomeHistory,
     HomeKind,
+    HomePlan,
     HomeReadings,
     HomeStatus,
     HomeSummary,
@@ -89,6 +90,7 @@ from .contracts import (
     Series,
 )
 from .homes import build_home, geocode, hh09_exposed_m2, plan_insulation, surface_insulation
+from .house_shapes import HH09_SHAPE, get_shape
 from .insight import predicted_series
 from .real_homes import (
     HOMES_DIR,
@@ -263,6 +265,14 @@ class HomeState:
     demo: object | None = None  # backend.simulation.demo_home.DemoHome, never inspected here
     record: RealHomeRecord | None = None
     home_template: HomeTemplate | None = None
+    plan: HomePlan | None = None  # a plan-built demo house (None for the HH09 twin)
+    shape_id: str | None = None
+
+    @property
+    def house_plan(self) -> HomePlan | None:
+        """The plan the engine template was built from (real home or plan-built demo)."""
+
+        return self.record.plan if self.record is not None else self.plan
     readings_cache: tuple[tuple, dict[str, dict[str, Series]]] | None = None
 
     def evaluated_nights(self, room_id: str) -> list[NightObservations]:
@@ -342,23 +352,37 @@ class HomeService:
             if request.fault
             else None
         )
+        plan = home_template = None
+        template, extension, settings = self._demo_template, self._demo_extension, self._settings
+        name = "HH09 twin (demo)"
+        if request.house != HH09_SHAPE:
+            shape = get_shape(request.house)
+            plan = shape.plan
+            home_template, extension = build_home(plan)
+            template = home_template.template
+            settings = self._transferred(template, f"this {shape.name.lower()}")
+            name = f"{shape.name} (demo)"
         demo = DemoHome(
             seed=request.seed if request.seed is not None else secrets.randbelow(2**63),
             fault=fault,
             random_fault=request.random_fault,
             start_date=request.start_date,
+            plan=plan,
         )
         state = HomeState(
             home_id=f"demo-{uuid4().hex[:10]}",
-            name="HH09 twin (demo)",
+            name=name,
             kind=HomeKind.DEMO,
             created_at=datetime.now(UTC),
-            template=self._demo_template,
-            extension=self._demo_extension,
-            settings=self._settings,
-            room_names={r.room_id: r.room_name for r in self._demo_template.rooms},
-            tracks={r.room_id: RoomTrack() for r in self._demo_template.rooms},
+            template=template,
+            extension=extension,
+            settings=settings,
+            room_names={r.room_id: r.room_name for r in template.rooms},
+            tracks={r.room_id: RoomTrack() for r in template.rooms},
             demo=demo,
+            home_template=home_template,
+            plan=plan,
+            shape_id=request.house,
         )
         with self._lock:
             demos = sorted(
@@ -394,15 +418,18 @@ class HomeService:
             self._homes[state.home_id] = state
         return self._summary(state)
 
-    def _real_state(self, record: RealHomeRecord) -> HomeState:
-        home_template, extension = build_home(record.plan)
-        template = home_template.template
-        settings = replace(
+    def _transferred(self, template: PublicTemplate, where: str) -> MonitoringSettings:
+        return replace(
             self._settings,
             template_id=template.template_id,
             provenance=self._settings.provenance
-            + " Transferred unchanged to this home from the HH09-twin tuning (ASSUMPTION).",
+            + f" Transferred unchanged to {where} from the HH09-twin tuning (ASSUMPTION).",
         )
+
+    def _real_state(self, record: RealHomeRecord) -> HomeState:
+        home_template, extension = build_home(record.plan)
+        template = home_template.template
+        settings = self._transferred(template, "this home")
         tracks = {r.room_id: RoomTrack() for r in template.rooms}
         for room_id, fix in record.fixes.items():
             if room_id in tracks:
@@ -563,6 +590,7 @@ class HomeService:
             nights_monitored=len(state.nights),
             last_night=_night_date(state.nights[-1]) if state.nights else None,
             created_at=state.created_at,
+            shape_id=state.shape_id,
         )
 
     # --- money and words --------------------------------------------------------
@@ -573,15 +601,15 @@ class HomeService:
         score = score or state.tracks[room_id].latest
         fit = score.fits[score.leading_cause]
         overrides = None
-        if state.kind == HomeKind.REAL and named is not None:
+        if state.house_plan is not None:  # repair priced from the plan, not HH09's documented rooms
             assumptions = load_assumptions()
-            if named == HypothesisType.DRAFT:
+            if (named or score.leading_cause) == HypothesisType.DRAFT:
                 repair = float(assumptions["economic"]["repair_costs"]["seal_leaks"]["value"])
             else:
                 rate = float(assumptions["economic"]["repair_costs"]["add_insulation"]["value"])
                 wall = (
                     state.home_template.exterior_wall_length_m.get(room_id, 0.0)
-                    * state.record.plan.ceiling_height_m
+                    * state.house_plan.ceiling_height_m
                 )
                 repair = rate * max(wall - state.home_template.window_area_m2.get(room_id, 0.0), 0.0)
             overrides = MoneyOverrides(repair_cost_gbp=repair)
@@ -1044,8 +1072,8 @@ class HomeService:
                 wind_speed=joined(
                     [n.weather.wind_speed for n in nights], nights[0].weather.wind_speed.provenance, "m/s"
                 ),
-                insulation=plan_insulation(state.record.plan, state.template, state.extension)
-                if state.record is not None
+                insulation=plan_insulation(state.house_plan, state.template, state.extension)
+                if state.house_plan is not None
                 else surface_insulation(state.template, hh09_exposed_m2(), state.extension),
                 rooms=out_rooms,
                 nights=[_night_info(n) for n in nights],

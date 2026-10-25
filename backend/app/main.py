@@ -35,6 +35,8 @@ from .contracts import (
     HomePlan,
     HomeReadings,
     HomeSummary,
+    HouseShape,
+    HouseShapeCreate,
     ReadingsUpload,
     RealHouse,
     RoomReport,
@@ -337,6 +339,48 @@ def _demo_weeks() -> list[DemoWeek]:
     return weeks
 
 
+@app.get("/api/house-shapes", response_model=list[HouseShape], responses=V2_ERRORS, tags=["homes-v2"])
+async def house_shapes() -> list[HouseShape]:
+    """House shapes a demo can run on: the HH09 twin, presets and saved plans."""
+
+    from .house_shapes import list_shapes
+
+    return await _v2(list_shapes)
+
+
+@app.post(
+    "/api/house-shapes",
+    response_model=HouseShape,
+    status_code=status.HTTP_201_CREATED,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
+)
+async def save_house_shape(request: HouseShapeCreate) -> HouseShape:
+    """Save a drawn single-storey plan to reuse for simulations."""
+
+    from .house_shapes import save_shape
+
+    return await _v2(save_shape, request)
+
+
+@app.delete(
+    "/api/house-shapes/{shape_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
+)
+async def delete_house_shape(shape_id: str) -> Response:
+    """Delete a saved shape (presets and the HH09 twin stay)."""
+
+    from .house_shapes import delete_shape
+
+    if any(h.shape_id == shape_id for h in await _v2(_homes().list_homes)):
+        raise ApiFailure(409, "INVALID_HOME_STATE", "delete the demo houses built on this shape first")
+    await _v2(delete_shape, shape_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @app.post(
     "/api/demo/homes",
     response_model=HomeSummary,
@@ -345,7 +389,7 @@ def _demo_weeks() -> list[DemoWeek]:
     tags=["homes-v2"],
 )
 async def create_demo_home(request: DemoHomeCreate) -> HomeSummary:
-    """Load any scenario on the simulated HH09 twin: a chosen fault, a random hidden one, or none."""
+    """Load a scenario on a house shape (default the HH09 twin): a chosen fault, a random one, or none."""
 
     return await _v2(_homes().create_demo, request)
 

@@ -99,6 +99,8 @@ Only four routes are demo-only.
 |---|---|---|---|---|
 | 1 | GET | `/api/homes` | all | House picker: list of homes |
 | 2 | POST | `/api/demo/homes` | demo | Load any scenario: house + fault (or random, or none) |
+| 2c | GET/POST | `/api/house-shapes` | demo | House shapes for demos (HH09 twin, 4 presets, saved plans); POST saves a drawn plan |
+| 2d | DELETE | `/api/house-shapes/{shape_id}` | demo | Delete a saved shape (409 while a demo house uses it) |
 | 2b | GET | `/api/demo/weeks` | demo | Weeks a demo house can start on, with each week's real weather (mean °C, wind, windy/calm nights) |
 | 3 | POST | `/api/homes` | real | Set up a real home: plan, location, heating-off hours |
 | 4 | GET | `/api/homes/{home_id}` | all | Home health: every room's status in plain words |
