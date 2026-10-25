@@ -23,8 +23,11 @@ default model is `claude-sonnet-5-5`; override it with
 HeatHunter and the home it is shown; anything else gets a fixed redirect.
 Real homes and weather lookup use Open-Meteo and need internet.
 
-> The frontend still calls the single-night routes removed on 2026-10-24. It
-> must move to API v2 (`docs/CONTRACTS.md`) before the UI demo works.
+The UI uses API v2 throughout: `/lab` is the demo house (hidden, judge-planted or
+no fault; "Next night" advances, rooms change status, "I sealed leaks / I
+insulated" reports the repair, Reveal at the end), `/home` sets up a real home
+(plan, town, heating-off hours, sensor CSVs), and `/real` replays the real HH09
+week (heating on, so not monitored).
 
 ## The story
 

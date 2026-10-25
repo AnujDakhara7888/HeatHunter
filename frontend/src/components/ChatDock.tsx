@@ -12,11 +12,16 @@ type Msg = { role: "user" | "assistant"; content: string; offline?: boolean };
 export const useChatContext = create<{
   context: Record<string, unknown>;
   suggestions: string[];
+  /** Home on screen; the server builds the assistant's context for it (public data only). */
+  homeId: string | null;
   setContext: (c: Record<string, unknown>, suggestions?: string[]) => void;
+  setHome: (homeId: string | null) => void;
 }>((set) => ({
   context: {},
   suggestions: [],
+  homeId: null,
   setContext: (context, suggestions) => set((s) => ({ context, suggestions: suggestions ?? s.suggestions })),
+  setHome: (homeId) => set({ homeId }),
 }));
 
 const VIEWS: Record<string, View> = { exterior: "exterior", thermal: "thermal", open: "open", inside: "inside", fan: "fan", top: "top" };
@@ -35,46 +40,36 @@ function applyActions(actions: ChatAction[]) {
   }
 }
 
-/** Grounded fallback when no Claude key is configured: answers only from the shown state. */
+/** Grounded fallback when the assistant is unavailable: answers only from what is on screen. */
 function offlineAnswer(q: string, ctx: Record<string, unknown>): { text: string; actions: ChatAction[] } {
   const s = q.toLowerCase();
   const d = ctx as {
-    flagged_room?: string;
-    status?: string;
-    leading_cause?: string;
-    runner_up?: string;
-    bic_gap?: number;
-    multiplier?: number;
-    annual_cost?: string;
-    payback_years?: number;
+    rooms?: string[];
+    nights?: number;
+    selected_room?: { name: string; headline: string; why: string[]; what_to_do: string[]; money?: { annual_cost_gbp: number; repair_cost_gbp: number | null; payback_years: number | null } | null };
   };
+  const room = d.selected_room;
+  if (/several|nights|why.*night|one night/.test(s))
+    return {
+      text: "One cold night shows that a room cools too fast, but not why. An air leak gets worse on windy nights and a weak wall does not, so watching nights with different weather tells them apart. A room is only flagged after two nights in a row.",
+      actions: [],
+    };
   if (/draft|leak|insulat|differ/.test(s))
     return {
-      text: "A leak lets cold outside air in, so it gets worse with wind and with a fan pulling air through the house. Weak insulation lets heat soak out through the wall, which a fan barely changes. That difference is why HeatHunter can tell them apart with the fan test.",
-      actions: [{ type: "set_view", target: "fan" }],
+      text: "A leak lets cold outside air in, so its effect grows with wind. Weak insulation lets heat soak out through the wall whatever the wind. HeatHunter compares both explanations against every night it has seen.",
+      actions: [{ type: "set_view", target: "thermal" }],
     };
-  if (/why|which room|where/.test(s) && d.flagged_room)
+  if (/worth|cost|money|save|pay/.test(s) && room?.money)
     return {
-      text: `${d.flagged_room} cooled in a way the normal model could not explain${d.multiplier ? `: the best fit needs about ${d.multiplier.toFixed(1)}× its usual heat loss` : ""}. The heat map shows it losing heat first.`,
-      actions: [{ type: "focus_room", target: String(ctx.flagged_room_id ?? "") }, { type: "set_view", target: "thermal" }],
-    };
-  if (/sure|confiden|certain|trust/.test(s) && d.status)
-    return {
-      text:
-        d.status === "confident"
-          ? `Confident. ${d.leading_cause} beats ${d.runner_up} by a fit-score gap of ${d.bic_gap?.toFixed(0)} (above ~10 is a strong preference). It is still a screening result on a simulated twin, not a certified audit.`
-          : d.status === "ambiguous"
-            ? `Not yet. ${d.leading_cause} and ${d.runner_up} explain the night almost equally well (gap ${d.bic_gap?.toFixed(0)}), so HeatHunter recommends the fan test before suggesting a repair.`
-            : `The engine reports "${d.status}". It will not force an answer when the evidence is weak.`,
+      text: `${room.name}: about £${Math.round(room.money.annual_cost_gbp)} a year of extra heating${room.money.repair_cost_gbp != null ? `; a typical repair is about £${Math.round(room.money.repair_cost_gbp)}` : ""}${room.money.payback_years != null ? `, paying back in roughly ${room.money.payback_years.toFixed(1)} years` : ""}. These are screening estimates, not quotes.`,
       actions: [],
     };
-  if (/cost|money|save|worth|pay/.test(s) && d.annual_cost)
-    return {
-      text: `The extra heat loss costs about ${d.annual_cost} a year at the stated gas price${d.payback_years ? `, so the repair pays back in roughly ${d.payback_years.toFixed(0)} years` : ""}. These are screening estimates; adjust the price and repair cost sliders to match your quotes.`,
-      actions: [],
-    };
+  if (/which|where|problem|why/.test(s) && room)
+    return { text: `${room.headline} ${room.why.slice(0, 2).join(" ")}`, actions: [{ type: "set_view", target: "thermal" }] };
+  if (/do|fix|repair/.test(s) && room?.what_to_do.length) return { text: room.what_to_do.join(" "), actions: [] };
+  if (d.rooms?.length) return { text: `After ${d.nights ?? 0} night(s): ${d.rooms.join(" · ")}`, actions: [] };
   return {
-    text: "I can explain what the heat map shows, why a room was flagged, how sure the engine is, or what a fix is worth. Add an ANTHROPIC_API_KEY on the server for free-form answers.",
+    text: "I can explain what the heat map shows, which room is losing heat and why, and what a fix is worth. Add an ANTHROPIC_API_KEY on the server for free-form answers.",
     actions: [],
   };
 }
@@ -84,7 +79,7 @@ export function ChatDock() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const { context, suggestions } = useChatContext();
+  const { context, suggestions, homeId } = useChatContext();
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => end.current?.scrollIntoView({ behavior: "smooth" }), [msgs, busy]);
 
@@ -95,9 +90,11 @@ export function ChatDock() {
     setInput("");
     setBusy(true);
     try {
-      const reply = await traced("chat", "POST /assistant/chat", () =>
-        api.POST("/api/assistant/chat", {
-          body: { messages: history.slice(-12).map(({ role, content }) => ({ role, content })), context },
+      if (!homeId) throw new ApiError("no home on screen", 503);
+      const reply = await traced("chat", "POST /homes/{id}/assistant", () =>
+        api.POST("/api/homes/{home_id}/assistant", {
+          params: { path: { home_id: homeId } },
+          body: { messages: history.slice(-12).map(({ role, content }) => ({ role, content })) },
         }),
         (r) => r.model,
       );

@@ -1,28 +1,22 @@
-import type { Diagnosis, FitCurve, RoomInsight } from "../api/types";
+import type { RoomStatus } from "../api/types";
 import { CAUSE, type CauseKey } from "./rooms";
 
-export const strengthOf = (multiplier: number) => Math.min(1, Math.max(0.25, (multiplier - 1) / 1.5));
-
-export function assumption(d: Diagnosis | null | undefined, name: string): number | null {
-  const a = d?.assumptions.find((x) => x.name === name);
-  return typeof a?.value === "number" ? a.value : null;
-}
-
-export function bicGap(d: Diagnosis | null | undefined) {
-  if (!d || d.ranked_causes.length < 2) return null;
-  return d.ranked_causes[1].bic - d.ranked_causes[0].bic;
-}
+/** 0..1 visual intensity of a finding from the extra heat loss (%). */
+export const strengthOf = (extraPercent: number | null | undefined) =>
+  Math.min(1, Math.max(0.3, (extraPercent ?? 15) / 40));
 
 export const causeLabel = (c: string) => CAUSE[c as CauseKey]?.label ?? c;
 
-export const STATUS_COPY: Record<string, { label: string; color: string; line: string }> = {
-  confident: { label: "Confident", color: "#2fd18b", line: "One explanation clearly wins." },
-  ambiguous: { label: "Ambiguous", color: "#ffb020", line: "Two explanations fit almost equally well." },
-  unexplained: { label: "Unexplained", color: "#ff6a3d", line: "No explanation fits well enough to act on." },
-  no_fault: { label: "No fault found", color: "#3aa0ff", line: "Every room cools the way the model expects." },
+/** Plain-language room status, colour and icon (always shown with its label, never colour alone). */
+export const ROOM_STATUS: Record<RoomStatus, { label: string; color: string; icon: string }> = {
+  not_enough_data: { label: "Waiting for a night", color: "#626a7d", icon: "○" },
+  healthy: { label: "Healthy", color: "#2fd18b", icon: "✓" },
+  watching: { label: "Watching", color: "#ffb020", icon: "◔" },
+  issue: { label: "Issue", color: "#ff6a3d", icon: "!" },
+  issue_cause_unclear: { label: "Issue · cause unclear", color: "#ff6a3d", icon: "?" },
+  verifying: { label: "Checking the fix", color: "#7aa8ff", icon: "↻" },
+  resolved: { label: "Fixed", color: "#2fd18b", icon: "✓" },
+  still_an_issue: { label: "Fix didn't work", color: "#ff3b5c", icon: "✕" },
 };
 
-export function fitsFor(insight: RoomInsight | undefined) {
-  const by = Object.fromEntries((insight?.fits ?? []).map((f) => [f.fault_type, f])) as Record<string, FitCurve>;
-  return by;
-}
+export const FLAG_STATUSES: RoomStatus[] = ["issue", "issue_cause_unclear", "still_an_issue", "watching", "verifying"];

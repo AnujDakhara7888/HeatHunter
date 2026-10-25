@@ -31,6 +31,9 @@ export function useNight(
   const [t, setT] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const raf = useRef(0);
+  // Always read the current night's range (callbacks may be scheduled before a new night loads).
+  const rangeRef = useRef(range);
+  rangeRef.current = range;
 
   useEffect(() => {
     if (!rooms || !range) return;
@@ -62,7 +65,8 @@ export function useNight(
       const dt = now - last;
       last = now;
       setT((cur) => {
-        const next = (cur ?? range[0]) + ((range[1] - range[0]) * dt) / (seconds * 1000);
+        const start = cur == null || cur < range[0] || cur > range[1] ? range[0] : cur;
+        const next = start + ((range[1] - range[0]) * dt) / (seconds * 1000);
         if (next >= range[1]) {
           setPlaying(false);
           return range[1];
@@ -84,7 +88,8 @@ export function useNight(
     range,
     playing,
     play: () => {
-      if (range && t != null && t >= range[1] - 1) setT(range[0]);
+      const r = rangeRef.current;
+      setT((cur) => (r && (cur == null || cur >= r[1] - 1 || cur < r[0]) ? r[0] : cur));
       setPlaying(true);
     },
     pause: () => setPlaying(false),

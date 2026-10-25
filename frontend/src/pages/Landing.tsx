@@ -67,22 +67,21 @@ const CHAPTERS: Chapter[] = [
         <span className="text-mute">Physics questions each one.</span>
       </>
     ),
-    body: "Normal, an air leak, or weak insulation. Each is fitted to how every room actually cooled.",
+    body: "Normal, an air leak, or weak insulation. Every night, each is fitted to how every room actually cooled.",
     finding: true,
   },
   {
-    view: "fan",
-    eyebrow: "The experiment",
+    view: "exterior",
+    eyebrow: "Night after night",
     title: (
       <>
-        Still tied?
+        One night can't tell.
         <br />
-        <span className="text-mute">Switch on a fan.</span>
+        <span className="text-mute">The wind can.</span>
       </>
     ),
-    body: "Pulling air through the house speeds up a leak, but barely touches heat lost through a wall.",
+    body: "A leak gets worse on windy nights; a weak wall doesn't. Watching nights with different weather tells them apart, so a room is flagged only after two nights in a row.",
     finding: true,
-    fan: true,
     align: "right",
   },
   {
@@ -90,12 +89,12 @@ const CHAPTERS: Chapter[] = [
     eyebrow: "The proof",
     title: (
       <>
-        Fix it.
+        Fix it yourself.
         <br />
-        <span className="text-mute">Then replay the same night.</span>
+        <span className="text-mute">We confirm it worked.</span>
       </>
     ),
-    body: "Same weather, same start. If the room now cools normally, the fix worked. If not, we say so.",
+    body: "Tell the app what you did. It judges only the nights after your repair, and says plainly whether the problem is gone.",
     finding: true,
   },
 ];
@@ -264,9 +263,9 @@ export default function Landing() {
         </h2>
         <div className="pointer-events-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
           {[
-            { to: "/lab", icon: <FlaskConical size={20} />, t: "Fault Lab", d: "Hide a fault in the digital twin, or let a judge hide it. Watch the engine hunt it down." },
-            { to: "/real", icon: <Home size={20} />, t: "Real home", d: "A week of real HH09 sensor data, in 3D. Screen any night with the same engine." },
-            { to: "/home", icon: <Upload size={20} />, t: "Your home", d: "Upload a floor plan, add readings, get your own heat map and screening." },
+            { to: "/lab", icon: <FlaskConical size={20} />, t: "Fault Lab", d: "Hide a fault in the digital twin, or let a judge hide it. Advance night by night and watch it get caught." },
+            { to: "/real", icon: <Home size={20} />, t: "Real home", d: "A week of real HH09 sensor data, replayed in 3D, room by room." },
+            { to: "/home", icon: <Upload size={20} />, t: "Your home", d: "Upload a floor plan and your sensor logs. HeatHunter watches your rooms night after night." },
           ].map((c) => (
             <Link key={c.t} to={c.to} className="glass group rounded-3xl p-6 transition hover:-translate-y-1">
               <div className="grid h-10 w-10 place-items-center rounded-full bg-white/10">{c.icon}</div>
