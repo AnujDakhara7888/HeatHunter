@@ -59,7 +59,9 @@ def _errors(*codes: int) -> dict[int | str, dict]:
         status.HTTP_409_CONFLICT: "The action is not valid for this home now.",
         status.HTTP_422_UNPROCESSABLE_CONTENT: "The request is invalid.",
         status.HTTP_501_NOT_IMPLEMENTED: "The owning scientific or data service is not available.",
-        status.HTTP_503_SERVICE_UNAVAILABLE: "An optional online service (Claude, weather) is unavailable.",
+        status.HTTP_503_SERVICE_UNAVAILABLE: (
+            "An optional online service (assistant, weather) is unavailable."
+        ),
     }
     return {code: {"model": ApiError, "description": descriptions[code]} for code in codes}
 
@@ -398,17 +400,39 @@ async def reveal_demo(home_id: str) -> DemoReveal:
     return await _v2(_homes().reveal, home_id)
 
 
+@app.post("/api/assistant/help", response_model=ChatReply, responses=_errors(422, 503), tags=["assistant"])
+async def assistant_help(request: HomeChatRequest) -> ChatReply:
+    """General HeatHunter help before a home is selected; no client-supplied house data."""
+
+    from .assistant import AssistantUnavailable, general_chat
+
+    try:
+        return await run_in_threadpool(general_chat, request.messages, request.screen)
+    except AssistantUnavailable as exc:
+        raise ApiFailure(503, "ASSISTANT_UNAVAILABLE", str(exc)) from exc
+    except ValueError as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+
+
 @app.post("/api/homes/{home_id}/assistant", response_model=ChatReply, responses=V2_ERRORS, tags=["homes-v2"])
 async def home_assistant(home_id: str, request: HomeChatRequest) -> ChatReply:
-    """Chat about this home. The server supplies the home's public data; Claude only."""
+    """Chat about this home using its server-built context and the configured provider."""
 
     from .assistant import AssistantUnavailable, home_chat
+    from .chat_context import screen_context
 
     context = await _v2(_homes().assistant_context, home_id)
     try:
+        context["screen_context"] = screen_context(request.screen, has_home=True)
+        selected = request.screen.selected_room_id if request.screen else None
+        if selected and selected in {r["room_id"] for r in context["home"]["rooms"]}:
+            report = await _v2(_homes().room_report, home_id, selected)
+            context["selected_room"] = report.model_dump(mode="json")
         return await run_in_threadpool(home_chat, request.messages, context)
     except AssistantUnavailable as exc:
         raise ApiFailure(503, "ASSISTANT_UNAVAILABLE", str(exc)) from exc
+    except ValueError as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
 
 
 @app.post("/api/assistant/chat", response_model=ChatReply, responses=V2_ERRORS, tags=["assistant"])

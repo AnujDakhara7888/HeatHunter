@@ -162,13 +162,15 @@ export default function Lab() {
       {
         page: "Fault Lab: simulated HH09 twin watched night after night",
         nights: nights.length,
+        selected_room_id: report?.room_id,
+        visible_window: night ? { start: night.start, end: night.end } : undefined,
         rooms: health?.rooms.map((r) => `${r.name}: ${ROOM_STATUS[r.status].label} — ${r.headline}`),
         selected_room: report && { name: report.name, headline: report.headline, why: report.why, what_to_do: report.what_to_do, money: report.money && { annual_cost_gbp: report.money.annual_cost_gbp, repair_cost_gbp: report.money.repair_cost_gbp, payback_years: report.money.payback_years } },
         revealed_truth: reveal ? reveal.summary : "not revealed yet",
       },
       ["Which room is the problem?", "Why do several nights matter?", "Is it worth fixing?"],
     );
-  }, [home, health, report, reveal, nights.length]);
+  }, [home, health, report, reveal, nights.length, night?.night_id]);
 
   const run = async <T,>(what: string, fn: () => Promise<T>) => {
     setBusy(what);

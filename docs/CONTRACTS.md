@@ -46,6 +46,7 @@ root-cause classification.
 | GET | `/api/real/house/floor-plan` | `image/png` | Original floor plan |
 | GET | `/api/homes/sample-plan` | `HomePlan` | HH09 plan in the upload format |
 | POST | `/api/assistant/floor-plan` | `FloorPlanDraft` | Claude reads an uploaded plan |
+| POST | `/api/assistant/help` | `ChatReply` | General project help without a selected home; messages only |
 | GET | `/api/weather/lookup` | `WeatherLookup` | Open-Meteo by place name |
 | GET | `/api/evaluation/summary` | `EvaluationSummary` | 501 until the held-out report exists |
 
@@ -108,7 +109,7 @@ Only four routes are demo-only.
 | 9 | POST | `/api/homes/{home_id}/readings` | real | Sensors upload readings |
 | 10 | POST | `/api/demo/homes/{home_id}/advance` | demo | Move the demo clock on by N nights |
 | 11 | GET | `/api/demo/homes/{home_id}/reveal` | demo | Show the hidden fault and whether the app got it right |
-| 12 | POST | `/api/homes/{home_id}/assistant` | all | Chat about this home (Claude; sees public data only) |
+| 12 | POST | `/api/homes/{home_id}/assistant` | all | Chat about this home (OpenAI or Claude; server-built context) |
 
 The single-night routes it replaced were removed on 2026-10-24 (see "HTTP
 surface" above).
@@ -238,12 +239,31 @@ exists. After reveal, the assistant may mention the truth.
 `{ "messages": [ { "role": "user", "content": "Why the bedroom?" } ] }` →
 `{ "reply": "...", "actions": [ { "type": "focus_room", "target": "bedroom_1" } ] }`.
 The server builds the context from #4 and #6 itself, so the UI never sends
-data. Claude only; returns 503 without an API key.
+data. Set `HEATHUNTER_CHAT_PROVIDER=openai` and `OPENAI_API_KEY` for OpenAI;
+the default `claude` uses `ANTHROPIC_API_KEY`. `HEATHUNTER_OPENAI_MODEL`
+defaults to `gpt-5-nano` (minimal reasoning); the model setting is read after `.env` is loaded.
+OpenAI uses the Responses API with strict JSON output, `store=false`, a
+30-second request timeout, no automatic retries and at most 1,200 output tokens.
+Only valid room-focus actions are used. Missing credentials, provider errors or
+invalid replies return 503 with `ASSISTANT_UNAVAILABLE`; the UI labels its
+local fallback as an offline explanation. Floor-plan reading remains Claude-backed.
+Before a home is selected, the chat calls `/api/assistant/help` with the same
+message-list request. Its context is server-owned and explicitly has no selected
+home or room readings. Both chat paths include the project guide. No legacy
+scenario endpoint or client-supplied house context is restored. Conversations
+reset when the selected home changes; late replies from another session are ignored.
+Both chat routes accept optional `screen` metadata: the page (`overview`, `fault_lab`,
+`real_home`, `your_home`), 3D view, IR toggle, selected room ID, setup step and
+timezone-aware chart window. These identify the visible UI; they cannot contain
+client-supplied readings, diagnosis, prices or hidden truth. The backend adds the
+selected room's public report or real HH09 measurement ranges for that window.
+Ranges are explicitly not the current playback-cursor temperature. Page changes
+also reset the conversation to prevent replies about a previous page.
 
 ### Errors
 404 unknown home or room · 409 wrong state (e.g. advance a real home, reveal
 before any night) · 422 invalid input · 501 stale/missing settings ·
-503 Claude or weather unavailable.
+503 assistant or weather unavailable.
 
 ## OpenAPI and TypeScript
 

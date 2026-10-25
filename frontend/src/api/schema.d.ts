@@ -342,6 +342,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assistant/help": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assistant Help
+         * @description General HeatHunter help before a home is selected; no client-supplied house data.
+         */
+        post: operations["assistant_help_api_assistant_help_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/homes/{home_id}/assistant": {
         parameters: {
             query?: never;
@@ -353,7 +373,7 @@ export interface paths {
         put?: never;
         /**
          * Home Assistant
-         * @description Chat about this home. The server supplies the home's public data; Claude only.
+         * @description Chat about this home using its server-built context and the configured provider.
          */
         post: operations["home_assistant_api_homes__home_id__assistant_post"];
         delete?: never;
@@ -400,6 +420,32 @@ export interface components {
             detail: string;
             /** Code */
             code: string;
+        };
+        /**
+         * AssistantScreen
+         * @description UI selection metadata only; readings and diagnoses must come from the server.
+         */
+        AssistantScreen: {
+            /**
+             * Page
+             * @enum {string}
+             */
+            page: "overview" | "fault_lab" | "real_home" | "your_home";
+            /** View */
+            view?: ("exterior" | "thermal" | "open" | "inside" | "fan" | "top") | null;
+            /**
+             * Infrared
+             * @default false
+             */
+            infrared: boolean;
+            /** Selected Room Id */
+            selected_room_id?: string | null;
+            /** Step */
+            step?: ("plan" | "setup" | "data" | "results") | null;
+            /** Window Start */
+            window_start?: string | null;
+            /** Window End */
+            window_end?: string | null;
         };
         /** Assumption */
         Assumption: {
@@ -656,6 +702,7 @@ export interface components {
         HomeChatRequest: {
             /** Messages */
             messages: components["schemas"]["ChatMessage"][];
+            screen?: components["schemas"]["AssistantScreen"] | null;
         };
         /** HomeCreate */
         HomeCreate: {
@@ -1200,7 +1247,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1282,7 +1329,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1347,7 +1394,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1416,7 +1463,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1485,7 +1532,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1552,7 +1599,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1623,7 +1670,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1694,7 +1741,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1762,7 +1809,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1830,7 +1877,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1902,7 +1949,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1973,7 +2020,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -2040,7 +2087,49 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    assistant_help_api_assistant_help_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomeChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatReply"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -2111,7 +2200,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description An optional online service (Claude, weather) is unavailable. */
+            /** @description An optional online service (assistant, weather) is unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
