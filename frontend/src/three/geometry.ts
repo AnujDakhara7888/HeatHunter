@@ -1,5 +1,5 @@
 import type { HomePlan, PlanRoom } from "../api/types";
-import { planBounds, wallSegments, type WallSegment } from "../lib/plan";
+import { wallSegments, type WallSegment } from "../lib/plan";
 
 export const WALL_H = 2.4;
 export const WALL_T = 0.14;
@@ -16,52 +16,110 @@ export function outwardNormal(seg: WallSegment, plan: HomePlan): [number, number
   return horizontal ? [0, seg.z0 > cz ? 1 : -1] : [seg.x0 > cx ? 1 : -1, 0];
 }
 
-function coverage(rect: Rect, rooms: PlanRoom[]) {
-  let area = 0;
-  for (const r of rooms) {
-    const w = Math.max(0, Math.min(rect.x + rect.w, r.x + r.width) - Math.max(rect.x, r.x));
-    const d = Math.max(0, Math.min(rect.z + rect.d, r.z + r.depth) - Math.max(rect.z, r.z));
-    area += w * d;
-  }
-  return area / (rect.w * rect.d);
+/** Footprint grid: cells between room edges, marked where a room covers them. */
+function footprint(rooms: PlanRoom[]) {
+  const uniq = (vs: number[]) => [...new Set(vs.map((v) => Math.round(v * 100) / 100))].sort((p, q) => p - q);
+  const xs = uniq(rooms.flatMap((r) => [r.x, r.x + r.width]));
+  const zs = uniq(rooms.flatMap((r) => [r.z, r.z + r.depth]));
+  const covered = zs.slice(0, -1).map((z0, j) =>
+    xs.slice(0, -1).map((x0, i) => {
+      const cx = (x0 + xs[i + 1]) / 2;
+      const cz = (z0 + zs[j + 1]) / 2;
+      return rooms.some((r) => cx > r.x && cx < r.x + r.width && cz > r.z && cz < r.z + r.depth);
+    }),
+  );
+  return { xs, zs, covered };
 }
 
-/** The largest well-covered rectangle gets a gable roof; the rest gets flat roofs. */
-export function roofLayout(plan: HomePlan): { main: Rect; flats: Rect[] } {
-  const rooms = plan.rooms;
-  const bbox = (rs: PlanRoom[]): Rect => {
-    const b = planBounds({ ...plan, rooms: rs });
-    return { x: b.minX, z: b.minZ, w: b.w, d: b.d };
+/**
+ * Roof that follows the rooms wherever they are moved: the largest fully covered
+ * rectangle gets a gable, every detached rectangular block gets its own gable, and
+ * whatever is left (wings, bays) gets flat roofs. Gaps between rooms stay open.
+ */
+export function roofLayout(plan: HomePlan): { gables: Rect[]; flats: Rect[] } {
+  if (!plan.rooms.length) return { gables: [], flats: [] };
+  const { xs, zs, covered } = footprint(plan.rooms);
+  const nz = covered.length;
+  const nx = xs.length - 1;
+  const used = covered.map((row) => row.map(() => false));
+  const rect = (i0: number, j0: number, i1: number, j1: number): Rect => ({ x: xs[i0], z: zs[j0], w: xs[i1 + 1] - xs[i0], d: zs[j1 + 1] - zs[j0] });
+  const mark = (i0: number, j0: number, i1: number, j1: number) => {
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) used[j][i] = true;
   };
-  let main = bbox(rooms);
-  if (coverage(main, rooms) < 0.95) {
-    let best: Rect | null = null;
-    for (const skip of rooms) {
-      const rect = bbox(rooms.filter((r) => r !== skip));
-      if (coverage(rect, rooms) >= 0.95 && (!best || rect.w * rect.d > best.w * best.d)) best = rect;
+
+  // Main gable: the largest rectangle of covered cells.
+  let best: [number, number, number, number] | null = null;
+  let bestArea = 0;
+  for (let j0 = 0; j0 < nz; j0++)
+    for (let i0 = 0; i0 < nx; i0++) {
+      let limit = nx - 1;
+      for (let j1 = j0; j1 < nz && covered[j1][i0]; j1++) {
+        let i1 = i0;
+        while (i1 < limit && covered[j1][i1 + 1]) i1++;
+        limit = i1;
+        const r = rect(i0, j0, limit, j1);
+        if (r.w * r.d > bestArea) ((bestArea = r.w * r.d), (best = [i0, j0, limit, j1]));
+      }
     }
-    if (best) main = best;
+  const gables: Rect[] = [];
+  if (best) {
+    gables.push(rect(...best));
+    mark(...best);
   }
+
+  // Connected blocks of the rest: a detached rectangle gets a gable, anything else flat strips.
   const flats: Rect[] = [];
-  for (const r of rooms) {
-    const pieces: Rect[] = [];
-    const x0 = r.x;
-    const x1 = r.x + r.width;
-    const z0 = r.z;
-    const z1 = r.z + r.depth;
-    const mx1 = main.x + main.w;
-    const mz1 = main.z + main.d;
-    if (x1 <= main.x + 0.01 || x0 >= mx1 - 0.01 || z1 <= main.z + 0.01 || z0 >= mz1 - 0.01) {
-      pieces.push({ x: x0, z: z0, w: r.width, d: r.depth });
-    } else {
-      if (z1 > mz1 + 0.01) pieces.push({ x: x0, z: mz1, w: r.width, d: z1 - mz1 });
-      if (z0 < main.z - 0.01) pieces.push({ x: x0, z: z0, w: r.width, d: main.z - z0 });
-      if (x1 > mx1 + 0.01) pieces.push({ x: mx1, z: Math.max(z0, main.z), w: x1 - mx1, d: Math.min(z1, mz1) - Math.max(z0, main.z) });
-      if (x0 < main.x - 0.01) pieces.push({ x: x0, z: Math.max(z0, main.z), w: main.x - x0, d: Math.min(z1, mz1) - Math.max(z0, main.z) });
+  const seen = used.map((row) => row.slice());
+  for (let j = 0; j < nz; j++)
+    for (let i = 0; i < nx; i++) {
+      if (!covered[j][i] || seen[j][i]) continue;
+      const cells: [number, number][] = [];
+      let touchesRoof = false;
+      const stack: [number, number][] = [[i, j]];
+      seen[j][i] = true;
+      while (stack.length) {
+        const [ci, cj] = stack.pop()!;
+        cells.push([ci, cj]);
+        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const ni = ci + di;
+          const nj = cj + dj;
+          if (ni < 0 || nj < 0 || ni >= nx || nj >= nz || !covered[nj][ni]) continue;
+          if (used[nj][ni]) touchesRoof = true;
+          if (seen[nj][ni]) continue;
+          seen[nj][ni] = true;
+          stack.push([ni, nj]);
+        }
+      }
+      const i0 = Math.min(...cells.map((c) => c[0]));
+      const i1 = Math.max(...cells.map((c) => c[0]));
+      const j0 = Math.min(...cells.map((c) => c[1]));
+      const j1 = Math.max(...cells.map((c) => c[1]));
+      if (!touchesRoof && cells.length === (i1 - i0 + 1) * (j1 - j0 + 1)) {
+        gables.push(rect(i0, j0, i1, j1));
+        mark(i0, j0, i1, j1);
+        continue;
+      }
+      // Flat roof: merge each row's runs, then stack identical runs vertically.
+      const runs: { i0: number; i1: number; j0: number; j1: number }[] = [];
+      for (let rj = j0; rj <= j1; rj++) {
+        let ri = i0;
+        while (ri <= i1) {
+          if (!cells.some((c) => c[0] === ri && c[1] === rj)) {
+            ri++;
+            continue;
+          }
+          let re = ri;
+          while (re + 1 <= i1 && cells.some((c) => c[0] === re + 1 && c[1] === rj)) re++;
+          const above = runs.find((u) => u.i0 === ri && u.i1 === re && u.j1 === rj - 1);
+          if (above) above.j1 = rj;
+          else runs.push({ i0: ri, i1: re, j0: rj, j1: rj });
+          ri = re + 1;
+        }
+      }
+      for (const u of runs) mark(u.i0, u.j0, u.i1, u.j1);
+      flats.push(...runs.map((u) => rect(u.i0, u.j0, u.i1, u.j1)));
     }
-    flats.push(...pieces.filter((p) => p.w > 0.05 && p.d > 0.05));
-  }
-  return { main, flats };
+  return { gables, flats: flats.filter((p) => p.w > 0.05 && p.d > 0.05) };
 }
 
 export type WallPiece = { cx: number; cz: number; len: number; y0: number; y1: number; rot: number; exterior: boolean };

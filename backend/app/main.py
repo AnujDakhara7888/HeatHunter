@@ -36,6 +36,7 @@ from .contracts import (
     HomePlan,
     HomeReadings,
     HomeSummary,
+    Location,
     ReadingsUpload,
     RealHouse,
     RoomReport,
@@ -151,6 +152,18 @@ async def sample_plan() -> HomePlan:
     """The documented HH09 plan, in the same format a user's plan uses."""
 
     return HomePlan.model_validate_json((REPOSITORY_ROOT / "shared" / "homes" / "hh09_plan.json").read_text())
+
+
+@app.get("/api/places", response_model=list[Location], responses=_errors(422, 503), tags=["homes"])
+async def search_places(q: Annotated[str, Query(min_length=2, max_length=80)]) -> list[Location]:
+    """Real towns or UK postcodes matching ``q``, for the home location picker (needs internet)."""
+
+    from .homes import search_places as search
+
+    try:
+        return await run_in_threadpool(search, q)
+    except OSError as exc:
+        raise ApiFailure(503, "WEATHER_UNAVAILABLE", f"place search unreachable: {exc}") from exc
 
 
 @app.get("/api/weather/lookup", response_model=WeatherLookup, responses=_errors(422, 503), tags=["homes"])

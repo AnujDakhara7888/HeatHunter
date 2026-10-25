@@ -1,25 +1,31 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, BarChart3, FileUp, Home, MapPin, PencilRuler, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, FileUp, Home, MapPin, PencilRuler, Play, Sparkles, Square, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, api, traced } from "../api/client";
 import { Analytics } from "../components/Analytics";
-import type { FixAction, FloorPlanDraft, HomeHealth, HomeHistory, HomePlan, HomeReadings, HomeSummary, RoomReport, RoomTechnical, Series } from "../api/types";
+import type { FixAction, FloorPlanDraft, HomeHealth, HomeHistory, HomePlan, HomeReadings, HomeSummary, Location, RoomHealthView, RoomReport, RoomTechnical, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
 import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
+import { PlacePicker } from "../components/PlacePicker";
 import { PlanEditor } from "../components/PlanEditor";
-import { RoomDetail } from "../components/RoomDetail";
 import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
 import { FLAG_STATUSES, ROOM_STATUS, strengthOf } from "../lib/diagnosis";
+import { snapAt } from "../lib/history";
 import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
-import { fmtDate, ms, roomColor, type CauseKey } from "../lib/rooms";
+import { CAUSE, fmtDate, ms, roomColor, type CauseKey } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
 import { HouseCanvas } from "../three/Scene";
 
 type Step = "plan" | "setup" | "data" | "results";
+const SETUP_STEPS: [Step, string][] = [
+  ["plan", "Your plan"],
+  ["setup", "Where & when"],
+  ["data", "Readings"],
+];
 type RoomData = { series: Series; source: string };
 
 const EMPTY: HomePlan = {
@@ -80,6 +86,16 @@ function parseCsv(text: string): Series {
   return { timestamps: order.map((i) => ts[i]), values: order.map((i) => vs[i]), unit: "degC", provenance: "REAL_MEASUREMENT" };
 }
 
+function StatusChip({ status }: { status: keyof typeof ROOM_STATUS }) {
+  const s = ROOM_STATUS[status];
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ color: s.color, background: `${s.color}1f` }}>
+      <span aria-hidden>{s.icon}</span>
+      {s.label}
+    </span>
+  );
+}
+
 export default function MyHome() {
   const set = useScene((s) => s.set);
   const [step, setStep] = useState<Step>("plan");
@@ -88,7 +104,7 @@ export default function MyHome() {
   const [reading, setReading] = useState<string | null>(null);
   const [notes, setNotes] = useState<string[]>([]);
   const [homeName, setHomeName] = useState("My home");
-  const [place, setPlace] = useState("");
+  const [place, setPlace] = useState<Location | null>(null);
   const [offStart, setOffStart] = useState("22:00");
   const [offEnd, setOffEnd] = useState("06:00");
   const [home, setHome] = useState<HomeSummary | null>(null);
@@ -103,6 +119,7 @@ export default function MyHome() {
   const [nightIdx, setNightIdx] = useState<number | null>(null);
   const [history, setHistory] = useState<HomeHistory | null>(null);
   const [analytics, setAnalytics] = useState(false);
+  const [weekPlay, setWeekPlay] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -131,17 +148,53 @@ export default function MyHome() {
   );
   const outdoor = useMemo(() => (readings && window_ ? slice(readings.outdoor_temperature, ...window_) : null), [readings, window_?.[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const wind = useMemo(() => (readings && window_ ? slice(readings.wind_speed, ...window_) : null), [readings, window_?.[0]]); // eslint-disable-line react-hooks/exhaustive-deps
-  const player = useNight(roomsPlayback, outdoor, wind, 10);
-
-  const flagged = health?.rooms.find((r) => FLAG_STATUSES.includes(r.status));
+  const player = useNight(roomsPlayback, outdoor, wind, weekPlay != null ? 6 : 10);
   useEffect(() => {
-    const target = flagged;
-    if (preview && target) {
-      set({ finding: preview === "normal" ? null : { room: target.room_id, cause: preview, strength: strengthOf(target.extra_heat_loss_percent) } });
+    if (weekPlay == null || player.playing || !player.range || player.t == null || player.t < player.range[1] - 1) return;
+    const next = (nightIdx ?? nights.length - 1) + 1;
+    if (next < Math.min(nights.length, weekPlay * 7 + 7)) {
+      setNightIdx(next);
+      setTimeout(() => player.play(), 250);
+    } else setWeekPlay(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player.playing, player.t, weekPlay]);
+
+  // Rooms as the app saw them after the selected night: looking back never shows later evidence.
+  const asOf = (nightIdx ?? nights.length - 1) + 1;
+  const latest = asOf >= nights.length;
+  const rooms: RoomHealthView[] = useMemo(() => {
+    if (!health) return [];
+    if (latest || !history) return health.rooms;
+    return health.rooms.map((r) => {
+      const s = snapAt(history.rooms.find((h) => h.room_id === r.room_id), asOf);
+      return {
+        ...r,
+        status: s?.status ?? "not_enough_data",
+        likely_cause: s?.named_cause ?? null,
+        extra_heat_loss_percent: s && FLAG_STATUSES.includes(s.status) ? Math.round(s.extra_heat_loss_percent) : null,
+        annual_cost_gbp: s?.annual_cost_gbp ?? null,
+        nights_seen: s?.nights_judged ?? 0,
+        headline: "",
+      };
+    });
+  }, [health, history, asOf, latest]);
+
+  // The room the app is worried about drives the 3D finding (or the user's preview), as in the Fault Lab.
+  const flaggedRoom = rooms.find((r) => FLAG_STATUSES.includes(r.status));
+  useEffect(() => {
+    const r = selected ? rooms.find((x) => x.room_id === selected) : flaggedRoom;
+    const target = r && FLAG_STATUSES.includes(r.status) ? r : flaggedRoom;
+    if (preview && (target || selected)) {
+      const room = (target ?? r)!.room_id;
+      set({ finding: preview === "normal" ? null : { room, cause: preview, strength: strengthOf(target?.extra_heat_loss_percent ?? 25) } });
       return;
     }
-    set({ finding: target ? { room: target.room_id, cause: target.status === "verifying" ? null : target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent) } : null });
-  }, [flagged, preview, set]);
+    if (!target || target.status === "verifying") {
+      set({ finding: target ? { room: target.room_id, cause: null, strength: 0.3 } : null });
+      return;
+    }
+    set({ finding: { room: target.room_id, cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent) } });
+  }, [rooms, selected, preview, flaggedRoom, set]);
 
   useEffect(() => {
     useChatContext.getState().setHome(home?.home_id ?? null);
@@ -250,9 +303,18 @@ export default function MyHome() {
     });
 
   const create = () =>
-    run("Setting up your home (looking up its location)…", async () => {
+    run("Setting up your home…", async () => {
       const h = await traced("create", "POST /homes", () =>
-        api.POST("/api/homes", { body: { name: homeName, plan, location_query: place, heating_off: { start: offStart, end: offEnd, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/London" } } }),
+        api.POST("/api/homes", {
+          body: {
+            name: homeName,
+            plan,
+            location_query: place!.name,
+            latitude: place!.latitude,
+            longitude: place!.longitude,
+            heating_off: { start: offStart, end: offEnd, timezone: place!.timezone && place!.timezone !== "UTC" ? place!.timezone : Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/London" },
+          },
+        }),
         (d) => d.home_id,
       );
       savePlan(h.home_id, plan);
@@ -277,18 +339,17 @@ export default function MyHome() {
       setReport(rep);
       const h = await traced("health", "GET /homes/{id}", () => api.GET("/api/homes/{home_id}", { params: { path: { home_id: home!.home_id } } }), (d) => d.home.status);
       setHealth(h);
+      setHome(h.home);
+      setHistory(await api.GET("/api/homes/{home_id}/history", { params: { path: { home_id: home!.home_id } } }).then((x) => x.data ?? null));
     });
 
-  const sel = health?.rooms.find((r) => r.room_id === selected);
-  const roomReadings = selected && readings ? readings.rooms[selected] : null;
-  const chartData =
-    roomReadings && window_
-      ? [
-          { id: "m", label: `${names[selected!] ?? selected} measured`, color: "#f2f3f5", series: slice(roomReadings.measured, ...window_), width: 2 },
-          ...(roomReadings.expected_if_healthy ? [{ id: "e", label: "Expected if healthy", color: "#2fd18b", series: slice(roomReadings.expected_if_healthy, ...window_), dashed: true }] : []),
-          ...(outdoor ? [{ id: "o", label: "Outside", color: "#8a90a2", series: outdoor, dashed: true, width: 1.5 }] : []),
-        ]
-      : null;
+  const sel = rooms.find((r) => r.room_id === selected);
+  const canFix = latest && sel && ["issue", "issue_cause_unclear", "still_an_issue"].includes(sel.status);
+  const showIn3D = (c: CauseKey) => {
+    setAnalytics(false);
+    setPreview(c);
+    set({ view: "open" });
+  };
   const order = plan.rooms.map((x) => x.room_id);
 
   return (
@@ -296,9 +357,29 @@ export default function MyHome() {
       <Nav transparent />
       <HouseCanvas className={`absolute inset-0 ${step === "results" ? "" : "left-[min(52vw,760px)]"}`} focusControl />
 
-      <div className={`pointer-events-none absolute top-16 z-20 flex justify-center ${step === "results" ? "inset-x-0 pr-[460px]" : "left-[min(52vw,760px)] right-0"}`}>
-        <ViewSwitcher views={["top", "open", "exterior", "thermal", "inside"]} className="pointer-events-auto" />
+      <div className={`pointer-events-none absolute top-16 z-20 flex justify-center gap-2 ${step === "results" ? "inset-x-0 pr-[460px]" : "left-[min(52vw,760px)] right-0"}`}>
+        <ViewSwitcher views={step === "results" ? ["exterior", "thermal", "open", "inside"] : ["top", "open", "exterior", "thermal", "inside"]} className="pointer-events-auto" />
+        {step === "results" && (
+          <button className="glass pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold hover:bg-white/10 disabled:opacity-40" disabled={!history || !readings || !nights.length} onClick={() => setAnalytics(true)}>
+            <BarChart3 size={14} /> Analytics
+          </button>
+        )}
       </div>
+      <AnimatePresence>
+        {step === "results" && preview && sel && (
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-x-0 top-[166px] z-20 flex justify-center pr-[460px]">
+            <div className="glass pointer-events-auto flex items-center gap-3 rounded-full py-1.5 pl-4 pr-1.5 text-[12.5px]">
+              <span>
+                Previewing <b style={{ color: CAUSE[preview].color }}>{CAUSE[preview].label.toLowerCase()}</b>
+                <span className="text-mute"> · {preview === sel.likely_cause ? "the app's likely cause" : "an alternative"}</span>
+              </span>
+              <button onClick={() => setPreview(null)} className="rounded-full bg-ink px-3 py-1 font-semibold text-black">
+                Back to the app's view
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {step !== "results" ? (
@@ -310,9 +391,9 @@ export default function MyHome() {
             className="glass absolute bottom-4 left-4 top-16 z-30 flex w-[calc(min(52vw,760px)-24px)] flex-col rounded-[26px] p-5"
           >
             <div className="flex items-center gap-2 text-[11.5px]">
-              {(["plan", "setup", "data", "results"] as Step[]).map((s, i) => (
+              {SETUP_STEPS.map(([s, label], i) => (
                 <span key={s} className={`rounded-full px-2.5 py-1 ${step === s ? "bg-ink font-semibold text-black" : "text-dim"}`}>
-                  {i + 1} {s === "plan" ? "Your plan" : s === "setup" ? "Where & when" : s === "data" ? "Readings" : "Health"}
+                  {i + 1} {label}
                 </span>
               ))}
             </div>
@@ -380,12 +461,12 @@ export default function MyHome() {
                   Name
                   <input value={homeName} onChange={(e) => setHomeName(e.target.value)} className="mt-1 w-full rounded-lg border border-line bg-transparent px-3 py-2 text-ink outline-none focus:border-white/40" />
                 </label>
-                <label className="block text-[12px] text-mute">
+                <div className="block text-[12px] text-mute">
                   <span className="inline-flex items-center gap-1">
                     <MapPin size={12} /> Town or postcode
                   </span>
-                  <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder="e.g. Loughborough" className="mt-1 w-full rounded-lg border border-line bg-transparent px-3 py-2 text-ink outline-none placeholder:text-dim focus:border-white/40" />
-                </label>
+                  <PlacePicker value={place} onChange={setPlace} />
+                </div>
                 <div className="flex items-center gap-3 text-[12px] text-mute">
                   Heating off from
                   <input type="time" value={offStart} onChange={(e) => setOffStart(e.target.value)} className="rounded-lg border border-line bg-transparent px-2 py-1.5 text-ink" />
@@ -396,7 +477,7 @@ export default function MyHome() {
                   <button className="btn btn-ghost" onClick={() => setStep("plan")}>
                     <ArrowLeft size={15} /> Plan
                   </button>
-                  <button className="btn btn-primary flex-1" onClick={create} disabled={!!busy || place.trim().length < 2}>
+                  <button className="btn btn-primary flex-1" onClick={create} disabled={!!busy || !place}>
                     Create my home <ArrowRight size={15} />
                   </button>
                 </div>
@@ -465,41 +546,141 @@ export default function MyHome() {
           </motion.section>
         ) : (
           health && home && (
-            <motion.aside key="results" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} className="glass scroll-thin absolute bottom-4 right-4 top-16 z-30 w-[min(440px,calc(100vw-32px))] overflow-y-auto rounded-[26px] p-5">
+            <motion.aside key="results" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} className="glass scroll-thin absolute bottom-4 right-4 top-16 z-30 flex w-[min(440px,calc(100vw-32px))] flex-col overflow-y-auto rounded-[26px] p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="eyebrow">{home.name} · real home</div>
-                  <div className="mt-0.5 text-[24px] font-bold tracking-tight">{home.nights_monitored} heating-off nights</div>
+                  <div className="eyebrow inline-flex items-center gap-1">
+                    <Home size={11} /> {home.name} · real home
+                  </div>
+                  <div className="mt-0.5 text-[26px] font-bold tracking-tight">
+                    Night {home.nights_monitored}
+                    {home.last_night && <span className="ml-2 text-[13px] font-normal text-mute">{fmtDate(ms(home.last_night))}</span>}
+                  </div>
                 </div>
-                <button className="btn btn-ghost !px-3 !py-1.5 !text-[12px]" onClick={() => setStep("data")}>
-                  Add readings
+                <button className="btn btn-primary !px-3 !py-2" onClick={() => (setWeekPlay(null), setStep("data"))} title="Upload more nights">
+                  <FileUp size={15} /> Add readings
                 </button>
               </div>
-              <div className="mt-3 flex flex-wrap gap-1">
-                {nights.map((n, i) => (
-                  <button key={n.night_id} onClick={() => setNightIdx(i)} className={`num h-7 min-w-7 rounded-md px-1.5 text-[11px] ${i === (nightIdx ?? nights.length - 1) ? "bg-ink font-semibold text-black" : "bg-white/[0.06] text-mute"}`}>
-                    {i + 1}
-                  </button>
+
+              {/* nights, grouped into weeks */}
+              <div className="mt-3 space-y-1.5">
+                {Array.from({ length: Math.ceil(nights.length / 7) }, (_, w) => (
+                  <div key={w} className="flex items-center gap-1">
+                    <button
+                      onClick={() => (weekPlay === w ? setWeekPlay(null) : (setWeekPlay(w), setNightIdx(w * 7), setTimeout(() => player.play(), 100)))}
+                      className={`flex h-7 w-[74px] shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] ${weekPlay === w ? "bg-warm/20 text-warm" : "bg-white/[0.04] text-mute hover:text-ink"}`}
+                      title="Play this week's nights back to back"
+                    >
+                      {weekPlay === w ? <Square size={10} /> : <Play size={10} />} Week {w + 1}
+                    </button>
+                    {nights.slice(w * 7, w * 7 + 7).map((n, j) => {
+                      const i = w * 7 + j;
+                      return (
+                        <button
+                          key={n.night_id}
+                          onClick={() => (setWeekPlay(null), setNightIdx(i), setTimeout(() => player.play(), 100))}
+                          title={`${fmtDate(ms(n.start))} · ${n.mean_outdoor_c.toFixed(1)}°C · wind ${n.mean_wind_m_s.toFixed(1)} m/s`}
+                          className={`num h-7 min-w-7 rounded-md px-1.5 text-[11px] ${i === (nightIdx ?? nights.length - 1) ? "bg-ink font-semibold text-black" : n.mean_wind_m_s >= 4 ? "bg-[#1c2a44] text-[#9cc8ff] hover:text-ink" : "bg-white/[0.06] text-mute hover:text-ink"}`}
+                        >
+                          {i + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
                 ))}
+                <div className="text-[10px] text-dim">Blue nights were windy (≥ 4 m/s). Play a week to watch its nights back to back.</div>
               </div>
-              <div className="mt-4 space-y-1.5">
-                {health.rooms.map((r) => (
-                  <button key={r.room_id} onClick={() => openRoom(home.home_id, r.room_id)} className={`w-full rounded-2xl border px-3 py-2.5 text-left transition ${selected === r.room_id ? "border-white/40 bg-white/[0.07]" : "border-line bg-white/[0.02] hover:border-white/25"}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold">{r.name}</span>
-                      <span className="text-[11px] font-semibold" style={{ color: ROOM_STATUS[r.status].color }}>
-                        {ROOM_STATUS[r.status].icon} {ROOM_STATUS[r.status].label}
-                      </span>
+
+              {/* rooms, as of the selected night */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-[11px] text-mute">{latest ? "Rooms now" : `Rooms as of night ${asOf}`}</div>
+                {!latest && (
+                  <button className="text-[11px] text-warm underline" onClick={() => setNightIdx(null)}>
+                    back to latest
+                  </button>
+                )}
+              </div>
+              <div className="mt-1.5 space-y-1">
+                {rooms.map((r) => {
+                  const h = history?.rooms.find((x) => x.room_id === r.room_id);
+                  return (
+                    <button
+                      key={r.room_id}
+                      onClick={() => openRoom(home.home_id, r.room_id)}
+                      className={`w-full rounded-2xl border px-3 py-2 text-left transition ${selected === r.room_id ? "border-white/40 bg-white/[0.07]" : "border-line bg-white/[0.02] hover:border-white/25"}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-2 font-semibold">
+                          <i className="h-2 w-2 rounded-full" style={{ background: roomColor(r.room_id, order) }} />
+                          {r.name}
+                        </span>
+                        <StatusChip status={r.status} />
+                      </div>
+                      {h && (
+                        <div className="mt-1.5 flex gap-[3px]" aria-hidden>
+                          {nights.map((_, i) => {
+                            const s = i < asOf ? h.snapshots.find((x) => x.night_number === i + 1) : undefined;
+                            return <i key={i} className="h-1.5 flex-1 rounded-full" style={{ background: s ? ROOM_STATUS[s.status].color : "#ffffff12", opacity: s?.status === "healthy" ? 0.35 : 1 }} />;
+                          })}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* selected room: only what acts on the house */}
+              {sel && (
+                <div className="mt-3 space-y-2.5 rounded-2xl border border-line bg-black/20 p-3">
+                  <div className="text-[13px] leading-snug">
+                    <b>{sel.name}</b>
+                    <span className="text-mute">
+                      {sel.extra_heat_loss_percent != null && ` · +${sel.extra_heat_loss_percent}% heat loss`}
+                      {sel.likely_cause && ` · likely ${CAUSE[sel.likely_cause].label.toLowerCase()}`}
+                      {sel.annual_cost_gbp != null && ` · £${Math.round(sel.annual_cost_gbp)}/yr`}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11.5px]">
+                    <span className="text-dim">Show in 3D:</span>
+                    {(["draft", "envelope_conduction", "normal"] as CauseKey[]).map((c) => (
+                      <button key={c} onClick={() => setPreview((p) => (p === c ? null : c))} className={`rounded-full border px-2 py-0.5 ${preview === c ? "border-white/60 text-ink" : "border-line text-mute hover:text-ink"}`}>
+                        {CAUSE[c].label}
+                      </button>
+                    ))}
+                  </div>
+                  {canFix && (
+                    <div>
+                      <div className="mb-1 text-[11px] text-mute">Do a repair, then upload the next nights:</div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {([
+                          ["seal_leaks", "Seal leaks"],
+                          ["add_insulation", "Insulate"],
+                          ["other", "Other"],
+                        ] as [FixAction, string][]).map(([a, l]) => (
+                          <button key={a} className={`btn !px-2 !py-1.5 !text-[12px] ${(sel.likely_cause === "draft" && a === "seal_leaks") || (sel.likely_cause === "envelope_conduction" && a === "add_insulation") ? "btn-hot" : "btn-ghost"}`} disabled={!!busy} onClick={() => fix(a)}>
+                            {l}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="mt-0.5 text-[12px] leading-snug text-mute">{r.headline}</div>
-                  </button>
-                ))}
-              </div>
+                  )}
+                  {latest && report?.fix && report.room_id === sel.room_id && (
+                    <div className="text-[11.5px] text-mute">
+                      Repair: <b className="text-ink">{report.fix.action.replace("_", " ")}</b> · {report.fix.nights_since_fix} night{report.fix.nights_since_fix === 1 ? "" : "s"} since{report.status === "verifying" ? ". Upload the next nights to check it." : "."}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button className="btn btn-primary mt-3 w-full" disabled={!history || !readings || !nights.length} onClick={() => setAnalytics(true)}>
                 <BarChart3 size={15} /> Analytics{sel ? ` · ${sel.name}` : ""}
               </button>
-              <RoomDetail report={report} sel={sel} technical={technical} chartData={chartData} cursor={player.t} onScrub={player.setT} preview={preview} setPreview={setPreview} busy={!!busy} fix={fix} />
-              {busy && <div className="mt-3 text-[12.5px] text-mute pulse-dot">{busy}</div>}
+
+              {busy && (
+                <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-[12.5px] text-mute">
+                  <span className="h-2 w-2 rounded-full bg-warm pulse-dot" /> {busy}
+                </div>
+              )}
               {error && <div className="mt-3 rounded-xl border border-hot/40 bg-hot/10 px-3 py-2 text-[12px] text-hot">{error}</div>}
               <div className="mt-3 text-[10.5px] text-dim">{health.disclaimer}</div>
             </motion.aside>
@@ -513,21 +694,21 @@ export default function MyHome() {
             label={home?.name ?? "Your home"}
             history={history}
             readings={readings}
-            asOf={(nightIdx ?? nights.length - 1) + 1}
-            setAsOf={(k) => setNightIdx(k - 1)}
+            asOf={asOf}
+            setAsOf={(k) => (setWeekPlay(null), setNightIdx(k - 1))}
             room={selected}
             setRoom={(id) => home && openRoom(home.home_id, id)}
             report={report}
             technical={technical}
             onClose={() => setAnalytics(false)}
-            onShow3D={(c) => (setAnalytics(false), setPreview(c))}
+            onShow3D={showIn3D}
           />
         )}
       </AnimatePresence>
 
       {step === "results" && (
         <div className="pointer-events-none absolute bottom-4 left-4 right-[476px] z-20 flex flex-col gap-2">
-          <Timeline className="pointer-events-auto max-w-[640px]" {...player} onPlay={player.play} onPause={player.pause} onScrub={player.setT} caption="Your readings, replayed through your house" />
+          <Timeline className="pointer-events-auto max-w-[640px]" {...player} onPlay={player.play} onPause={player.pause} onScrub={player.setT} caption={night ? `Night ${asOf} · heating off · your readings · ${night.mean_outdoor_c.toFixed(1)}°C avg outside` : "No nights yet"} />
         </div>
       )}
     </div>
