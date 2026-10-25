@@ -249,30 +249,35 @@ export function House() {
   });
 
   const wallMat = (exterior: boolean) => (thermal ? (exterior ? mats.tEnv : mats.tInt) : exterior ? mats.ext : mats.int);
-  const ridgeAlongX = roof.main.w >= roof.main.d;
-  const roofGeo = useMemo(() => {
-    const { x, z, w, d } = roof.main;
-    const o = 0.3;
-    const x0 = x - o, x1 = x + w + o, z0 = z - o, z1 = z + d + o;
-    const rise = Math.min(w, d) * 0.32;
-    const H = WALL_H;
-    const pos = ridgeAlongX
-      ? [x0, H, z0, x1, H, z0, x1, H + rise, (z0 + z1) / 2, x0, H, z0, x1, H + rise, (z0 + z1) / 2, x0, H + rise, (z0 + z1) / 2,
-         x0, H, z1, x0, H + rise, (z0 + z1) / 2, x1, H + rise, (z0 + z1) / 2, x0, H, z1, x1, H + rise, (z0 + z1) / 2, x1, H, z1]
-      : [x0, H, z0, (x0 + x1) / 2, H + rise, z0, (x0 + x1) / 2, H + rise, z1, x0, H, z0, (x0 + x1) / 2, H + rise, z1, x0, H, z1,
-         x1, H, z0, x1, H, z1, (x0 + x1) / 2, H + rise, z1, x1, H, z0, (x0 + x1) / 2, H + rise, z1, (x0 + x1) / 2, H + rise, z0];
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    g.computeVertexNormals();
-    const gx0 = x, gx1 = x + w, gz0 = z, gz1 = z + d;
-    const gable = ridgeAlongX
-      ? [gx0, H, gz0, gx0, H, gz1, gx0, H + rise * 0.95, (gz0 + gz1) / 2, gx1, H, gz0, gx1, H + rise * 0.95, (gz0 + gz1) / 2, gx1, H, gz1]
-      : [gx0, H, gz0, (gx0 + gx1) / 2, H + rise * 0.95, gz0, gx1, H, gz0, gx0, H, gz1, gx1, H, gz1, (gx0 + gx1) / 2, H + rise * 0.95, gz1];
-    const gg = new THREE.BufferGeometry();
-    gg.setAttribute("position", new THREE.Float32BufferAttribute(gable, 3));
-    gg.computeVertexNormals();
-    return { roof: g, gable: gg };
-  }, [roof, ridgeAlongX]);
+  // One gable per roofed block; rebuilt whenever rooms move, so the roof always fits the plan.
+  const roofGeos = useMemo(
+    () =>
+      roof.gables.map(({ x, z, w, d }) => {
+        const ridgeAlongX = w >= d;
+        const o = 0.3;
+        const x0 = x - o, x1 = x + w + o, z0 = z - o, z1 = z + d + o;
+        const rise = Math.min(w, d) * 0.32;
+        const H = WALL_H;
+        const pos = ridgeAlongX
+          ? [x0, H, z0, x1, H, z0, x1, H + rise, (z0 + z1) / 2, x0, H, z0, x1, H + rise, (z0 + z1) / 2, x0, H + rise, (z0 + z1) / 2,
+             x0, H, z1, x0, H + rise, (z0 + z1) / 2, x1, H + rise, (z0 + z1) / 2, x0, H, z1, x1, H + rise, (z0 + z1) / 2, x1, H, z1]
+          : [x0, H, z0, (x0 + x1) / 2, H + rise, z0, (x0 + x1) / 2, H + rise, z1, x0, H, z0, (x0 + x1) / 2, H + rise, z1, x0, H, z1,
+             x1, H, z0, x1, H, z1, (x0 + x1) / 2, H + rise, z1, x1, H, z0, (x0 + x1) / 2, H + rise, z1, (x0 + x1) / 2, H + rise, z0];
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        g.computeVertexNormals();
+        const gx0 = x, gx1 = x + w, gz0 = z, gz1 = z + d;
+        const gable = ridgeAlongX
+          ? [gx0, H, gz0, gx0, H, gz1, gx0, H + rise * 0.95, (gz0 + gz1) / 2, gx1, H, gz0, gx1, H + rise * 0.95, (gz0 + gz1) / 2, gx1, H, gz1]
+          : [gx0, H, gz0, (gx0 + gx1) / 2, H + rise * 0.95, gz0, gx1, H, gz0, gx0, H, gz1, gx1, H, gz1, (gx0 + gx1) / 2, H + rise * 0.95, gz1];
+        const gg = new THREE.BufferGeometry();
+        gg.setAttribute("position", new THREE.Float32BufferAttribute(gable, 3));
+        gg.computeVertexNormals();
+        return { roof: g, gable: gg };
+      }),
+    [roof],
+  );
+  useEffect(() => () => roofGeos.forEach((r) => (r.roof.dispose(), r.gable.dispose())), [roofGeos]);
 
   return (
     <group>
@@ -336,8 +341,12 @@ export function House() {
       </group>
 
       <group ref={roofGroup}>
-        <mesh geometry={roofGeo.roof} material={thermal ? mats.tEnv : mats.roof} castShadow />
-        <mesh geometry={roofGeo.gable} material={thermal ? mats.tEnv : mats.ext} />
+        {roofGeos.map((r, i) => (
+          <group key={`gable-${i}`}>
+            <mesh geometry={r.roof} material={thermal ? mats.tEnv : mats.roof} castShadow />
+            <mesh geometry={r.gable} material={thermal ? mats.tEnv : mats.ext} />
+          </group>
+        ))}
         {roof.flats.map((f, i) => (
           <mesh key={i} position={[f.x + f.w / 2, WALL_H + 0.08, f.z + f.d / 2]} material={thermal ? mats.tEnv : mats.roof} castShadow>
             <boxGeometry args={[f.w + 0.3, 0.16, f.d + 0.3]} />

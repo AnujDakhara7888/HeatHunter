@@ -253,3 +253,39 @@ def test_real_house_carries_insulation_for_its_own_rooms(client) -> None:
     rooms = set(house["insulation"]["envelope_u_w_per_m2k"])
     assert rooms == {"living_room", "kitchen", "bedroom", "hall"}
     assert rooms <= set(house["room_temperature_series"])
+
+
+def test_place_search_returns_real_places_and_nothing_for_gibberish(client, monkeypatch) -> None:
+    from backend.app import homes
+
+    homes._search_places.cache_clear()
+    urls: list[str] = []
+
+    def fake(url: str, timeout: float = 20) -> dict:
+        urls.append(url)
+        if "postcodes.io" in url:
+            result = {"postcode": "LE11 3TU", "latitude": 52.76, "longitude": -1.23}
+            result["admin_district"] = "Charnwood"
+            return {"result": result}
+        if "name=loughb" in url:
+            place = {"name": "Loughborough", "admin1": "England", "country": "United Kingdom"}
+            return {"results": [{**place, "latitude": 52.77, "longitude": -1.2, "timezone": "Europe/London"}]}
+        return {}
+
+    monkeypatch.setattr(homes, "_get_json", fake)
+    town = ok(client.get("/api/places", params={"q": "Loughb"}))
+    assert town[0]["name"] == "Loughborough, England, United Kingdom"
+    assert town[0]["timezone"] == "Europe/London"
+    postcode = ok(client.get("/api/places", params={"q": "le11 3tu"}))
+    assert postcode[0]["name"] == "LE11 3TU, Charnwood, United Kingdom"
+    assert ok(client.get("/api/places", params={"q": "xqzzv9"})) == []
+    with pytest.raises(homes.HomeError):
+        homes.geocode("xqzzv9")
+
+    def offline(url: str, timeout: float = 20) -> dict:
+        raise OSError("timed out")
+
+    homes._search_places.cache_clear()
+    monkeypatch.setattr(homes, "_get_json", offline)
+    assert client.get("/api/places", params={"q": "Leeds"}).status_code == 503
+    homes._search_places.cache_clear()

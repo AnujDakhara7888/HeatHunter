@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
@@ -293,21 +295,82 @@ def _transfer_source() -> SourceMetadata:
     )
 
 
-def geocode(query: str) -> Location:
-    """Find a place by name (Open-Meteo geocoding; needs network)."""
+UK_POSTCODE = re.compile(r"^([A-Z]{1,2}\d[A-Z\d]?)\s*(\d[A-Z]{2})?$")
+PLACE_TIMEOUT_S = 6
 
+
+def search_places(query: str, count: int = 6) -> list[Location]:
+    """Real places matching a town name or UK postcode (needs network).
+
+    Towns come from Open-Meteo geocoding, UK postcodes from postcodes.io. Returns an
+    empty list when nothing matches, so random text never becomes a location.
+    """
+
+    return list(_search_places(" ".join(query.split()).lower(), count))
+
+
+@lru_cache(maxsize=256)
+def _search_places(query: str, count: int) -> tuple[Location, ...]:
+    if len(query) < 2:
+        return ()
+    postcode = UK_POSTCODE.match(query.upper())
+    if postcode:
+        found = _postcode(*postcode.groups())
+        if found:
+            return (found,)
     geo = _get_json(
-        "https://geocoding-api.open-meteo.com/v1/search?" + urlencode({"name": query, "count": 1})
+        "https://geocoding-api.open-meteo.com/v1/search?"
+        + urlencode({"name": query, "count": count, "language": "en", "format": "json"}),
+        timeout=PLACE_TIMEOUT_S,
     )
-    if not geo.get("results"):
-        raise HomeError(f"could not find a place called {query!r}")
-    place = geo["results"][0]
+    places: list[Location] = []
+    for place in geo.get("results") or []:
+        parts = [place.get("name"), place.get("admin1"), place.get("country")]
+        name = ", ".join(dict.fromkeys(p for p in parts if p))
+        places.append(
+            Location(
+                name=name[:80],
+                latitude=place["latitude"],
+                longitude=place["longitude"],
+                timezone=place.get("timezone") or "UTC",
+                elevation_m=place.get("elevation"),
+            )
+        )
+    return tuple(places)
+
+
+def _postcode(outcode: str, incode: str | None) -> Location | None:
+    url = (
+        f"https://api.postcodes.io/postcodes/{outcode}{incode}"
+        if incode
+        else f"https://api.postcodes.io/outcodes/{outcode}"
+    )
+    try:
+        result = _get_json(url, timeout=PLACE_TIMEOUT_S).get("result")
+    except HTTPError as exc:
+        if exc.code == 404:
+            return None
+        raise
+    if not result or result.get("latitude") is None:
+        return None
+    district = result.get("admin_district")
+    district = district[0] if isinstance(district, list) and district else district
+    label = result.get("postcode") or outcode
     return Location(
-        name=f"{place['name']}, {place.get('country', '')}".strip(", "),
-        latitude=place["latitude"],
-        longitude=place["longitude"],
-        timezone="UTC",
+        name=", ".join(p for p in [label, district, "United Kingdom"] if p)[:80],
+        latitude=result["latitude"],
+        longitude=result["longitude"],
+        timezone="Europe/London",
     )
+
+
+def geocode(query: str) -> Location:
+    """Find a place by name or UK postcode (needs network)."""
+
+    places = search_places(query, count=1)
+    if not places:
+        raise HomeError(f"could not find a place called {query!r}")
+    return places[0]
 
 
 def lookup_weather(query: str, start: datetime, end: datetime) -> WeatherLookup:
@@ -374,6 +437,6 @@ def fetch_weather(location: Location, start: datetime, end: datetime) -> Weather
     )
 
 
-def _get_json(url: str) -> dict:
-    with urlopen(url, timeout=20) as response:  # noqa: S310 - fixed https hosts
+def _get_json(url: str, timeout: float = 20) -> dict:
+    with urlopen(url, timeout=timeout) as response:  # noqa: S310 - fixed https hosts
         return json.load(response)

@@ -218,9 +218,6 @@ export default function Landing() {
             <div>
               <div className="text-[28px] font-bold text-ink">3</div>suspects tested
             </div>
-            <div>
-              <div className="text-[28px] font-bold text-ink">0</div>pre-baked answers
-            </div>
           </div>
         </motion.div>
         <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 2 }} className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[12px] text-dim">
@@ -262,7 +259,7 @@ export default function Landing() {
 
       <section className="relative flex min-h-screen flex-col justify-center px-[6vw]">
         <h2 className="max-w-3xl text-[clamp(40px,5.5vw,72px)] font-bold leading-[1] tracking-[-0.04em]">
-          Nothing on this page is scripted. <span className="text-mute">Try it.</span>
+          Pick a home. Watch it cool. <span className="text-mute">Catch the leak.</span>
         </h2>
         <div className="pointer-events-auto mt-10 grid max-w-4xl gap-4 md:grid-cols-2">
           {[

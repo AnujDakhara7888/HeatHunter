@@ -47,6 +47,7 @@ root-cause classification.
 | GET | `/api/homes/sample-plan` | `HomePlan` | HH09 plan in the upload format |
 | POST | `/api/assistant/floor-plan` | `FloorPlanDraft` | Claude reads an uploaded plan |
 | POST | `/api/assistant/help` | `ChatReply` | General project help without a selected home; messages only |
+| GET | `/api/places?q=` | `Location[]` | Real towns (Open-Meteo geocoding) or UK postcodes (postcodes.io) for the home location picker; `[]` when nothing matches, 503 when unreachable |
 | GET | `/api/weather/lookup` | `WeatherLookup` | Open-Meteo by place name |
 | GET | `/api/evaluation/summary` | `EvaluationSummary` | 501 until the held-out report exists |
 
