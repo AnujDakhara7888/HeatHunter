@@ -14,6 +14,7 @@ import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
 import { HouseCanvas } from "../three/Scene";
+import { toInsulation } from "../three/thermal";
 
 const NAMES = Object.fromEntries(HH09_PLAN.rooms.map((r) => [r.room_id, r.name]));
 
@@ -55,6 +56,7 @@ export default function Real() {
   const outdoor = useMemo(() => (house ? (window_ ? slice(house.outdoor_temperature, ...window_) : house.outdoor_temperature) : null), [house, window_]);
   const wind = useMemo(() => (house ? (window_ ? slice(house.wind_speed, ...window_) : house.wind_speed) : null), [house, window_]);
   const player = useNight(rooms, outdoor, wind, window_ ? 10 : 24);
+  useEffect(() => set({ insulation: house?.insulation ? toInsulation(house.insulation) : null }), [house, set]);
 
 
   useEffect(() => {

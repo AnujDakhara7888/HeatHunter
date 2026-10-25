@@ -70,6 +70,10 @@ def test_planted_leak_is_found_explained_fixed_and_revealed(client) -> None:
 
     readings = ok(client.get(f"/api/homes/{home}/readings", params={"room_id": "bedroom_1"}))
     assert len(readings["nights"]) == 3 and list(readings["rooms"]) == ["bedroom_1"]
+    insulation = readings["insulation"]
+    assert set(insulation["envelope_u_w_per_m2k"]) == {"living_room", "kitchen", "bedroom_1", "bedroom_2"}
+    assert insulation["window_u_w_per_m2k"] == 2.8 and insulation["provenance"] == "MODEL_ESTIMATE"
+    assert set(insulation["room_heat_loss_w_per_k"]) == set(insulation["envelope_u_w_per_m2k"])
     expected = readings["rooms"]["bedroom_1"]["expected_if_healthy"]
     assert expected["provenance"] == "MODEL_ESTIMATE" and len(expected["values"]) > 100
 
@@ -202,3 +206,14 @@ def test_real_home_turns_uploads_into_nights_and_persists(tmp_path, monkeypatch)
     assert [r.status for r in again.rooms] == [r.status for r in health.rooms]
     technical = reloaded.room_technical(summary.home_id, sensed[0])
     assert any("Transferred" in str(a.value) for a in technical.rule)
+    insulation = reloaded.readings(summary.home_id).insulation
+    assert set(insulation.envelope_u_w_per_m2k) == set(sensed)  # transferred per m2, so every room matches
+    default = insulation.default_envelope_u_w_per_m2k
+    assert all(math.isclose(u, default) for u in insulation.envelope_u_w_per_m2k.values())
+
+
+def test_real_house_carries_insulation_for_its_own_rooms(client) -> None:
+    house = ok(client.get("/api/real/house"))
+    rooms = set(house["insulation"]["envelope_u_w_per_m2k"])
+    assert rooms == {"living_room", "kitchen", "bedroom", "hall"}
+    assert rooms <= set(house["room_temperature_series"])

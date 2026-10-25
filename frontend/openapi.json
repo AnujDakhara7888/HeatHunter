@@ -2840,6 +2840,16 @@
             },
             "type": "array",
             "title": "Nights"
+          },
+          "insulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SurfaceInsulation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -3347,6 +3357,16 @@
           "scientific_disclaimer": {
             "type": "string",
             "title": "Scientific Disclaimer"
+          },
+          "insulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SurfaceInsulation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -4000,6 +4020,57 @@
           "dataset"
         ],
         "title": "SourceMetadata"
+      },
+      "SurfaceInsulation": {
+        "properties": {
+          "envelope_u_w_per_m2k": {
+            "additionalProperties": {
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "type": "object",
+            "title": "Envelope U W Per M2K"
+          },
+          "room_heat_loss_w_per_k": {
+            "additionalProperties": {
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "type": "object",
+            "title": "Room Heat Loss W Per K"
+          },
+          "default_envelope_u_w_per_m2k": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Default Envelope U W Per M2K"
+          },
+          "window_u_w_per_m2k": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Window U W Per M2K"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "MODEL_ESTIMATE",
+            "title": "Provenance",
+            "default": "MODEL_ESTIMATE"
+          },
+          "notes": {
+            "type": "string",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "envelope_u_w_per_m2k",
+          "room_heat_loss_w_per_k",
+          "default_envelope_u_w_per_m2k",
+          "window_u_w_per_m2k",
+          "notes"
+        ],
+        "title": "SurfaceInsulation",
+        "description": "How well insulated each room's outside surfaces are; the UI's infrared view\nuses it to estimate surface temperatures from measured air temperatures."
       },
       "WeatherLookup": {
         "properties": {

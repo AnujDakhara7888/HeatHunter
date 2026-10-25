@@ -18,6 +18,7 @@ import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
 import { HouseCanvas } from "../three/Scene";
+import { toInsulation } from "../three/thermal";
 
 type Step = "plan" | "setup" | "data" | "results";
 type RoomData = { series: Series; source: string };
@@ -132,15 +133,17 @@ export default function MyHome() {
   const outdoor = useMemo(() => (readings && window_ ? slice(readings.outdoor_temperature, ...window_) : null), [readings, window_?.[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const wind = useMemo(() => (readings && window_ ? slice(readings.wind_speed, ...window_) : null), [readings, window_?.[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const player = useNight(roomsPlayback, outdoor, wind, 10);
+  useEffect(() => set({ insulation: readings?.insulation ? toInsulation(readings.insulation) : null }), [readings, set]);
 
   const flagged = health?.rooms.find((r) => FLAG_STATUSES.includes(r.status));
   useEffect(() => {
     const target = flagged;
     if (preview && target) {
-      set({ finding: preview === "normal" ? null : { room: target.room_id, cause: preview, strength: strengthOf(target.extra_heat_loss_percent) } });
+      const extra = target.extra_heat_loss_percent ?? 25;
+      set({ finding: preview === "normal" ? null : { room: target.room_id, cause: preview, strength: strengthOf(extra), extra: extra / 100 } });
       return;
     }
-    set({ finding: target ? { room: target.room_id, cause: target.status === "verifying" ? null : target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent) } : null });
+    set({ finding: target ? { room: target.room_id, cause: target.status === "verifying" ? null : target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent), extra: (target.extra_heat_loss_percent ?? 0) / 100 } : null });
   }, [flagged, preview, set]);
 
   useEffect(() => {

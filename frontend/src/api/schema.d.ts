@@ -842,6 +842,7 @@ export interface components {
             };
             /** Nights */
             nights: components["schemas"]["NightInfo"][];
+            insulation?: components["schemas"]["SurfaceInsulation"] | null;
         };
         /**
          * HomeStatus
@@ -1043,6 +1044,7 @@ export interface components {
             timestamp_notes: string;
             /** Scientific Disclaimer */
             scientific_disclaimer: string;
+            insulation?: components["schemas"]["SurfaceInsulation"] | null;
         };
         /** RoomHealthView */
         RoomHealthView: {
@@ -1200,6 +1202,33 @@ export interface components {
             station_call_sign?: string | null;
             /** Station Name */
             station_name?: string | null;
+        };
+        /**
+         * SurfaceInsulation
+         * @description How well insulated each room's outside surfaces are; the UI's infrared view
+         *     uses it to estimate surface temperatures from measured air temperatures.
+         */
+        SurfaceInsulation: {
+            /** Envelope U W Per M2K */
+            envelope_u_w_per_m2k: {
+                [key: string]: number;
+            };
+            /** Room Heat Loss W Per K */
+            room_heat_loss_w_per_k: {
+                [key: string]: number;
+            };
+            /** Default Envelope U W Per M2K */
+            default_envelope_u_w_per_m2k: number;
+            /** Window U W Per M2K */
+            window_u_w_per_m2k: number;
+            /**
+             * Provenance
+             * @default MODEL_ESTIMATE
+             * @constant
+             */
+            provenance: "MODEL_ESTIMATE";
+            /** Notes */
+            notes: string;
         };
         /** WeatherLookup */
         WeatherLookup: {

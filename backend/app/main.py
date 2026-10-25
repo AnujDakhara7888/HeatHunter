@@ -108,8 +108,10 @@ async def health() -> HealthResponse:
 async def get_real_house() -> RealHouse:
     from backend.data_pipeline import load_real_house
 
+    from .homes import hh09_real_insulation
+
     try:
-        return load_real_house()
+        return load_real_house().model_copy(update={"insulation": hh09_real_insulation()})
     except FileNotFoundError as exc:
         raise ServiceNotIntegratedError(f"real-house data is not available: {exc}") from exc
 

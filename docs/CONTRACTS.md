@@ -177,11 +177,23 @@ USD conversion is needed in the UI.
 { "outdoor_temperature": "Series", "wind_speed": "Series",
   "rooms": { "bedroom_1": { "measured": "Series", "expected_if_healthy": "Series" } },
   "nights": [ { "night_id": "hh09-night-2021-01-10", "start": "...", "end": "...",
-                "mean_wind_m_s": 4.1 } ] }
+                "mean_wind_m_s": 4.1 } ],
+  "insulation": { "envelope_u_w_per_m2k": { "bedroom_1": 0.742 },
+                  "room_heat_loss_w_per_k": { "bedroom_1": 50.7 },
+                  "default_envelope_u_w_per_m2k": 0.735, "window_u_w_per_m2k": 2.8,
+                  "provenance": "MODEL_ESTIMATE", "notes": "..." } }
 ```
 `expected_if_healthy` is the engine's prediction for a healthy room under the
 same weather (`MODEL_ESTIMATE`). It never comes from the simulator, so it
 reveals nothing hidden.
+
+`insulation` (`SurfaceInsulation`, also on `GET /api/real/house` keyed by the
+real sensor rooms) holds the engine's nominal figures: each room's envelope
+conductance per m² of exposed wall, roof and floor (an effective U-value), its
+nominal seasonal heat loss (what `extra_heat_loss_percent` is a fraction of),
+and the SAP window U-value. The UI's infrared view uses them to estimate
+surface temperatures from measured air and outdoor temperatures (ISO 6946
+surface resistances). Those colours are estimates, not camera images.
 
 ### 6. `GET /api/homes/{home_id}/rooms/{room_id}` → `RoomReport`
 ```json
