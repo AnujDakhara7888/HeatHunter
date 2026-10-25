@@ -140,6 +140,13 @@ export function ChatDock() {
     };
     const body = { messages: history.slice(-12).map(({ role, content }) => ({ role, content })), screen };
     try {
+      const messages = history.slice(-12).map(({ role, content }) => ({ role, content }));
+      const reply = homeId
+        ? await traced("chat", "POST /homes/{id}/assistant", () =>
+            api.POST("/api/homes/{home_id}/assistant", { params: { path: { home_id: homeId } }, body: { messages } }),
+            (r) => r.model,
+          )
+        : await traced("chat", "POST /assistant/chat", () => api.POST("/api/assistant/chat", { body: { messages } }), (r) => r.model);
       const reply = await traced("chat", homeId ? "POST /homes/{id}/assistant" : "POST /assistant/help", () =>
         homeId
           ? api.POST("/api/homes/{home_id}/assistant", { params: { path: { home_id: homeId } }, body })

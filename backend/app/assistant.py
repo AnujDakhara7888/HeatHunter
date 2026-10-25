@@ -268,6 +268,22 @@ def home_chat(messages: list[ChatMessage], context: dict) -> ChatReply:
     return ChatReply(reply=result.reply[:2000], actions=actions, model=model)
 
 
+SITE_CONTEXT = {
+    "home": "none open",
+    "hidden_answer": "not revealed",
+    "note": (
+        "The user has not opened a home yet (landing or setup page). Answer questions about what "
+        "HeatHunter is, how it works and how to use it, from your instructions; there are no readings."
+    ),
+}
+
+
+def site_chat(messages: list[ChatMessage]) -> ChatReply:
+    """Chat when no home is on screen: general questions about HeatHunter, same strict scope."""
+
+    return home_chat(messages, SITE_CONTEXT)
+
+
 PLAN_PROMPT = """Read this floor plan and return its rooms as axis-aligned rectangles in metres.
 Use printed dimensions when present (e.g. "3.11 x 3.80"). x grows to the right, z grows downward,
 the top-left outer corner of the building is (0, 0). Rooms must tile the plan without overlapping;
