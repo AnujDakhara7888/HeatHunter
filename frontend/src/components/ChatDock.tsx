@@ -74,7 +74,7 @@ function offlineAnswer(q: string, ctx: Record<string, unknown>): { text: string;
       actions: [],
     };
   return {
-    text: "I can explain what the heat map shows, why a room was flagged, how sure the engine is, or what a fix is worth. Add a GEMINI_API_KEY on the server for free-form answers.",
+    text: "I can explain what the heat map shows, why a room was flagged, how sure the engine is, or what a fix is worth. Add an ANTHROPIC_API_KEY on the server for free-form answers.",
     actions: [],
   };
 }

@@ -112,17 +112,14 @@ Trust features judges can check:
 - The assistant (`Ask HeatHunter`) sees only what is on screen; truth reaches it
   only after the reveal.
 
-Optional online features: set `GEMINI_API_KEY` (free tier, from
-https://aistudio.google.com/apikey) in the environment or in the git-ignored
-repo-root `.env` (see `.env.example`) before starting uvicorn to enable chat
-and floor-plan reading (model `gemini-flash-latest`, override with
-`HEATHUNTER_ASSISTANT_MODEL`). Claude still works with `ANTHROPIC_API_KEY`
-(`claude-sonnet-5-5`); `HEATHUNTER_ASSISTANT_PROVIDER=gemini|anthropic` picks
-one when both keys are set. Without a key, chat answers offline from the engine
+Optional online features: set `ANTHROPIC_API_KEY` (in the environment or in the
+git-ignored repo-root `.env`, see `.env.example`) before starting uvicorn to
+enable chat and floor-plan reading (model `claude-sonnet-5-5`, override with
+`HEATHUNTER_ASSISTANT_MODEL`). Without it, chat answers offline from the engine
 output on screen and plans are traced by hand. The chat answers only questions
 about HeatHunter and the home on screen; anything else gets a fixed redirect.
-Weather lookup uses Open-Meteo and needs internet; readings can always be typed
-by hand. The judge demo (`/`, `/lab`, `/real`) needs no network.
+Weather lookup uses Open-Meteo and needs internet; readings can always be typed by hand. The judge demo
+(`/`, `/lab`, `/real`) needs no network.
 
 ### 3-minute pitch script
 

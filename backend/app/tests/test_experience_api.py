@@ -105,22 +105,12 @@ def test_home_analysis_screens_user_readings(client: TestClient) -> None:
     assert any("no verified fault labels" in u for u in result["uncertainty"])
 
 
-KEY_VARS = (
-    "GEMINI_API_KEY",
-    "GOOGLE_API_KEY",
-    "ANTHROPIC_API_KEY",
-    "ANTHROPIC_AUTH_TOKEN",
-    "HEATHUNTER_ASSISTANT_PROVIDER",
-    "HEATHUNTER_ASSISTANT_MODEL",
-)
-
-
 def test_assistant_reports_unavailable_without_credentials(client: TestClient, monkeypatch, tmp_path) -> None:
     from backend.app import assistant
 
     monkeypatch.setattr(assistant, "ENV_FILE", tmp_path / "missing.env")
-    for var in KEY_VARS:
-        monkeypatch.delenv(var, raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
     response = client.post("/api/assistant/chat", json={"messages": [{"role": "user", "content": "hi"}]})
     assert response.status_code == 503
     assert response.json()["code"] == "ASSISTANT_UNAVAILABLE"
@@ -159,58 +149,6 @@ def test_assistant_reads_key_from_env_file(monkeypatch, tmp_path) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     assistant._load_env_file()
     assert assistant.os.environ["ANTHROPIC_API_KEY"] == "sk-test"
-
-
-def test_assistant_prefers_gemini_then_claude(monkeypatch, tmp_path) -> None:
-    from backend.app import assistant
-
-    monkeypatch.setattr(assistant, "ENV_FILE", tmp_path / "missing.env")
-    for var in KEY_VARS:
-        monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
-    assert assistant._provider() == "anthropic"
-    monkeypatch.setenv("GEMINI_API_KEY", "g-test")
-    assert assistant._provider() == "gemini"
-    monkeypatch.setenv("HEATHUNTER_ASSISTANT_PROVIDER", "anthropic")
-    assert assistant._provider() == "anthropic"
-
-
-def test_gemini_request_uses_structured_output(monkeypatch, tmp_path) -> None:
-    from types import SimpleNamespace
-
-    from google import genai
-
-    from backend.app import assistant
-
-    monkeypatch.setattr(assistant, "ENV_FILE", tmp_path / "missing.env")
-    for var in KEY_VARS:
-        monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("GEMINI_API_KEY", "g-test")
-    calls = {}
-
-    class FakeModels:
-        def generate_content(self, **kwargs):
-            calls.update(kwargs)
-            text = '{"on_topic": true, "reply": "Drafts get worse with the fan.", "actions": []}'
-            candidate = SimpleNamespace(finish_reason="STOP")
-            return SimpleNamespace(text=text, candidates=[candidate], model_version="gemini-test")
-
-    monkeypatch.setattr(genai, "Client", lambda **_: SimpleNamespace(models=FakeModels()))
-    request = assistant.ChatRequest(
-        messages=[
-            {"role": "user", "content": "hi"},
-            {"role": "assistant", "content": "hello"},
-            {"role": "user", "content": "Why the hall?"},
-        ]
-    )
-    reply = assistant.chat(request)
-    assert reply.reply == "Drafts get worse with the fan." and reply.model == "gemini-test"
-    assert calls["model"] == "gemini-flash-latest"
-    assert [c.role for c in calls["contents"]] == ["user", "model", "user"]
-    config = calls["config"]
-    assert config.system_instruction == assistant.CHAT_SYSTEM
-    assert config.response_mime_type == "application/json"
-    assert "additionalProperties" not in json.dumps(config.response_json_schema)
 
 
 def test_openapi_lists_experience_routes(client: TestClient) -> None:

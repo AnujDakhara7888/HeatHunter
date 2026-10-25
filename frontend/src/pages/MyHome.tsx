@@ -160,7 +160,7 @@ export default function MyHome() {
     } catch (e) {
       setNotes([
         e instanceof ApiError && e.status === 503
-          ? "AI plan reading is off (no GEMINI_API_KEY on the server). Your plan is shown underneath: drag the rooms to trace it."
+          ? "AI plan reading is off (no ANTHROPIC_API_KEY on the server). Your plan is shown underneath: drag the rooms to trace it."
           : `Couldn't read the plan automatically (${e instanceof Error ? e.message : e}). Trace the rooms over it instead.`,
       ]);
     } finally {
