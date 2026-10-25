@@ -102,29 +102,76 @@ Details are in [`docs/PHYSICS.md`](docs/PHYSICS.md) and
   custom infrared shader, first-person walk-in, d3 charts, Framer Motion and
   Tailwind.
 
-## Run it
+## Run it on your computer
 
-Needs Python 3.11+ and Node 20+.
+### 1. Install the tools (once)
+
+- **Python 3.11 or newer:** <https://www.python.org/downloads/>
+- **Node.js 20 or newer:** <https://nodejs.org/>
+- **Git:** <https://git-scm.com/downloads>, or use GitHub Desktop
+
+### 2. Download the code
+
+```bash
+git clone https://github.com/AnujDakhara7888/HeatHunter.git
+cd HeatHunter
+```
+
+Or, on GitHub, click **Code → Download ZIP**, unzip it, and open a terminal in
+the `HeatHunter` folder.
+
+### 3. Set it up (once)
+
+macOS / Linux:
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev,assistant]'
 (cd frontend && npm install && npm run build)
-cp .env.example .env      # optional: add OPENAI_API_KEY or ANTHROPIC_API_KEY for the chat
+cp .env.example .env
+```
+
+Windows (PowerShell):
+
+```powershell
+py -m venv .venv
+.venv\Scripts\pip install -e ".[dev,assistant]"
+cd frontend; npm install; npm run build; cd ..
+copy .env.example .env
+```
+
+To use the chat, open `.env` and add one line: `OPENAI_API_KEY=sk-...` (or
+`ANTHROPIC_API_KEY=...`). Everything else works without a key.
+
+### 4. Start it
+
+macOS / Linux:
+
+```bash
 .venv/bin/uvicorn backend.app.main:app --port 8000
 ```
 
-Open <http://127.0.0.1:8000>. The Fault Lab works fully offline. The chat
-needs an API key (with only `OPENAI_API_KEY` set it uses OpenAI, otherwise
-Claude), and "Your home" needs internet for weather.
+Windows:
+
+```powershell
+.venv\Scripts\uvicorn backend.app.main:app --port 8000
+```
+
+Then open <http://127.0.0.1:8000> in Chrome. Stop it with `Ctrl+C`. Next time,
+only step 4 is needed. After pulling new code, run step 3's install and build
+lines again.
+
+The Fault Lab works fully offline. "Your home" needs internet for weather.
+
+### For developers
 
 ```bash
 .venv/bin/pytest                # 261 tests
 .venv/bin/ruff check backend
 ```
 
-For frontend development, run the API, then `cd frontend && npm run dev`.
-[`docs/DEMO.md`](docs/DEMO.md) has the demo walkthrough, and
+For frontend development, run the API, then `cd frontend && npm run dev`
+(port 5173). [`docs/DEMO.md`](docs/DEMO.md) has the demo walkthrough, and
 [`docs/CONTRACTS.md`](docs/CONTRACTS.md) documents the API.
 
 ## Honest limits
