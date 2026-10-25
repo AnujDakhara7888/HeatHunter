@@ -24,7 +24,7 @@ Synthetic benchmark performance must not be presented as real-home accuracy.
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev,assistant]'
 (cd frontend && npm install && npm run build)
-export ANTHROPIC_API_KEY=...   # optional: chat + floor-plan reading
+cp .env.example .env           # optional: put ANTHROPIC_API_KEY in .env for chat + plan reading
 .venv/bin/uvicorn backend.app.main:app --port 8000   # http://127.0.0.1:8000
 ```
 

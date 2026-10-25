@@ -105,12 +105,50 @@ def test_home_analysis_screens_user_readings(client: TestClient) -> None:
     assert any("no verified fault labels" in u for u in result["uncertainty"])
 
 
-def test_assistant_reports_unavailable_without_credentials(client: TestClient, monkeypatch) -> None:
+def test_assistant_reports_unavailable_without_credentials(client: TestClient, monkeypatch, tmp_path) -> None:
+    from backend.app import assistant
+
+    monkeypatch.setattr(assistant, "ENV_FILE", tmp_path / "missing.env")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
     response = client.post("/api/assistant/chat", json={"messages": [{"role": "user", "content": "hi"}]})
     assert response.status_code == 503
     assert response.json()["code"] == "ASSISTANT_UNAVAILABLE"
+
+
+def test_assistant_replaces_off_topic_answers(client: TestClient, monkeypatch) -> None:
+    from backend.app import assistant
+
+    reply = {"on_topic": False, "reply": "Paris.", "actions": [{"type": "set_view", "target": "fan"}]}
+    monkeypatch.setattr(assistant, "_create", lambda **_: (reply, "test-model"))
+    response = client.post(
+        "/api/assistant/chat", json={"messages": [{"role": "user", "content": "Capital of France?"}]}
+    )
+    assert response.status_code == 200, response.text
+    assert response.json() == {"reply": assistant.OFF_TOPIC_REPLY, "actions": [], "model": "test-model"}
+
+
+def test_assistant_passes_on_topic_answers(client: TestClient, monkeypatch) -> None:
+    from backend.app import assistant
+
+    actions = [{"type": "set_view", "target": "fan"}]
+    reply = {"on_topic": True, "reply": "The hall leaks air.", "actions": actions}
+    monkeypatch.setattr(assistant, "_create", lambda **_: (reply, "test-model"))
+    body = {"messages": [{"role": "user", "content": "Why the hall?"}]}
+    response = client.post("/api/assistant/chat", json=body)
+    assert response.json()["reply"] == "The hall leaks air."
+    assert response.json()["actions"] == actions
+
+
+def test_assistant_reads_key_from_env_file(monkeypatch, tmp_path) -> None:
+    from backend.app import assistant
+
+    env = tmp_path / ".env"
+    env.write_text("# comment\nexport ANTHROPIC_API_KEY='sk-test'\n")
+    monkeypatch.setattr(assistant, "ENV_FILE", env)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assistant._load_env_file()
+    assert assistant.os.environ["ANTHROPIC_API_KEY"] == "sk-test"
 
 
 def test_openapi_lists_experience_routes(client: TestClient) -> None:

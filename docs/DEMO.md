@@ -112,11 +112,13 @@ Trust features judges can check:
 - The assistant (`Ask HeatHunter`) sees only what is on screen; truth reaches it
   only after the reveal.
 
-Optional online features: set `ANTHROPIC_API_KEY` before starting uvicorn to
+Optional online features: set `ANTHROPIC_API_KEY` (in the environment or in the
+git-ignored repo-root `.env`, see `.env.example`) before starting uvicorn to
 enable chat and floor-plan reading (model `claude-opus-5-5`, override with
 `HEATHUNTER_ASSISTANT_MODEL`). Without it, chat answers offline from the engine
-output on screen and plans are traced by hand. Weather lookup uses Open-Meteo
-and needs internet; readings can always be typed by hand. The judge demo
+output on screen and plans are traced by hand. The chat answers only questions
+about HeatHunter and the home on screen; anything else gets a fixed redirect.
+Weather lookup uses Open-Meteo and needs internet; readings can always be typed by hand. The judge demo
 (`/`, `/lab`, `/real`) needs no network.
 
 ### 3-minute pitch script
