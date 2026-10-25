@@ -10,6 +10,14 @@ from backend.app.homes import build_home
 from backend.app.main import app
 
 
+@pytest.fixture(autouse=True)
+def isolated_assistant(monkeypatch, tmp_path):
+    from backend.app import assistant
+
+    monkeypatch.setattr(assistant, "ENV_FILE", tmp_path / "missing.env")
+    monkeypatch.setenv("HEATHUNTER_CHAT_PROVIDER", "claude")
+
+
 @pytest.fixture(scope="module")
 def client() -> TestClient:
     return TestClient(app)
