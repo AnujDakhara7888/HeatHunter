@@ -19,6 +19,7 @@ dependencies = [
 [project.optional-dependencies]
 assistant = [
   "anthropic>=2.3,<3",
+  "google-genai>=2,<3",
 ]
 data = [
   "matplotlib>=3.10,<4",

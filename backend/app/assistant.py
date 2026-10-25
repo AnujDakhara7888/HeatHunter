@@ -1,8 +1,12 @@
-"""Claude-backed assistant: plain-language chat and floor-plan reading (Nikhil).
+"""AI assistant: plain-language chat and floor-plan reading (Nikhil).
 
 The chat sees only what the UI has already shown the user (the ``context``
 object it sends). The API layer never adds simulator truth to it. Replies use
 structured output so the UI can also move the 3D camera.
+
+Runs on Google Gemini (free tier, ``GEMINI_API_KEY``) by default; Claude
+(``ANTHROPIC_API_KEY``) remains available. ``HEATHUNTER_ASSISTANT_PROVIDER``
+forces one; otherwise the first provider with a key wins, Gemini first.
 """
 
 from __future__ import annotations
@@ -16,12 +20,12 @@ from pathlib import Path
 from .contracts import ChatAction, ChatReply, ChatRequest, FloorPlanDraft, HomePlan
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
-MODEL = os.environ.get("HEATHUNTER_ASSISTANT_MODEL", "claude-sonnet-5-5")
+DEFAULT_MODELS = {"gemini": "gemini-flash-latest", "anthropic": "claude-sonnet-5-5"}
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 
 class AssistantUnavailable(RuntimeError):
-    """No Anthropic credentials or SDK; the UI falls back to offline answers."""
+    """No credentials or SDK, or the provider failed; the UI falls back to offline answers."""
 
 
 def _load_env_file() -> None:
@@ -34,24 +38,140 @@ def _load_env_file() -> None:
             os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
-def _client():
+def _gemini_key() -> str | None:
+    return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+
+
+def _anthropic_key() -> str | None:
+    return os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")
+
+
+def _provider() -> str:
     _load_env_file()
+    forced = os.environ.get("HEATHUNTER_ASSISTANT_PROVIDER", "").strip().lower()
+    if forced in DEFAULT_MODELS:
+        return forced
+    if forced:
+        raise AssistantUnavailable("HEATHUNTER_ASSISTANT_PROVIDER must be gemini or anthropic")
+    if _gemini_key():
+        return "gemini"
+    if _anthropic_key():
+        return "anthropic"
+    raise AssistantUnavailable("set GEMINI_API_KEY (free at aistudio.google.com) to enable the assistant")
+
+
+def _model(provider: str) -> str:
+    return os.environ.get("HEATHUNTER_ASSISTANT_MODEL") or DEFAULT_MODELS[provider]
+
+
+def _parse(text: str | None, model: str) -> tuple[dict, str]:
+    try:
+        return json.loads(text or ""), model
+    except json.JSONDecodeError as exc:
+        raise AssistantUnavailable("the assistant returned an unreadable reply") from exc
+
+
+def _create(
+    *,
+    messages: list[dict],
+    schema: dict,
+    max_tokens: int,
+    effort: str,
+    system: str | None = None,
+    attachment: tuple[bytes, str] | None = None,
+) -> tuple[dict, str]:
+    """Run one structured-output request. ``messages`` hold plain-text turns; an
+    optional ``(bytes, media_type)`` attachment goes before the last user turn."""
+    provider = _provider()
+    if provider == "gemini":
+        return _create_gemini(messages, schema, max_tokens, system, attachment)
+    return _create_claude(messages, schema, max_tokens, effort, system, attachment)
+
+
+def _without_additional_properties(schema):
+    """Gemini's schema subset does not take ``additionalProperties``."""
+    if isinstance(schema, dict):
+        return {
+            k: _without_additional_properties(v) for k, v in schema.items() if k != "additionalProperties"
+        }
+    if isinstance(schema, list):
+        return [_without_additional_properties(v) for v in schema]
+    return schema
+
+
+def _create_gemini(messages, schema, max_tokens, system, attachment):
+    try:
+        import httpx
+        from google import genai
+        from google.genai import errors, types
+    except ImportError as exc:  # pragma: no cover - optional dependency
+        raise AssistantUnavailable("the google-genai package is not installed") from exc
+    if not _gemini_key():
+        raise AssistantUnavailable("set GEMINI_API_KEY to use the Gemini assistant")
+    contents = []
+    for i, m in enumerate(messages):
+        parts = [types.Part.from_text(text=m["content"])]
+        if attachment and i == len(messages) - 1:
+            parts.insert(0, types.Part.from_bytes(data=attachment[0], mime_type=attachment[1]))
+        contents.append(types.Content(role="model" if m["role"] == "assistant" else "user", parts=parts))
+    client = genai.Client(api_key=_gemini_key(), http_options=types.HttpOptions(timeout=60_000))
+    model = _model("gemini")
+    try:
+        response = client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                max_output_tokens=max_tokens,
+                response_mime_type="application/json",
+                response_json_schema=_without_additional_properties(schema),
+            ),
+        )
+    except errors.ClientError as exc:
+        if exc.code == 429:
+            raise AssistantUnavailable("the Gemini free-tier limit was reached; try again shortly") from exc
+        if exc.code in (400, 401, 403) and "key" in str(exc).lower():
+            raise AssistantUnavailable("the Gemini API key was rejected") from exc
+        raise AssistantUnavailable(f"the Gemini API returned an error ({exc.code})") from exc
+    except errors.ServerError as exc:
+        raise AssistantUnavailable(f"the Gemini API returned an error ({exc.code})") from exc
+    except httpx.HTTPError as exc:
+        raise AssistantUnavailable("could not reach the Gemini API") from exc
+    candidate = (response.candidates or [None])[0]
+    finish = str(getattr(candidate, "finish_reason", "") or "")
+    if candidate is None or "SAFETY" in finish or "PROHIBITED" in finish:
+        raise AssistantUnavailable("the assistant declined this request")
+    if "MAX_TOKENS" in finish:
+        raise AssistantUnavailable("the assistant reply was cut off")
+    return _parse(response.text, response.model_version or model)
+
+
+def _create_claude(messages, schema, max_tokens, effort, system, attachment):
     try:
         import anthropic
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise AssistantUnavailable("the anthropic package is not installed") from exc
-    if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
-        raise AssistantUnavailable("set ANTHROPIC_API_KEY to enable the assistant")
-    return anthropic.Anthropic(timeout=60.0, max_retries=1)
-
-
-def _create(**kwargs):
-    import anthropic
-
-    client = _client()
+    if not _anthropic_key():
+        raise AssistantUnavailable("set ANTHROPIC_API_KEY to use the Claude assistant")
+    turns = [{"role": m["role"], "content": m["content"]} for m in messages]
+    if attachment:
+        data, media_type = attachment
+        kind = "document" if media_type == "application/pdf" else "image"
+        encoded = base64.standard_b64encode(data).decode()
+        source = {"type": "base64", "media_type": media_type, "data": encoded}
+        text = {"type": "text", "text": turns[-1]["content"]}
+        turns[-1]["content"] = [{"type": kind, "source": source}, text]
+    extra = {"system": system} if system else {}
+    client = anthropic.Anthropic(timeout=60.0, max_retries=1)
     try:
         response = client.beta.messages.create(
-            model=MODEL, betas=[FALLBACK_BETA], fallbacks="default", **kwargs
+            model=_model("anthropic"),
+            betas=[FALLBACK_BETA],
+            fallbacks="default",
+            max_tokens=max_tokens,
+            messages=turns,
+            output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
+            **extra,
         )
     except anthropic.APIConnectionError as exc:
         raise AssistantUnavailable("could not reach the Claude API") from exc
@@ -67,11 +187,7 @@ def _create(**kwargs):
         raise AssistantUnavailable("the assistant declined this request")
     if response.stop_reason == "max_tokens":
         raise AssistantUnavailable("the assistant reply was cut off")
-    text = "".join(block.text for block in response.content if block.type == "text")
-    try:
-        return json.loads(text), response.model
-    except json.JSONDecodeError as exc:
-        raise AssistantUnavailable("the assistant returned an unreadable reply") from exc
+    return _parse("".join(b.text for b in response.content if b.type == "text"), response.model)
 
 
 CHAT_SYSTEM = """You are HeatHunter's guide inside a 3D home-heat-loss app.
@@ -139,7 +255,8 @@ def chat(request: ChatRequest) -> ChatReply:
         max_tokens=4000,
         system=CHAT_SYSTEM,
         messages=messages,
-        output_config={"effort": "low", "format": {"type": "json_schema", "schema": CHAT_SCHEMA}},
+        schema=CHAT_SCHEMA,
+        effort="low",
     )
     if not data.get("on_topic") or not data.get("reply", "").strip():
         return ChatReply(reply=OFF_TOPIC_REPLY, actions=[], model=model)
@@ -202,30 +319,14 @@ IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
 
 
 def read_floor_plan(content: bytes, media_type: str) -> FloorPlanDraft:
-    if media_type == "application/pdf":
-        block = {
-            "type": "document",
-            "source": {
-                "type": "base64",
-                "media_type": media_type,
-                "data": base64.standard_b64encode(content).decode(),
-            },
-        }
-    elif media_type in IMAGE_TYPES:
-        block = {
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": media_type,
-                "data": base64.standard_b64encode(content).decode(),
-            },
-        }
-    else:
+    if media_type != "application/pdf" and media_type not in IMAGE_TYPES:
         raise ValueError("upload a PNG, JPEG, WebP or PDF floor plan")
     data, model = _create(
         max_tokens=16000,
-        messages=[{"role": "user", "content": [block, {"type": "text", "text": PLAN_PROMPT}]}],
-        output_config={"effort": "medium", "format": {"type": "json_schema", "schema": PLAN_SCHEMA}},
+        messages=[{"role": "user", "content": PLAN_PROMPT}],
+        attachment=(content, media_type),
+        schema=PLAN_SCHEMA,
+        effort="medium",
     )
     seen: set[str] = set()
     rooms = []
