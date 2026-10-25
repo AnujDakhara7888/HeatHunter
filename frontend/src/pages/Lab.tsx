@@ -327,7 +327,10 @@ export default function Lab() {
     });
 
   const advance = async (homeId: string, n: number) => {
-    const h = await traced("advance", `POST /demo/homes/{id}/advance ×${n}`, () => api.POST("/api/demo/homes/{home_id}/advance", { params: { path: { home_id: homeId } }, body: { nights: n } }), (d) => `night ${d.home.nights_monitored} · ${d.home.status}`);
+    // A night that never comes back must not freeze the demo: give up after 30 s so the user can retry.
+    const h = await traced("advance", `POST /demo/homes/{id}/advance ×${n}`, () => api.POST("/api/demo/homes/{home_id}/advance", { params: { path: { home_id: homeId } }, body: { nights: n }, signal: AbortSignal.timeout(30000) }), (d) => `night ${d.home.nights_monitored} · ${d.home.status}`).catch((e: unknown) => {
+      throw e instanceof DOMException && e.name === "TimeoutError" ? new Error("That night took too long to simulate. Press Next night to try again.") : e;
+    });
     await refresh(homeId, h);
     setTimeout(() => player.play(), 300);
   };

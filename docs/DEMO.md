@@ -7,7 +7,7 @@ python3 -m venv .venv
 .venv/bin/pip install -e '.[dev,assistant]'
 npm --prefix frontend ci
 npm --prefix frontend run build
-export ANTHROPIC_API_KEY=...   # optional: assistant and floor-plan reading
+cp .env.example .env           # optional: OPENAI_API_KEY or ANTHROPIC_API_KEY for the chat
 .venv/bin/uvicorn backend.app.main:app --port 8000
 ```
 
@@ -16,18 +16,55 @@ work, run `npm --prefix frontend run dev`; Vite proxies `/api` to port 8000.
 Demo homes need no network. Restarting the backend clears demo homes; real
 homes reload from `var/homes`.
 
-The assistant and floor-plan reading need `ANTHROPIC_API_KEY`, set in the
-environment or in the git-ignored repo-root `.env` (see `.env.example`). The
-default model is `claude-sonnet-5-5`; override it with
-`HEATHUNTER_ASSISTANT_MODEL`. The assistant answers only questions about
+The chat needs `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in the environment or the
+git-ignored repo-root `.env` (see `.env.example`). With only an OpenAI key it uses
+OpenAI; otherwise Claude (`claude-sonnet-5-5`, override with
+`HEATHUNTER_ASSISTANT_MODEL`). Floor-plan reading uses Claude. The assistant answers only questions about
 HeatHunter and the home it is shown; anything else gets a fixed redirect.
 Real homes and weather lookup use Open-Meteo and need internet.
 
-The UI uses API v2 throughout: `/lab` is the demo house (hidden, judge-planted or
-no fault; "Next night" advances, rooms change status, "I sealed leaks / I
-insulated" reports the repair, Reveal at the end), `/home` sets up a real home
-(plan, town, heating-off hours, sensor CSVs), and `/real` replays the real HH09
-week (heating on, so not monitored).
+The UI uses API v2 throughout. `/lab` is the demo house: hidden, judge-planted or
+no fault, starting in a chosen week. "Next night" and "Week" advance the clock,
+"Seal leaks / Insulate / Other" reports the repair, "Analytics" shows the analysis
+as of any night, and "Reveal" ends the round. `/home` sets up a real home (plan,
+town, heating-off hours, sensor CSVs), and `/real` replays the real HH09 week
+(heating on, so not monitored).
+
+## Live judging script (3 minutes, tested 2026-10-25)
+
+Setup that worked reliably: week **10 Jan – 16 Jan**, **Judge mode**, severity
+×1.8. Over 32 random-seed runs (every room, both faults), the planted fault was
+flagged by night 2 and named correctly by night 2–3 in 31 runs; the miss was a
+Hall air leak named as weak insulation. A later Living room air leak was also
+misnamed once. A healthy house stayed clear in 6 of 6. So suggest a Kitchen or
+Bedroom leak, or any insulation fault. Avoid the 15 Nov week: a healthy house was falsely flagged in
+2 of 6 runs.
+
+1. **Landing (10 s).** One sentence: "HeatHunter finds which room is losing
+   heat, and why, from cheap temperature sensors."
+2. **Fault Lab → 10 Jan – 16 Jan → Judge mode (20 s).** The judge picks the room
+   and fault in secret and clicks "Hide it & start". "The app never sees this;
+   only Reveal can."
+3. **Week (30 s).** Nights play one by one. "Each night we fit three physics
+   models to every room. A leak gets worse with wind, a wall doesn't, so the
+   windy nights (blue) split them." A room turns orange: flagged after two
+   nights in a row.
+4. **Thermal (10 s).** Drag the house; the crosshair reads each room's measured
+   temperature.
+5. **Analytics (40 s).** *What happened*: verdict, "How it unfolded", the
+   suspects and the cost. Then *Under the hood*: "the cause gap jumps on the
+   windy nights: that's how it names the cause."
+6. **Repair (20 s).** House → "Seal leaks" (or "Insulate") → Next night twice →
+   "Fixed".
+7. **Reveal (10 s).** Read out the hidden answer and how many nights it took.
+8. **Learning and limits (20 s).** "One night couldn't separate a leak from a
+   weak wall (3 of 32), so we redesigned around watching night after night. The
+   house is simulated on real weather; real sensors are next."
+
+Before judging: restart the server, warm it up with one round, have the backup
+video ready. If a night ever takes too long, the app stops after 30 s with a
+message; press Next night again, or reload and reopen the house from "Your
+houses".
 
 ## The story
 
