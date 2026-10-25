@@ -3,7 +3,8 @@
 A user's rectangular floor plan becomes a ``PublicTemplate`` by transferring the
 HH09 calibration per unit of geometry: envelope conductance per m2 of exposed
 envelope, infiltration per m3, air-fabric conductance per m2 of floor, and the
-same leakage law. These are ASSUMPTIONS, disclosed on every response. The
+same leakage law. Windows get the engine's air-side glazing path: the SAP
+double-glazing U-value x the plan's window area. These are ASSUMPTIONS, disclosed on every response. The
 public engine then fits the same three hypotheses to the user's own readings.
 
 Real homes have no verified fault labels, so results are screening only.
@@ -145,6 +146,7 @@ def build_home(plan: HomePlan) -> tuple[HomeTemplate, ModelExtension]:
     tmp = value(physical, "physical", "thermal_mass_parameter")
     air_c = value(physical, "physical", "air_volumetric_heat_capacity")
     partition_u = value(physical, "physical", "partition_u_value")
+    window_u = value(physical, "physical", "window_u_value")
     exterior, shared, windows = plan_geometry(plan)
     h = plan.ceiling_height_m
     rooms, air_fabric = [], {}
@@ -186,7 +188,8 @@ def build_home(plan: HomePlan) -> tuple[HomeTemplate, ModelExtension]:
         template_id=template.template_id,
         air_fabric_conductance_w_per_k=air_fabric,
         leakage_law=LeakageLaw(coefficients["stack_wind_ratio"], coefficients["reference_delta_t_k"]),
-        note="Transferred per unit geometry from the HH09 calibration.",
+        note="Transferred per unit geometry from the HH09 calibration; windows from the SAP glazing U-value.",
+        window_conductance_w_per_k={r.room_id: window_u * windows.get(r.room_id, 0.0) for r in rooms},
     )
     assumptions = [
         Assumption(
@@ -209,6 +212,7 @@ def build_home(plan: HomePlan) -> tuple[HomeTemplate, ModelExtension]:
         ),
         Assumption(name="thermal_mass_parameter", value=tmp, unit="J/(m2.K)"),
         Assumption(name="partition_u_value", value=partition_u, unit="W/(m2.K)"),
+        Assumption(name="window_u_value", value=window_u, unit="W/(m2.K)"),
         Assumption(name="ceiling_height", value=h, unit="m"),
         Assumption(name="window_height", value=WINDOW_HEIGHT_M, unit="m"),
     ]
