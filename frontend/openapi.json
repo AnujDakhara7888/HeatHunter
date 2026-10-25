@@ -27,550 +27,6 @@
         }
       }
     },
-    "/api/scenarios": {
-      "post": {
-        "tags": [
-          "fault-lab"
-        ],
-        "summary": "Create Scenario",
-        "operationId": "create_scenario_api_scenarios_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ScenarioCreateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScenarioCreated"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown scenario, diagnosis or asset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The action is not valid in the scenario's current state.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/scenarios/{id}/observations": {
-      "get": {
-        "tags": [
-          "fault-lab"
-        ],
-        "summary": "Get Observations",
-        "operationId": "get_observations_api_scenarios__id__observations_get",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ObservationResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown scenario, diagnosis or asset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The action is not valid in the scenario's current state.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/scenarios/{id}/diagnose": {
-      "post": {
-        "tags": [
-          "fault-lab"
-        ],
-        "summary": "Diagnose",
-        "operationId": "diagnose_api_scenarios__id__diagnose_post",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DiagnoseRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Diagnosis"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown scenario, diagnosis or asset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The action is not valid in the scenario's current state.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/scenarios/{id}/experiments": {
-      "post": {
-        "tags": [
-          "fault-lab"
-        ],
-        "summary": "Run Experiment",
-        "operationId": "run_experiment_api_scenarios__id__experiments_post",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExperimentRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExperimentResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown scenario, diagnosis or asset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The action is not valid in the scenario's current state.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/scenarios/{id}/money": {
-      "post": {
-        "tags": [
-          "fault-lab"
-        ],
-        "summary": "Estimate Money",
-        "description": "Re-price a diagnosis with user tariff/repair-cost overrides via the public engine.",
-        "operationId": "estimate_money_api_scenarios__id__money_post",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MoneyRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MoneyResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown scenario, diagnosis or asset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The action is not valid in the scenario's current state.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/scenarios/{id}/repair": {
-      "post": {
-        "tags": [
-          "fault-lab"
-        ],
-        "summary": "Apply Repair",
-        "operationId": "apply_repair_api_scenarios__id__repair_post",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RepairRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RepairResult"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown scenario, diagnosis or asset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The action is not valid in the scenario's current state.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/scenarios/{id}/reveal": {
-      "get": {
-        "tags": [
-          "fault-lab"
-        ],
-        "summary": "Reveal",
-        "operationId": "reveal_api_scenarios__id__reveal_get",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GroundTruth"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown scenario, diagnosis or asset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The action is not valid in the scenario's current state.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/real/house": {
       "get": {
         "tags": [
@@ -618,7 +74,7 @@
             }
           },
           "404": {
-            "description": "Unknown scenario, diagnosis or asset.",
+            "description": "Unknown home, room or asset.",
             "content": {
               "application/json": {
                 "schema": {
@@ -661,110 +117,6 @@
         }
       }
     },
-    "/api/insight/fits": {
-      "post": {
-        "tags": [
-          "insight"
-        ],
-        "summary": "Insight Fits",
-        "description": "Fit normal / draft / insulation per room and return each hypothesis's predicted curve.",
-        "operationId": "insight_fits_api_insight_fits_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/InsightRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InsightResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/insight/predict": {
-      "post": {
-        "tags": [
-          "insight"
-        ],
-        "summary": "Insight Predict",
-        "description": "Forward-predict a night under competing fitted hypotheses (out-of-sample check).",
-        "operationId": "insight_predict_api_insight_predict_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PredictionRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PredictionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/homes/sample-plan": {
       "get": {
         "tags": [
@@ -780,99 +132,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HomePlan"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/homes/template": {
-      "post": {
-        "tags": [
-          "homes"
-        ],
-        "summary": "Home Template",
-        "operationId": "home_template_api_homes_template_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/HomePlan"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HomeTemplate"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/homes/analyze": {
-      "post": {
-        "tags": [
-          "homes"
-        ],
-        "summary": "Home Analyze",
-        "description": "Screen a user's own readings with the public engine (no fault labels exist for real homes).",
-        "operationId": "home_analyze_api_homes_analyze_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/HomeAnalyzeRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HomeAnalysis"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -933,7 +192,7 @@
             }
           },
           "422": {
-            "description": "The request is invalid for this scenario.",
+            "description": "The request is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -986,7 +245,7 @@
             }
           },
           "404": {
-            "description": "Unknown scenario, diagnosis or asset.",
+            "description": "Unknown home, room or asset.",
             "content": {
               "application/json": {
                 "schema": {
@@ -996,58 +255,7 @@
             }
           },
           "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/assistant/chat": {
-      "post": {
-        "tags": [
-          "assistant"
-        ],
-        "summary": "Assistant Chat",
-        "operationId": "assistant_chat_api_assistant_chat_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChatRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChatReply"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid for this scenario.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "The request is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1088,7 +296,1107 @@
             }
           },
           "422": {
-            "description": "The request is invalid for this scenario.",
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes": {
+      "get": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "List Homes",
+        "description": "House picker: every demo and real home.",
+        "operationId": "list_homes_api_homes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HomeSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Homes Api Homes Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Create Home",
+        "description": "Set up a real home from its plan, location and heating-off hours.",
+        "operationId": "create_home_api_homes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/homes": {
+      "post": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Create Demo Home",
+        "description": "Load any scenario on the simulated HH09 twin: a chosen fault, a random hidden one, or none.",
+        "operationId": "create_demo_home_api_demo_homes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoHomeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes/{home_id}": {
+      "get": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Home Health",
+        "description": "Every room's status in plain words.",
+        "operationId": "home_health_api_homes__home_id__get",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeHealth"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes/{home_id}/readings": {
+      "get": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Home Readings",
+        "description": "Chart data: measured room temperatures, weather and the engine's expected-if-healthy line.",
+        "operationId": "home_readings_api_homes__home_id__readings_get",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "room_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Room Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeReadings"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Upload Readings",
+        "description": "Sensor readings for a real home; weather is fetched for its location.",
+        "operationId": "upload_readings_api_homes__home_id__readings_post",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadingsUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeHealth"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes/{home_id}/rooms/{room_id}": {
+      "get": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Room Report",
+        "description": "One room: why, what to do, cost and the evidence night by night.",
+        "operationId": "room_report_api_homes__home_id__rooms__room_id__get",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          },
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Room Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomReport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes/{home_id}/rooms/{room_id}/technical": {
+      "get": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Room Technical",
+        "description": "Fits, scores and thresholds behind a room's status (for a details panel).",
+        "operationId": "room_technical_api_homes__home_id__rooms__room_id__technical_get",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          },
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Room Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomTechnical"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes/{home_id}/rooms/{room_id}/fix": {
+      "post": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Report Fix",
+        "description": "'I've fixed it': the room is re-judged on nights after the fix only.",
+        "operationId": "report_fix_api_homes__home_id__rooms__room_id__fix_post",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          },
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Room Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomReport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/homes/{home_id}/advance": {
+      "post": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Advance Demo",
+        "description": "Run the demo house through its next heating-off nights.",
+        "operationId": "advance_demo_api_demo_homes__home_id__advance_post",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeHealth"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/homes/{home_id}/reveal": {
+      "get": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Reveal Demo",
+        "description": "The hidden fault, whether the app found it, and the same night without the fault.",
+        "operationId": "reveal_demo_api_demo_homes__home_id__reveal_get",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoReveal"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/homes/{home_id}/assistant": {
+      "post": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Home Assistant",
+        "description": "Chat about this home. The server supplies the home's public data; Claude only.",
+        "operationId": "home_assistant_api_homes__home_id__assistant_post",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1113,6 +1421,20 @@
   },
   "components": {
     "schemas": {
+      "AdvanceRequest": {
+        "properties": {
+          "nights": {
+            "type": "integer",
+            "maximum": 14.0,
+            "minimum": 1.0,
+            "title": "Nights",
+            "default": 1
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AdvanceRequest"
+      },
       "ApiError": {
         "properties": {
           "detail": {
@@ -1326,30 +1648,6 @@
         ],
         "title": "ChatReply"
       },
-      "ChatRequest": {
-        "properties": {
-          "messages": {
-            "items": {
-              "$ref": "#/components/schemas/ChatMessage"
-            },
-            "type": "array",
-            "maxItems": 40,
-            "minItems": 1,
-            "title": "Messages"
-          },
-          "context": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Context"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "messages"
-        ],
-        "title": "ChatRequest"
-      },
       "ConfusionMatrix": {
         "properties": {
           "actual_labels": {
@@ -1386,37 +1684,95 @@
         ],
         "title": "ConfusionMatrix"
       },
-      "DiagnoseRequest": {
+      "DemoFault": {
         "properties": {
-          "observation_night_ids": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "envelope_conduction"
+            ],
+            "title": "Type"
+          },
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "severity": {
+            "type": "number",
+            "maximum": 3.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Severity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "room_id",
+          "severity"
+        ],
+        "title": "DemoFault"
+      },
+      "DemoHomeCreate": {
+        "properties": {
+          "house": {
+            "type": "string",
+            "const": "hh09",
+            "title": "House",
+            "default": "hh09"
+          },
+          "fault": {
             "anyOf": [
               {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
+                "$ref": "#/components/schemas/DemoFault"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "random_fault": {
+            "type": "boolean",
+            "title": "Random Fault",
+            "default": false
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Observation Night Ids"
+            "title": "Start Date"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMaximum": 9.223372036854776e+18,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "DiagnoseRequest"
+        "title": "DemoHomeCreate"
       },
-      "Diagnosis": {
+      "DemoReveal": {
         "properties": {
-          "diagnosis_id": {
-            "type": "string",
-            "title": "Diagnosis Id"
+          "fault_type": {
+            "$ref": "#/components/schemas/FaultType"
           },
-          "status": {
-            "$ref": "#/components/schemas/DiagnosisStatus"
-          },
-          "flagged_room_id": {
+          "room_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -1425,81 +1781,63 @@
                 "type": "null"
               }
             ],
-            "title": "Flagged Room Id"
+            "title": "Room Id"
           },
-          "ranked_causes": {
-            "items": {
-              "$ref": "#/components/schemas/HypothesisFit"
-            },
-            "type": "array",
-            "title": "Ranked Causes"
+          "severity": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Severity"
           },
-          "evidence": {
-            "items": {
-              "$ref": "#/components/schemas/Evidence"
-            },
-            "type": "array",
-            "title": "Evidence"
+          "app_found_it": {
+            "type": "boolean",
+            "title": "App Found It"
           },
-          "uncertainty": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Uncertainty"
-          },
-          "test_decision": {
+          "nights_to_find": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/TestDecision"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Nights To Find"
           },
-          "money_estimate": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MoneyEstimate"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "summary": {
+            "type": "string",
+            "title": "Summary"
           },
-          "assumptions": {
-            "items": {
-              "$ref": "#/components/schemas/Assumption"
+          "fault_free_twin": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Series"
             },
-            "type": "array",
-            "title": "Assumptions"
+            "type": "object",
+            "title": "Fault Free Twin"
+          },
+          "fault_free_night_id": {
+            "type": "string",
+            "title": "Fault Free Night Id"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "SIMULATED_GROUND_TRUTH",
+            "title": "Provenance",
+            "default": "SIMULATED_GROUND_TRUTH"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "diagnosis_id",
-          "status",
-          "flagged_room_id",
-          "ranked_causes",
-          "evidence",
-          "uncertainty",
-          "test_decision",
-          "money_estimate",
-          "assumptions"
+          "fault_type",
+          "room_id",
+          "severity",
+          "app_found_it",
+          "nights_to_find",
+          "summary",
+          "fault_free_twin",
+          "fault_free_night_id"
         ],
-        "title": "Diagnosis"
-      },
-      "DiagnosisStatus": {
-        "type": "string",
-        "enum": [
-          "no_fault",
-          "unexplained",
-          "ambiguous",
-          "confident"
-        ],
-        "title": "DiagnosisStatus"
+        "title": "DemoReveal"
       },
       "EvaluationSummary": {
         "properties": {
@@ -1623,76 +1961,6 @@
         ],
         "title": "EvaluationSummary"
       },
-      "Evidence": {
-        "properties": {
-          "statement": {
-            "type": "string",
-            "title": "Statement"
-          },
-          "relationship": {
-            "type": "string",
-            "enum": [
-              "supports",
-              "contradicts",
-              "limits"
-            ],
-            "title": "Relationship"
-          },
-          "provenance": {
-            "$ref": "#/components/schemas/Provenance"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "statement",
-          "relationship",
-          "provenance"
-        ],
-        "title": "Evidence"
-      },
-      "ExperimentRequest": {
-        "properties": {
-          "diagnosis_id": {
-            "type": "string",
-            "title": "Diagnosis Id"
-          },
-          "experiment_type": {
-            "type": "string",
-            "const": "exhaust_fan_depressurization",
-            "title": "Experiment Type"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "diagnosis_id",
-          "experiment_type"
-        ],
-        "title": "ExperimentRequest"
-      },
-      "ExperimentResponse": {
-        "properties": {
-          "scenario_id": {
-            "type": "string",
-            "title": "Scenario Id"
-          },
-          "observations": {
-            "$ref": "#/components/schemas/NightObservations"
-          },
-          "updated_diagnosis": {
-            "$ref": "#/components/schemas/Diagnosis"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "scenario_id",
-          "observations",
-          "updated_diagnosis"
-        ],
-        "title": "ExperimentResponse"
-      },
       "FaultType": {
         "type": "string",
         "enum": [
@@ -1702,61 +1970,118 @@
         ],
         "title": "FaultType"
       },
-      "FitCurve": {
+      "FixAction": {
+        "type": "string",
+        "enum": [
+          "seal_leaks",
+          "add_insulation",
+          "other"
+        ],
+        "title": "FixAction"
+      },
+      "FixRecord": {
         "properties": {
-          "fault_type": {
-            "$ref": "#/components/schemas/HypothesisType"
+          "action": {
+            "$ref": "#/components/schemas/FixAction"
           },
-          "fitted_multiplier": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Fitted Multiplier"
+          "reported_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reported At"
           },
-          "bic": {
-            "type": "number",
-            "title": "Bic"
+          "fixed_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed On"
           },
-          "residual_rmse_deg_c": {
-            "type": "number",
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "nights_since_fix": {
+            "type": "integer",
             "minimum": 0.0,
-            "title": "Residual Rmse Deg C"
+            "title": "Nights Since Fix"
           },
-          "sensor_offset_deg_c": {
-            "type": "number",
-            "title": "Sensor Offset Deg C"
-          },
-          "converged": {
-            "type": "boolean",
-            "title": "Converged"
-          },
-          "predicted": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/Series"
-            },
-            "type": "object",
-            "title": "Predicted"
-          },
-          "warnings": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Warnings"
+          "found_before_fix": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "envelope_conduction",
+                  "unclear"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Found Before Fix"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "fault_type",
-          "fitted_multiplier",
-          "bic",
-          "residual_rmse_deg_c",
-          "sensor_offset_deg_c",
-          "converged",
-          "predicted"
+          "action",
+          "reported_at",
+          "fixed_on",
+          "note",
+          "nights_since_fix",
+          "found_before_fix"
         ],
-        "title": "FitCurve",
-        "description": "One fitted hypothesis for one room, with its predicted readings per night."
+        "title": "FixRecord"
+      },
+      "FixRequest": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/FixAction"
+          },
+          "fixed_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed On"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "title": "FixRequest"
       },
       "FloorPlanDraft": {
         "properties": {
@@ -1784,60 +2109,6 @@
         ],
         "title": "FloorPlanDraft"
       },
-      "GroundTruth": {
-        "properties": {
-          "fault_type": {
-            "$ref": "#/components/schemas/FaultType"
-          },
-          "actual_room_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Actual Room Id"
-          },
-          "severity": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Severity"
-          },
-          "diagnosis_matched": {
-            "type": "boolean",
-            "title": "Diagnosis Matched"
-          },
-          "repair_addressed_cause": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Repair Addressed Cause"
-          },
-          "provenance": {
-            "type": "string",
-            "const": "SIMULATED_GROUND_TRUTH",
-            "title": "Provenance",
-            "default": "SIMULATED_GROUND_TRUTH"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "fault_type",
-          "actual_room_id",
-          "severity",
-          "diagnosis_matched",
-          "repair_addressed_cause"
-        ],
-        "title": "GroundTruth"
-      },
       "HealthResponse": {
         "properties": {
           "status": {
@@ -1857,136 +2128,145 @@
         "type": "object",
         "title": "HealthResponse"
       },
-      "HomeAnalysis": {
+      "HeatingOffWindow": {
         "properties": {
-          "status": {
-            "$ref": "#/components/schemas/DiagnosisStatus"
+          "start": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "title": "Start",
+            "default": "22:00"
           },
-          "flagged_room_id": {
+          "end": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "title": "End",
+            "default": "06:00"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "Europe/London"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "HeatingOffWindow",
+        "description": "Local hours when the heating is reliably off; only these nights are analysed."
+      },
+      "HomeChatRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Messages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "HomeChatRequest"
+      },
+      "HomeCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/HomePlan"
+          },
+          "location_query": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 2
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Flagged Room Id"
+            "title": "Location Query"
           },
-          "ranked_causes": {
-            "items": {
-              "$ref": "#/components/schemas/HypothesisFit"
-            },
-            "type": "array",
-            "title": "Ranked Causes"
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -90.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 180.0,
+                "minimum": -180.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "heating_off": {
+            "$ref": "#/components/schemas/HeatingOffWindow"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "plan"
+        ],
+        "title": "HomeCreate"
+      },
+      "HomeHealth": {
+        "properties": {
+          "home": {
+            "$ref": "#/components/schemas/HomeSummary"
           },
           "rooms": {
             "items": {
-              "$ref": "#/components/schemas/RoomInsight"
+              "$ref": "#/components/schemas/RoomHealthView"
             },
             "type": "array",
             "title": "Rooms"
           },
-          "money_estimate": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MoneyEstimate"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "nights": {
-            "items": {
-              "$ref": "#/components/schemas/NightObservations"
-            },
-            "type": "array",
-            "title": "Nights"
-          },
-          "home": {
-            "$ref": "#/components/schemas/HomeTemplate"
-          },
-          "evidence": {
-            "items": {
-              "$ref": "#/components/schemas/Evidence"
-            },
-            "type": "array",
-            "title": "Evidence"
-          },
-          "uncertainty": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Uncertainty"
-          },
-          "elapsed_ms": {
-            "type": "number",
-            "title": "Elapsed Ms"
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "status",
-          "flagged_room_id",
-          "ranked_causes",
-          "rooms",
-          "money_estimate",
-          "nights",
           "home",
-          "evidence",
-          "uncertainty",
-          "elapsed_ms"
+          "rooms",
+          "disclaimer"
         ],
-        "title": "HomeAnalysis"
+        "title": "HomeHealth"
       },
-      "HomeAnalyzeRequest": {
-        "properties": {
-          "plan": {
-            "$ref": "#/components/schemas/HomePlan"
-          },
-          "room_temperature_series": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/Series"
-            },
-            "type": "object",
-            "title": "Room Temperature Series"
-          },
-          "outdoor_temperature": {
-            "$ref": "#/components/schemas/Series"
-          },
-          "wind_speed": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Series"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "location_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Location Name"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "plan",
-          "room_temperature_series",
-          "outdoor_temperature"
+      "HomeKind": {
+        "type": "string",
+        "enum": [
+          "demo",
+          "real"
         ],
-        "title": "HomeAnalyzeRequest"
+        "title": "HomeKind"
       },
       "HomePlan": {
         "properties": {
@@ -2035,46 +2315,113 @@
         ],
         "title": "HomePlan"
       },
-      "HomeTemplate": {
+      "HomeReadings": {
         "properties": {
-          "template": {
-            "$ref": "#/components/schemas/PublicTemplate"
+          "home_id": {
+            "type": "string",
+            "title": "Home Id"
           },
-          "exterior_wall_length_m": {
+          "outdoor_temperature": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "wind_speed": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "rooms": {
             "additionalProperties": {
-              "type": "number",
-              "minimum": 0.0
+              "$ref": "#/components/schemas/RoomReadings"
             },
             "type": "object",
-            "title": "Exterior Wall Length M"
+            "title": "Rooms"
           },
-          "window_area_m2": {
-            "additionalProperties": {
-              "type": "number",
-              "minimum": 0.0
-            },
-            "type": "object",
-            "title": "Window Area M2"
-          },
-          "assumptions": {
+          "nights": {
             "items": {
-              "$ref": "#/components/schemas/Assumption"
+              "$ref": "#/components/schemas/NightInfo"
             },
             "type": "array",
-            "title": "Assumptions"
+            "title": "Nights"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "template",
-          "exterior_wall_length_m",
-          "window_area_m2",
-          "assumptions"
+          "home_id",
+          "outdoor_temperature",
+          "wind_speed",
+          "rooms",
+          "nights"
         ],
-        "title": "HomeTemplate"
+        "title": "HomeReadings"
       },
-      "HypothesisFit": {
+      "HomeStatus": {
+        "type": "string",
+        "enum": [
+          "monitoring",
+          "issue",
+          "verifying",
+          "all_clear"
+        ],
+        "title": "HomeStatus"
+      },
+      "HomeSummary": {
+        "properties": {
+          "home_id": {
+            "type": "string",
+            "title": "Home Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/HomeKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HomeStatus"
+          },
+          "rooms_with_issues": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Rooms With Issues"
+          },
+          "nights_monitored": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Nights Monitored"
+          },
+          "last_night": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Night"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "home_id",
+          "name",
+          "kind",
+          "status",
+          "rooms_with_issues",
+          "nights_monitored",
+          "last_night",
+          "created_at"
+        ],
+        "title": "HomeSummary"
+      },
+      "HypothesisSummary": {
         "properties": {
           "fault_type": {
             "$ref": "#/components/schemas/HypothesisType"
@@ -2084,11 +2431,6 @@
             "exclusiveMinimum": 0.0,
             "title": "Fitted Multiplier"
           },
-          "sse": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Sse"
-          },
           "bic": {
             "type": "number",
             "title": "Bic"
@@ -2097,12 +2439,6 @@
             "type": "number",
             "minimum": 0.0,
             "title": "Residual Rmse Deg C"
-          },
-          "provenance": {
-            "type": "string",
-            "const": "MODEL_ESTIMATE",
-            "title": "Provenance",
-            "default": "MODEL_ESTIMATE"
           }
         },
         "additionalProperties": false,
@@ -2110,11 +2446,10 @@
         "required": [
           "fault_type",
           "fitted_multiplier",
-          "sse",
           "bic",
           "residual_rmse_deg_c"
         ],
-        "title": "HypothesisFit"
+        "title": "HypothesisSummary"
       },
       "HypothesisType": {
         "type": "string",
@@ -2124,105 +2459,6 @@
           "envelope_conduction"
         ],
         "title": "HypothesisType"
-      },
-      "InsightRequest": {
-        "properties": {
-          "nights": {
-            "items": {
-              "$ref": "#/components/schemas/NightObservations"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Nights"
-          },
-          "room_ids": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Room Ids"
-          },
-          "template": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PublicTemplate"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "nights"
-        ],
-        "title": "InsightRequest"
-      },
-      "InsightResponse": {
-        "properties": {
-          "template_id": {
-            "type": "string",
-            "title": "Template Id"
-          },
-          "rooms": {
-            "items": {
-              "$ref": "#/components/schemas/RoomInsight"
-            },
-            "type": "array",
-            "title": "Rooms"
-          },
-          "model_evaluations": {
-            "type": "integer",
-            "title": "Model Evaluations"
-          },
-          "elapsed_ms": {
-            "type": "number",
-            "title": "Elapsed Ms"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "template_id",
-          "rooms",
-          "model_evaluations",
-          "elapsed_ms"
-        ],
-        "title": "InsightResponse"
-      },
-      "InterRoomCoupling": {
-        "properties": {
-          "room_a_id": {
-            "type": "string",
-            "title": "Room A Id"
-          },
-          "room_b_id": {
-            "type": "string",
-            "title": "Room B Id"
-          },
-          "conductance_w_per_k": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Conductance W Per K"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "room_a_id",
-          "room_b_id",
-          "conductance_w_per_k"
-        ],
-        "title": "InterRoomCoupling"
       },
       "Location": {
         "properties": {
@@ -2328,206 +2564,87 @@
         ],
         "title": "MeasuredMetric"
       },
-      "MoneyEstimate": {
-        "properties": {
-          "excess_conductance_w_per_k": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Excess Conductance W Per K"
-          },
-          "annual_energy_estimate_kwh": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Annual Energy Estimate Kwh"
-          },
-          "annual_cost_estimate_usd": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Annual Cost Estimate Usd"
-          },
-          "repair_cost_usd": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Repair Cost Usd"
-          },
-          "simple_payback_years": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Simple Payback Years"
-          },
-          "assumptions": {
-            "items": {
-              "$ref": "#/components/schemas/Assumption"
-            },
-            "type": "array",
-            "title": "Assumptions"
-          },
-          "provenance": {
-            "type": "string",
-            "const": "MODEL_ESTIMATE",
-            "title": "Provenance",
-            "default": "MODEL_ESTIMATE"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "excess_conductance_w_per_k",
-          "annual_energy_estimate_kwh",
-          "annual_cost_estimate_usd",
-          "repair_cost_usd",
-          "simple_payback_years",
-          "assumptions"
-        ],
-        "title": "MoneyEstimate"
-      },
-      "MoneyRequest": {
-        "properties": {
-          "diagnosis_id": {
-            "type": "string",
-            "title": "Diagnosis Id"
-          },
-          "gas_price_pence_per_kwh": {
-            "anyOf": [
-              {
-                "type": "number",
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Gas Price Pence Per Kwh"
-          },
-          "repair_cost_gbp": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Repair Cost Gbp"
-          },
-          "fault_type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/HypothesisType"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "diagnosis_id"
-        ],
-        "title": "MoneyRequest",
-        "description": "User what-if overrides for the screening money estimate of a confident diagnosis."
-      },
-      "MoneyResponse": {
-        "properties": {
-          "diagnosis_id": {
-            "type": "string",
-            "title": "Diagnosis Id"
-          },
-          "estimate": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MoneyEstimate"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "explanation": {
-            "type": "string",
-            "title": "Explanation"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "diagnosis_id",
-          "estimate",
-          "explanation"
-        ],
-        "title": "MoneyResponse"
-      },
-      "NightObservations": {
+      "NightEvidence": {
         "properties": {
           "night_id": {
             "type": "string",
             "title": "Night Id"
           },
-          "kind": {
+          "nights_so_far": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Nights So Far"
+          },
+          "extra_heat_loss_percent": {
+            "type": "number",
+            "title": "Extra Heat Loss Percent"
+          },
+          "threshold_percent": {
+            "type": "number",
+            "title": "Threshold Percent"
+          },
+          "leading_cause": {
             "type": "string",
             "enum": [
-              "passive",
-              "fan_test"
+              "draft",
+              "envelope_conduction"
             ],
-            "title": "Kind"
+            "title": "Leading Cause"
           },
-          "room_temperature_series": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/Series"
-            },
-            "type": "object",
-            "title": "Room Temperature Series"
-          },
-          "weather": {
-            "$ref": "#/components/schemas/WeatherNight"
-          },
-          "protocol": {
-            "$ref": "#/components/schemas/Protocol"
+          "mean_wind_m_s": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Mean Wind M S"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "night_id",
-          "kind",
-          "room_temperature_series",
-          "weather",
-          "protocol"
+          "nights_so_far",
+          "extra_heat_loss_percent",
+          "threshold_percent",
+          "leading_cause",
+          "mean_wind_m_s"
         ],
-        "title": "NightObservations"
+        "title": "NightEvidence"
       },
-      "ObservationResponse": {
+      "NightInfo": {
         "properties": {
-          "scenario_id": {
+          "night_id": {
             "type": "string",
-            "title": "Scenario Id"
+            "title": "Night Id"
           },
-          "nights": {
-            "items": {
-              "$ref": "#/components/schemas/NightObservations"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Nights"
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "mean_outdoor_c": {
+            "type": "number",
+            "title": "Mean Outdoor C"
+          },
+          "mean_wind_m_s": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Mean Wind M S"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "scenario_id",
-          "nights"
+          "night_id",
+          "start",
+          "end",
+          "mean_outdoor_c",
+          "mean_wind_m_s"
         ],
-        "title": "ObservationResponse"
+        "title": "NightInfo"
       },
       "PlanOpening": {
         "properties": {
@@ -2627,136 +2744,6 @@
         "title": "PlanRoom",
         "description": "Axis-aligned rectangular room on the plan, in metres (x right, z down)."
       },
-      "PredictionRequest": {
-        "properties": {
-          "room_id": {
-            "type": "string",
-            "title": "Room Id"
-          },
-          "causes": {
-            "items": {
-              "$ref": "#/components/schemas/HypothesisFit"
-            },
-            "type": "array",
-            "minItems": 2,
-            "title": "Causes"
-          },
-          "night": {
-            "$ref": "#/components/schemas/NightObservations"
-          },
-          "template": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PublicTemplate"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "room_id",
-          "causes",
-          "night"
-        ],
-        "title": "PredictionRequest",
-        "description": "Out-of-sample check: predict a later night from fits made on earlier nights."
-      },
-      "PredictionResponse": {
-        "properties": {
-          "room_id": {
-            "type": "string",
-            "title": "Room Id"
-          },
-          "night_id": {
-            "type": "string",
-            "title": "Night Id"
-          },
-          "predictions": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/Series"
-            },
-            "type": "object",
-            "title": "Predictions"
-          },
-          "elapsed_ms": {
-            "type": "number",
-            "title": "Elapsed Ms"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "room_id",
-          "night_id",
-          "predictions",
-          "elapsed_ms"
-        ],
-        "title": "PredictionResponse"
-      },
-      "Protocol": {
-        "properties": {
-          "heating_off": {
-            "type": "boolean",
-            "title": "Heating Off"
-          },
-          "doors_closed": {
-            "type": "boolean",
-            "title": "Doors Closed"
-          },
-          "fan_on": {
-            "type": "boolean",
-            "title": "Fan On"
-          },
-          "fan_airflow_m3_per_h": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fan Airflow M3 Per H"
-          },
-          "fan_start": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fan Start"
-          },
-          "fan_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fan End"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "heating_off",
-          "doors_closed",
-          "fan_on"
-        ],
-        "title": "Protocol"
-      },
       "Provenance": {
         "type": "string",
         "enum": [
@@ -2768,48 +2755,23 @@
         ],
         "title": "Provenance"
       },
-      "PublicTemplate": {
+      "ReadingsUpload": {
         "properties": {
-          "template_id": {
-            "type": "string",
-            "title": "Template Id"
-          },
-          "rooms": {
-            "items": {
-              "$ref": "#/components/schemas/RoomTemplate"
+          "room_temperature_series": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Series"
             },
-            "type": "array",
-            "minItems": 1,
-            "title": "Rooms"
-          },
-          "inter_room_couplings": {
-            "items": {
-              "$ref": "#/components/schemas/InterRoomCoupling"
-            },
-            "type": "array",
-            "title": "Inter Room Couplings"
-          },
-          "calibrated_from_split": {
-            "type": "string",
-            "const": "training",
-            "title": "Calibrated From Split",
-            "default": "training"
-          },
-          "provenance": {
-            "type": "string",
-            "const": "MODEL_ESTIMATE",
-            "title": "Provenance",
-            "default": "MODEL_ESTIMATE"
+            "type": "object",
+            "minProperties": 1,
+            "title": "Room Temperature Series"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "template_id",
-          "rooms",
-          "inter_room_couplings"
+          "room_temperature_series"
         ],
-        "title": "PublicTemplate"
+        "title": "ReadingsUpload"
       },
       "RealHouse": {
         "properties": {
@@ -2907,69 +2869,50 @@
         ],
         "title": "RealHouse"
       },
-      "RepairRequest": {
+      "RoomHealthView": {
         "properties": {
-          "diagnosis_id": {
+          "room_id": {
             "type": "string",
-            "title": "Diagnosis Id"
+            "title": "Room Id"
           },
-          "effectiveness": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Effectiveness",
-            "default": 1.0
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "diagnosis_id"
-        ],
-        "title": "RepairRequest"
-      },
-      "RepairResult": {
-        "properties": {
-          "repair_type": {
-            "$ref": "#/components/schemas/FaultType"
-          },
-          "effectiveness": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Effectiveness"
-          },
-          "original_observations": {
-            "items": {
-              "$ref": "#/components/schemas/NightObservations"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Original Observations"
-          },
-          "repaired_observations": {
-            "items": {
-              "$ref": "#/components/schemas/NightObservations"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Repaired Observations"
-          },
-          "diagnosed_improvement": {
+          "name": {
             "type": "string",
-            "title": "Diagnosed Improvement"
+            "title": "Name"
           },
-          "estimated_savings": {
+          "status": {
+            "$ref": "#/components/schemas/RoomStatus"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          },
+          "likely_cause": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/MoneyEstimate"
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "envelope_conduction"
+                ]
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Likely Cause"
           },
-          "remeasured_savings_kwh": {
+          "extra_heat_loss_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Heat Loss Percent"
+          },
+          "annual_cost_gbp": {
             "anyOf": [
               {
                 "type": "number",
@@ -2979,138 +2922,156 @@
                 "type": "null"
               }
             ],
-            "title": "Remeasured Savings Kwh"
+            "title": "Annual Cost Gbp"
           },
-          "provenance": {
-            "type": "string",
-            "const": "SIMULATED_MEASUREMENT",
-            "title": "Provenance",
-            "default": "SIMULATED_MEASUREMENT"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "repair_type",
-          "effectiveness",
-          "original_observations",
-          "repaired_observations",
-          "diagnosed_improvement",
-          "estimated_savings",
-          "remeasured_savings_kwh"
-        ],
-        "title": "RepairResult"
-      },
-      "RoomInsight": {
-        "properties": {
-          "room_id": {
-            "type": "string",
-            "title": "Room Id"
-          },
-          "fits": {
-            "items": {
-              "$ref": "#/components/schemas/FitCurve"
-            },
-            "type": "array",
-            "title": "Fits"
-          },
-          "anomaly_score": {
-            "type": "number",
-            "title": "Anomaly Score"
+          "nights_seen": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Nights Seen"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "room_id",
-          "fits",
-          "anomaly_score"
+          "name",
+          "status",
+          "headline",
+          "likely_cause",
+          "extra_heat_loss_percent",
+          "annual_cost_gbp",
+          "nights_seen"
         ],
-        "title": "RoomInsight"
+        "title": "RoomHealthView"
       },
-      "RoomTemplate": {
+      "RoomMoney": {
         "properties": {
-          "room_id": {
-            "type": "string",
-            "title": "Room Id"
-          },
-          "room_name": {
-            "type": "string",
-            "title": "Room Name"
-          },
-          "volume_m3": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Volume M3"
-          },
-          "nominal_capacitance_j_per_k": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Nominal Capacitance J Per K"
-          },
-          "nominal_envelope_conductance_w_per_k": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Nominal Envelope Conductance W Per K"
-          },
-          "nominal_infiltration_conductance_w_per_k": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Nominal Infiltration Conductance W Per K"
-          },
-          "wind_sensitivity_s_per_m": {
+          "annual_cost_gbp": {
             "type": "number",
             "minimum": 0.0,
-            "title": "Wind Sensitivity S Per M"
+            "title": "Annual Cost Gbp"
           },
-          "nominal_leakage_share": {
+          "annual_energy_kwh": {
             "type": "number",
-            "maximum": 1.0,
             "minimum": 0.0,
-            "title": "Nominal Leakage Share"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "room_id",
-          "room_name",
-          "volume_m3",
-          "nominal_capacitance_j_per_k",
-          "nominal_envelope_conductance_w_per_k",
-          "nominal_infiltration_conductance_w_per_k",
-          "wind_sensitivity_s_per_m",
-          "nominal_leakage_share"
-        ],
-        "title": "RoomTemplate"
-      },
-      "ScenarioCreateRequest": {
-        "properties": {
-          "mode": {
-            "$ref": "#/components/schemas/ScenarioMode"
+            "title": "Annual Energy Kwh"
           },
-          "guided_scenario_id": {
+          "repair_cost_gbp": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "number",
+                "minimum": 0.0
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Guided Scenario Id"
+            "title": "Repair Cost Gbp"
           },
-          "judge_fault_type": {
+          "payback_years": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/FaultType"
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payback Years"
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/Assumption"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "annual_cost_gbp",
+          "annual_energy_kwh",
+          "repair_cost_gbp",
+          "payback_years",
+          "assumptions"
+        ],
+        "title": "RoomMoney"
+      },
+      "RoomReadings": {
+        "properties": {
+          "measured": {
+            "$ref": "#/components/schemas/Series"
+          },
+          "expected_if_healthy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Series"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "measured",
+          "expected_if_healthy"
+        ],
+        "title": "RoomReadings"
+      },
+      "RoomReport": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RoomStatus"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          },
+          "why": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Why"
+          },
+          "what_to_do": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "What To Do"
+          },
+          "money": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoomMoney"
               },
               {
                 "type": "null"
               }
             ]
           },
-          "judge_room_id": {
+          "evidence_by_night": {
+            "items": {
+              "$ref": "#/components/schemas/NightEvidence"
+            },
+            "type": "array",
+            "title": "Evidence By Night"
+          },
+          "suggested_check": {
             "anyOf": [
               {
                 "type": "string"
@@ -3119,84 +3080,142 @@
                 "type": "null"
               }
             ],
-            "title": "Judge Room Id"
+            "title": "Suggested Check"
           },
-          "severity": {
+          "fix": {
             "anyOf": [
               {
-                "type": "number",
-                "maximum": 3.0,
-                "exclusiveMinimum": 0.0
+                "$ref": "#/components/schemas/FixRecord"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Severity"
-          },
-          "seed": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seed"
+            ]
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "mode"
+          "room_id",
+          "name",
+          "status",
+          "headline",
+          "why",
+          "what_to_do",
+          "money",
+          "evidence_by_night",
+          "suggested_check",
+          "fix"
         ],
-        "title": "ScenarioCreateRequest"
+        "title": "RoomReport"
       },
-      "ScenarioCreated": {
-        "properties": {
-          "scenario_id": {
-            "type": "string",
-            "title": "Scenario Id"
-          },
-          "mode": {
-            "$ref": "#/components/schemas/ScenarioMode"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "available_actions": {
-            "items": {
-              "type": "string",
-              "enum": [
-                "observations",
-                "diagnose"
-              ]
-            },
-            "type": "array",
-            "title": "Available Actions"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "scenario_id",
-          "mode",
-          "created_at",
-          "available_actions"
-        ],
-        "title": "ScenarioCreated"
-      },
-      "ScenarioMode": {
+      "RoomStatus": {
         "type": "string",
         "enum": [
-          "guided",
-          "judge",
-          "surprise"
+          "not_enough_data",
+          "healthy",
+          "watching",
+          "issue",
+          "issue_cause_unclear",
+          "verifying",
+          "resolved",
+          "still_an_issue"
         ],
-        "title": "ScenarioMode"
+        "title": "RoomStatus"
+      },
+      "RoomTechnical": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "nights_judged": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Nights Judged"
+          },
+          "fits": {
+            "items": {
+              "$ref": "#/components/schemas/HypothesisSummary"
+            },
+            "type": "array",
+            "title": "Fits"
+          },
+          "leading_cause": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "envelope_conduction"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leading Cause"
+          },
+          "extra_heat_loss_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Heat Loss Fraction"
+          },
+          "threshold_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold Fraction"
+          },
+          "cause_gap_bic": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cause Gap Bic"
+          },
+          "consecutive_candidate_nights": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Consecutive Candidate Nights"
+          },
+          "rule": {
+            "items": {
+              "$ref": "#/components/schemas/Assumption"
+            },
+            "type": "array",
+            "title": "Rule"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "room_id",
+          "nights_judged",
+          "fits",
+          "leading_cause",
+          "extra_heat_loss_fraction",
+          "threshold_fraction",
+          "cause_gap_bic",
+          "consecutive_candidate_nights",
+          "rule"
+        ],
+        "title": "RoomTechnical"
       },
       "Series": {
         "properties": {
@@ -3342,106 +3361,6 @@
         ],
         "title": "SourceMetadata"
       },
-      "Split": {
-        "type": "string",
-        "enum": [
-          "training",
-          "heldout"
-        ],
-        "title": "Split"
-      },
-      "TestDecision": {
-        "properties": {
-          "recommended": {
-            "type": "boolean",
-            "title": "Recommended"
-          },
-          "experiment_type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "exhaust_fan_depressurization"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Experiment Type"
-          },
-          "separation_score": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Separation Score"
-          },
-          "explanation": {
-            "type": "string",
-            "title": "Explanation"
-          },
-          "safety_warning": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Safety Warning"
-          },
-          "provenance": {
-            "type": "string",
-            "const": "MODEL_ESTIMATE",
-            "title": "Provenance",
-            "default": "MODEL_ESTIMATE"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "recommended",
-          "explanation"
-        ],
-        "title": "TestDecision"
-      },
-      "UtcWindow": {
-        "properties": {
-          "start": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Start"
-          },
-          "end": {
-            "type": "string",
-            "format": "date-time",
-            "title": "End"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Note"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "start",
-          "end"
-        ],
-        "title": "UtcWindow"
-      },
       "WeatherLookup": {
         "properties": {
           "location": {
@@ -3466,130 +3385,6 @@
           "source"
         ],
         "title": "WeatherLookup"
-      },
-      "WeatherNight": {
-        "properties": {
-          "schema_version": {
-            "type": "integer",
-            "const": 1,
-            "title": "Schema Version",
-            "default": 1
-          },
-          "night_id": {
-            "type": "string",
-            "title": "Night Id"
-          },
-          "source": {
-            "$ref": "#/components/schemas/SourceMetadata"
-          },
-          "location": {
-            "$ref": "#/components/schemas/Location"
-          },
-          "outdoor_temperature": {
-            "$ref": "#/components/schemas/Series"
-          },
-          "wind_speed": {
-            "$ref": "#/components/schemas/Series"
-          },
-          "train_or_heldout_split": {
-            "$ref": "#/components/schemas/Split"
-          },
-          "local_night_date": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Local Night Date"
-          },
-          "utc_window": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UtcWindow"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "selection_metadata": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/WeatherSelectionMetadata"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "night_id",
-          "source",
-          "location",
-          "outdoor_temperature",
-          "wind_speed",
-          "train_or_heldout_split"
-        ],
-        "title": "WeatherNight"
-      },
-      "WeatherSelectionMetadata": {
-        "properties": {
-          "weather_regime": {
-            "type": "string",
-            "enum": [
-              "calm",
-              "moderate",
-              "windy"
-            ],
-            "title": "Weather Regime"
-          },
-          "mean_temperature_deg_c": {
-            "type": "number",
-            "title": "Mean Temperature Deg C"
-          },
-          "mean_wind_speed_m_s": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Mean Wind Speed M S"
-          },
-          "observation_count": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Observation Count"
-          },
-          "temperature_quality_flags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Temperature Quality Flags"
-          },
-          "wind_quality_flags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Wind Quality Flags"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "weather_regime",
-          "mean_temperature_deg_c",
-          "mean_wind_speed_m_s",
-          "observation_count",
-          "temperature_quality_flags",
-          "wind_quality_flags"
-        ],
-        "title": "WeatherSelectionMetadata"
       }
     }
   }

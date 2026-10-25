@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "template_id": "hh09-public-template-v1",
+  "excess_threshold": {
+    "draft": {
+      "a": 0.05,
+      "b": 0.05
+    },
+    "envelope_conduction": {
+      "a": 0.2,
+      "b": 0.3
+    }
+  },
+  "persistence_nights": 2,
+  "cause_gap_bic": 10.0,
+  "public_assets": {
+    "backend/engine/model.py": "76a9e959fb5984393650876d84e20196282dd811705983190fd2e8fb7240a4d0",
+    "backend/engine/fitting.py": "12126d6cfb1e8427fecadd7e778f92592c789f41e64904a257cea74f735494ac",
+    "backend/engine/money.py": "38e9234f5b9b5597d4ce11138ded9bb1159c8b3a3c28fe0f50ff642924d4d1cb",
+    "backend/engine/templates/hh09_public_template.json": "af52a792bf00e4da5eac8a8047720d4dec4f7ba01ed56faf52b4f207e9c6d884",
+    "backend/engine/templates/hh09_model_extension.json": "540036d846a407e3513d4cebb68dda332256503a9ad71cf7600c668ded92a760",
+    "backend/diagnosis/monitoring.py": "3ee36dfdd5eb2021b4dfbf2cc674ac906317e8bc4d043e33659f33f3c3a5a72b"
+  },
+  "provenance": "Tuned on TRAINING-season study houses (even house indices) with backend/simulation/tune_monitoring.py; checked on odd houses. Not held-out or real-home validation.",
+  "check_summary": {
+    "healthy_flagged": 1,
+    "healthy_cases": 24,
+    "wrong_confident": 2,
+    "correct": 65,
+    "faulty_cases": 72
+  }
+}

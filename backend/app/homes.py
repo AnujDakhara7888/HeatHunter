@@ -3,17 +3,18 @@
 A user's rectangular floor plan becomes a ``PublicTemplate`` by transferring the
 HH09 calibration per unit of geometry: envelope conductance per m2 of exposed
 envelope, infiltration per m3, air-fabric conductance per m2 of floor, and the
-same leakage law. These are ASSUMPTIONS, disclosed on every response. The
+same leakage law. Windows get the engine's air-side glazing path: the SAP
+double-glazing U-value x the plan's window area. These are ASSUMPTIONS, disclosed on every response. The
 public engine then fits the same three hypotheses to the user's own readings.
 
-Real homes have no verified fault labels, so results are screening only.
+Real homes have no verified fault labels, so results are screening only. Homes
+are monitored night after night by ``monitoring_service.py``.
 """
 
 from __future__ import annotations
 
 import json
 import math
-import time
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
@@ -22,34 +23,23 @@ from urllib.request import urlopen
 
 import numpy as np
 
-from backend.engine import MoneyOverrides, estimate_money, load_model_extension, load_public_template
+from backend.engine import load_model_extension, load_public_template
 from backend.engine.assumptions import load_assumptions, value
 from backend.engine.model import LeakageLaw, ModelExtension
 
 from .contracts import (
     Assumption,
-    DiagnosisStatus,
-    Evidence,
-    HomeAnalysis,
-    HomeAnalyzeRequest,
     HomePlan,
     HomeTemplate,
-    HypothesisFit,
-    HypothesisType,
     InterRoomCoupling,
     Location,
-    NightObservations,
-    Protocol,
     Provenance,
     PublicTemplate,
     RoomTemplate,
     Series,
     SourceMetadata,
-    Split,
     WeatherLookup,
-    WeatherNight,
 )
-from .insight import room_insights
 
 HH09_EXPOSED = {  # exterior wall length (m) and floor area (m2) of the calibrated HH09 rooms
     "living_room": (7.51, 13.09),
@@ -145,6 +135,7 @@ def build_home(plan: HomePlan) -> tuple[HomeTemplate, ModelExtension]:
     tmp = value(physical, "physical", "thermal_mass_parameter")
     air_c = value(physical, "physical", "air_volumetric_heat_capacity")
     partition_u = value(physical, "physical", "partition_u_value")
+    window_u = value(physical, "physical", "window_u_value")
     exterior, shared, windows = plan_geometry(plan)
     h = plan.ceiling_height_m
     rooms, air_fabric = [], {}
@@ -186,7 +177,8 @@ def build_home(plan: HomePlan) -> tuple[HomeTemplate, ModelExtension]:
         template_id=template.template_id,
         air_fabric_conductance_w_per_k=air_fabric,
         leakage_law=LeakageLaw(coefficients["stack_wind_ratio"], coefficients["reference_delta_t_k"]),
-        note="Transferred per unit geometry from the HH09 calibration.",
+        note="Transferred per unit geometry from the HH09 calibration; windows from the SAP glazing U-value.",
+        window_conductance_w_per_k={r.room_id: window_u * windows.get(r.room_id, 0.0) for r in rooms},
     )
     assumptions = [
         Assumption(
@@ -209,6 +201,7 @@ def build_home(plan: HomePlan) -> tuple[HomeTemplate, ModelExtension]:
         ),
         Assumption(name="thermal_mass_parameter", value=tmp, unit="J/(m2.K)"),
         Assumption(name="partition_u_value", value=partition_u, unit="W/(m2.K)"),
+        Assumption(name="window_u_value", value=window_u, unit="W/(m2.K)"),
         Assumption(name="ceiling_height", value=h, unit="m"),
         Assumption(name="window_height", value=WINDOW_HEIGHT_M, unit="m"),
     ]
@@ -230,158 +223,8 @@ def _transfer_source() -> SourceMetadata:
     )
 
 
-def _resample(series: Series, timestamps: list[datetime]) -> list[float | None]:
-    known = [
-        (t.timestamp(), v)
-        for t, v in zip(series.timestamps, series.values, strict=True)
-        if v is not None and math.isfinite(v)
-    ]
-    if len(known) < 2:
-        raise HomeError("each series needs at least two readings")
-    xs, ys = np.array([k[0] for k in known]), np.array([k[1] for k in known])
-    out: list[float | None] = []
-    for t in timestamps:
-        s = t.timestamp()
-        out.append(None if s < xs[0] - 1 or s > xs[-1] + 1 else round(float(np.interp(s, xs, ys)), 4))
-    return out
-
-
-def readings_to_night(request: HomeAnalyzeRequest, sensed: list[str]) -> NightObservations:
-    missing = [r for r in sensed if r not in request.room_temperature_series]
-    if missing:
-        raise HomeError(f"no readings for rooms: {', '.join(missing)}")
-    starts = [s.timestamps[0] for s in request.room_temperature_series.values()]
-    ends = [s.timestamps[-1] for s in request.room_temperature_series.values()]
-    start, end = (
-        max(starts + [request.outdoor_temperature.timestamps[0]]),
-        min(ends + [request.outdoor_temperature.timestamps[-1]]),
-    )
-    if (end - start) < timedelta(hours=3):
-        raise HomeError("readings must overlap for at least 3 hours (heating off, ideally overnight)")
-    step = timedelta(minutes=15)
-    count = min(int((end - start) / step) + 1, 4 * 24 * 2 + 1)
-    grid = [start + k * step for k in range(count)]
-    outdoor = _resample(request.outdoor_temperature, grid)
-    wind = _resample(request.wind_speed, grid) if request.wind_speed else [0.0] * len(grid)
-    if any(v is None for v in outdoor) or any(v is None for v in wind):
-        raise HomeError("outdoor weather must cover the whole reading window")
-    location = Location(name=request.location_name or "User home", timezone="UTC")
-    weather = WeatherNight(
-        night_id=f"home-{start:%Y%m%dT%H%M}",
-        source=SourceMetadata(provider="User upload / weather lookup", dataset="home screening"),
-        location=location,
-        outdoor_temperature=Series(
-            timestamps=grid, values=outdoor, unit="degC", provenance=request.outdoor_temperature.provenance
-        ),
-        wind_speed=Series(
-            timestamps=grid,
-            values=[max(0.0, v) for v in wind],
-            unit="m/s",
-            provenance=request.wind_speed.provenance if request.wind_speed else Provenance.ASSUMPTION,
-        ),
-        train_or_heldout_split=Split.HELDOUT,
-    )
-    rooms = {
-        rid: Series(
-            timestamps=grid,
-            values=_resample(request.room_temperature_series[rid], grid),
-            unit="degC",
-            provenance=Provenance.REAL_MEASUREMENT,
-        )
-        for rid in sensed
-    }
-    return NightObservations(
-        night_id=weather.night_id,
-        kind="passive",
-        room_temperature_series=rooms,
-        weather=weather,
-        protocol=Protocol(heating_off=True, doors_closed=True, fan_on=False),
-    )
-
-
-def analyze_home(
-    request: HomeAnalyzeRequest, *, detection_bic: float, ambiguity_bic: float, adequacy_rmse: float
-) -> HomeAnalysis:
-    started = time.perf_counter()
-    home, extension = build_home(request.plan)
-    sensed = [r.room_id for r in home.template.rooms]
-    night = readings_to_night(request, sensed)
-    insights, _, _ = room_insights([night], home.template, extension=extension)
-    flagged = max(insights, key=lambda r: r.anomaly_score)
-    faults = sorted((f for f in flagged.fits if f.fault_type != HypothesisType.NORMAL), key=lambda f: f.bic)
-    ranked = [
-        HypothesisFit(
-            fault_type=f.fault_type,
-            fitted_multiplier=f.fitted_multiplier,
-            sse=0.0,
-            bic=f.bic,
-            residual_rmse_deg_c=f.residual_rmse_deg_c,
-        )
-        for f in faults
-    ]
-    uncertainty = [
-        "Screening only: this home has no verified fault labels and the model is transferred from HH09, "
-        "not calibrated on it.",
-        "Thresholds were tuned on synthetic HH09-twin nights; real homes add occupants, sun and appliances.",
-        "Heating must be off and doors closed for the readings to mean what the model assumes.",
-    ]
-    inadequate = [r.room_id for r in insights if min(f.residual_rmse_deg_c for f in r.fits) > adequacy_rmse]
-    if inadequate:
-        # As in the diagnosis controller: a model that cannot explain a room is not evidence of health.
-        status, room, ranked_out = DiagnosisStatus.UNEXPLAINED, None, []
-    elif flagged.anomaly_score <= detection_bic:
-        status, room, ranked_out = DiagnosisStatus.NO_FAULT, None, []
-    elif faults[0].residual_rmse_deg_c > adequacy_rmse or faults[0].fitted_multiplier <= 1:
-        status, room, ranked_out = DiagnosisStatus.UNEXPLAINED, flagged.room_id, ranked
-    elif faults[1].bic - faults[0].bic < ambiguity_bic:
-        status, room, ranked_out = DiagnosisStatus.AMBIGUOUS, flagged.room_id, ranked
-    else:
-        status, room, ranked_out = DiagnosisStatus.CONFIDENT, flagged.room_id, ranked
-    if inadequate:
-        uncertainty.append("The model fits poorly in: " + ", ".join(inadequate))
-    money = None
-    if room and ranked_out and ranked_out[0].fitted_multiplier > 1:
-        assumptions = load_assumptions()
-        cause = ranked_out[0].fault_type
-        if cause == HypothesisType.DRAFT:
-            repair = float(assumptions["economic"]["repair_costs"]["seal_leaks"]["value"])
-        else:
-            rate = float(assumptions["economic"]["repair_costs"]["add_insulation"]["value"])
-            wall = home.exterior_wall_length_m.get(room, 0.0) * request.plan.ceiling_height_m
-            repair = rate * max(wall - home.window_area_m2.get(room, 0.0), 0.0)
-        money = estimate_money(
-            home.template,
-            room,
-            ranked_out[0],
-            extension=extension,
-            overrides=MoneyOverrides(repair_cost_gbp=repair),
-        )
-    evidence = [
-        Evidence(
-            statement=f"Best fault improves BIC over normal by {flagged.anomaly_score:.1f} in "
-            f"{next(r.room_name for r in home.template.rooms if r.room_id == flagged.room_id)}.",
-            relationship="supports"
-            if status in {DiagnosisStatus.AMBIGUOUS, DiagnosisStatus.CONFIDENT}
-            else "limits",
-            provenance=Provenance.MODEL_ESTIMATE,
-        )
-    ]
-    return HomeAnalysis(
-        status=status,
-        flagged_room_id=room,
-        ranked_causes=ranked_out,
-        rooms=insights,
-        money_estimate=money,
-        nights=[night],
-        home=home,
-        evidence=evidence,
-        uncertainty=uncertainty,
-        elapsed_ms=(time.perf_counter() - started) * 1000,
-    )
-
-
-def lookup_weather(query: str, start: datetime, end: datetime) -> WeatherLookup:
-    """Geocode a place and fetch hourly reanalysis weather (Open-Meteo; needs network)."""
+def geocode(query: str) -> Location:
+    """Find a place by name (Open-Meteo geocoding; needs network)."""
 
     geo = _get_json(
         "https://geocoding-api.open-meteo.com/v1/search?" + urlencode({"name": query, "count": 1})
@@ -389,9 +232,28 @@ def lookup_weather(query: str, start: datetime, end: datetime) -> WeatherLookup:
     if not geo.get("results"):
         raise HomeError(f"could not find a place called {query!r}")
     place = geo["results"][0]
+    return Location(
+        name=f"{place['name']}, {place.get('country', '')}".strip(", "),
+        latitude=place["latitude"],
+        longitude=place["longitude"],
+        timezone="UTC",
+    )
+
+
+def lookup_weather(query: str, start: datetime, end: datetime) -> WeatherLookup:
+    """Geocode a place and fetch hourly reanalysis weather (Open-Meteo; needs network)."""
+
+    return fetch_weather(geocode(query), start, end)
+
+
+def fetch_weather(location: Location, start: datetime, end: datetime) -> WeatherLookup:
+    """Hourly gridded weather at a location's coordinates (Open-Meteo; needs network)."""
+
+    if location.latitude is None or location.longitude is None:
+        raise HomeError("the location has no coordinates")
     params = {
-        "latitude": place["latitude"],
-        "longitude": place["longitude"],
+        "latitude": location.latitude,
+        "longitude": location.longitude,
         "start_date": (start - timedelta(days=1)).date().isoformat(),
         "end_date": (end + timedelta(days=1)).date().isoformat(),
         "hourly": "temperature_2m,wind_speed_10m",
@@ -425,12 +287,7 @@ def lookup_weather(query: str, start: datetime, end: datetime) -> WeatherLookup:
         notes="Gridded model weather, not a station reading.",
     )
     return WeatherLookup(
-        location=Location(
-            name=f"{place['name']}, {place.get('country', '')}".strip(", "),
-            latitude=place["latitude"],
-            longitude=place["longitude"],
-            timezone="UTC",
-        ),
+        location=location,
         outdoor_temperature=Series(
             timestamps=[stamps[i] for i in keep],
             values=[hourly["temperature_2m"][i] for i in keep],

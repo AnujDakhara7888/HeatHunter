@@ -391,21 +391,21 @@ engine.
 ## Model
 
 Each room has **one dynamic temperature**, its fabric (walls, furniture, mass)
-`T_f`. The measured room air is a quasi-steady layer between the fabric and the
-incoming outdoor air (SI units):
+`T_f`. The measured room air `T_a` is a quasi-steady layer between the fabric,
+the incoming outdoor air and the neighbouring rooms' air (SI units):
 
 ```
-H_air(t)   = m_l H_inf0 f(w, dT) + fan(t) 0.33 Q share
-H_ser      = H_af H_air / (H_af + H_air)                 (air path in series)
-C dT_f/dt  = -[m_c H_cond + H_ser] (T_f - T_out) + sum_j H_ij (T_f,j - T_f)
-T_air      = T_f - H_air/(H_af + H_air) (T_f - T_out)     (what sensors read)
+H_air(t)   = H_win + m_l H_inf0 f(w, dT) + fan(t) 0.33 Q share
+0          = H_af (T_f - T_a) - H_air (T_a - T_out) + sum_j H_ij (T_a,j - T_a)
+C dT_f/dt  = -m_c H_cond (T_f - T_out) - H_af (T_f - T_a)
 share_i    = m_l,i s_i / sum_j m_l,j s_j                  (spec's leakage-share rule)
 f(w, dT)   = sqrt((dT + (Cw/Cs) w^2) / dT_ref)           (ASHRAE/LBL stack + wind)
 ```
 
-Without the engine extension (`H_af = inf`, linear `f = 1 + beta w`) this is
-exactly the specification's single-node model, and tests check that limit. Two
-evidence-driven extensions were agreed with Kailash:
+Without the engine extension (`H_af = inf`, no separate window path, linear
+`f = 1 + beta w`) this is exactly the specification's single-node model, and
+tests check that limit. Four evidence-driven extensions were agreed with
+Kailash:
 
 1. **Quick-settling air layer.** In the simulator, the fan dips room air by
    about 1 °C within minutes and the air rebounds when the fan stops, while the
@@ -416,10 +416,105 @@ evidence-driven extensions were agreed with Kailash:
    This uses the published ASHRAE/LBL coefficients (one-storey, shelter class
    3), deliberately not the simulator's. The stack term uses the room's own
    measured temperature, so fitting stays linear and fast.
+3. **Windows on the air side (2026-10-24).** Glass has negligible thermal mass,
+   so glazing cools the room air directly, in parallel with infiltration:
+   `H_win` = SAP 2012 Table 6e double-glazed, air-filled, 12 mm gap, PVC/wood
+   frame, 2.8 W/m²K (p. 217) × documented window area. HH09 is documented only
+   as "Double glazing"; SAP says to assume air-filled without low-E. Fixed, not
+   fitted, and deliberately not the simulator's own coefficient. A draft
+   multiplier scales infiltration only, never the glazing.
+4. **Air-to-air inter-room coupling (2026-10-24).** A partition U-value is
+   defined between the air on either side (it includes both surface
+   resistances), so coupling acts on the air balance, not the fabric. The
+   per-room fit uses neighbours' *measured* air directly, with no neighbour
+   parameters. A leaky room's air sits well below its fabric and is partly held
+   up by warmer neighbouring air; the fabric-to-fabric version missed this.
+   A test checks the quasi-steady network against an independent two-node ODE
+   with a very light air node (agreement within 0.02 °C).
 
-Both live in the engine-owned `templates/hh09_model_extension.json`, keyed by
-`template_id`, because the canonical `PublicTemplate` contract has no fields for
-them. Engine functions load it automatically when the template ID matches.
+`H_af`, the leakage law and `H_win` live in the engine-owned
+`templates/hh09_model_extension.json`, keyed by `template_id`, because the
+canonical `PublicTemplate` contract has no fields for them. Engine functions
+load it automatically when the template ID matches.
+
+### Why air leaks were missed, and what fixes it (2026-10-24)
+
+Controlled fits of simulator houses (scratch probes, not committed) showed:
+
+| Evidence (realistic noise, ±12% houses, 4 houses × 4 rooms × 2 severities) | Drafts correct | Conduction correct |
+|---|---|---|
+| One calm night | 3/32 | 32/32 |
+| Four passive nights (2 calm, 2 windy) | 30/32 | 32/32 |
+
+On one calm night a draft and an envelope fault cool a room almost identically.
+Leak heat loss rises with wind and wall loss does not, so several nights of
+varying weather separate them. The main fix is therefore **evidence
+accumulated over several nights**, not a change of model structure. The window
+path and air-to-air coupling are physics corrections: on noise-free data they
+recover envelope-fault size closely (×2 → 2.0–2.3, ×4 → 4.1–4.6 versus 1.8 and
+3.9 before), but they did not change classification on realistic data.
+Rejected hypotheses: the SAP capacitance anchor (matching the simulator's mass
+made the fan fit worse) and the leakage-law ratio (matching it barely changed
+the fits).
+
+Open issue: on a fan night the draft hypothesis still mispredicts severe (×4)
+drafts in the large rooms, so passive + fan can rank them as conduction. The
+fan is therefore an optional suggested check, not the main evidence.
+
+## Multi-night monitoring rule (`backend/diagnosis/monitoring.py`)
+
+The product monitors a home over consecutive heating-off nights instead of
+judging one night. `assess_rooms(nights, template, settings)` returns, for every
+room, `healthy`, `watching` (suspicious, not yet persistent), `issue` (room and
+cause named) or `issue_cause_unclear`.
+
+- **Measure.** For each room, all nights so far are fitted together under
+  normal, draft and envelope conduction. The leading fault's *excess heat loss*
+  is its extra seasonal conductance as a fraction of the room's nominal seasonal
+  heat loss (`engine.excess_fraction`). This is the number a user sees ("this
+  room loses 30% more heat than expected").
+- **Threshold per cause, strict early.** A room is a candidate when the excess
+  exceeds `a + b / sqrt(nights)` for its leading cause and the fault fits better
+  than normal. Separate thresholds are essential: healthy rooms whose best fault
+  is a draft show at most 6–17% excess, while ordinary ±12% house variation
+  looks like a 21–44% envelope excess. One shared threshold detected no drafts.
+- **Persistence and cause.** A room is flagged after `persistence_nights`
+  consecutive candidate nights with the same leading cause. The cause is named
+  only when the draft/envelope BIC gap exceeds `cause_gap_bic`.
+
+**Tuned settings** (`backend/diagnosis/monitoring_settings.json`): draft
+`a = 0.05, b = 0.05`; envelope `a = 0.20, b = 0.30`; persistence 2 nights;
+cause gap 10 BIC. The file fingerprints the engine assets it was tuned against
+and is rejected when they change.
+
+**How it was tuned (TRAINING winter 2019-20 only).**
+`python -m backend.simulation.monitoring_study --houses 6 --nights 14` simulates
+192 houses (healthy; draft and envelope faults ×1.6/×2.2/×3 in every room) over
+14 consecutive real-weather nights from random start dates, and saves every
+fit (about 10 minutes; raw output is not committed).
+`python -m backend.simulation.tune_monitoring` grid-searches the six settings on
+even-numbered houses with two constraints: no healthy house flagged and at most
+two wrong confident answers. (One was infeasible: the best settings call two
+severe drafts envelope losses, in the right room.) Odd-numbered houses are
+scored once and never tuned on. A test replays the cached fits and checks that
+the live rule makes identical decisions.
+
+| Check houses (never tuned on) | Correct room + cause | Median night | Worst night |
+|---|---|---|---|
+| Draft ×1.6 | 8/12 | 4.5 | 12 |
+| Draft ×2.2 | 12/12 | 3 | 5 |
+| Draft ×3 | 10/12 | 3 | 6 |
+| Envelope ×1.6 | 11/12 | 3 | 4 |
+| Envelope ×2.2, ×3 | 24/24 | 2 | 2 |
+| Healthy houses flagged | 1/24 | | |
+| Confident but wrong | 2/72 | | |
+
+Full numbers are in `reports/monitoring/flag_rule_tuning.json`. These are
+TRAINING-season simulated results, not held-out or real-home accuracy. The
+held-out winter 2020-21 is reserved for the final benchmark. Caveat: the public
+template's calibration used the legacy night 2020-12-06, which lies in that
+winter, so the benchmark must exclude that night or the template must first be
+recalibrated on winter 2019-20 nights only.
 
 ## Calibration (`calibrate_public_template`)
 
@@ -438,11 +533,11 @@ them. Engine functions load it automatically when the template ID matches.
   identify coupling (free fits swung from 0.05 to 225 W/K), and the exterior
   estimates barely change for U between 1.2 and 2.5. The value deliberately
   differs from the simulator's 1.85 to avoid the inverse crime.
-- **Result:** per-house RMSE is 0.158 °C (noise is 0.15) and all 40 houses
-  converged. The air-fabric coefficient is 15.4 W/m²K (IQR 14.9–15.8). The
-  four-room total at season-mean wind is 136 W/K, against HH09's measured
-  172 W/K for the whole dwelling including the bathroom; that is a reference
-  check only.
+- **Result (with windows and air-to-air coupling):** per-house RMSE is
+  0.161 °C (noise is 0.15) and all 40 houses converged. The air-fabric
+  coefficient is 17.5 W/m²K (IQR 16.9–18.0). The four-room total at
+  season-mean wind is 140 W/K, against HH09's measured 172 W/K for the whole
+  dwelling including the bathroom; that is a reference check only.
 - **Reproduce:** `python -m scripts.calibrate_public_template --houses 40`, about
   2 minutes. Report: `templates/hh09_calibration_report.json`.
 

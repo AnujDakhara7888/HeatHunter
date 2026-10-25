@@ -1,9 +1,9 @@
 """Per-room hypothesis fitting with SciPy bounded nonlinear least squares.
 
 Each fit uses one room's observations. Neighbour rooms enter through their
-*measured* temperatures, as the specification's public model states, so rooms
-are fitted independently. Measured neighbour air is converted to fabric
-temperature with the same quasi-steady air relation the model uses.
+*measured* air temperatures, as the specification's public model states, so
+rooms are fitted independently. Coupling acts air to air, exactly as in the
+forward model, so no neighbour parameters are needed.
 
 Every hypothesis fits the same nuisance parameters: one starting fabric
 temperature per night and one bounded sensor offset for the room. Their BIC
@@ -29,12 +29,10 @@ from .model import (
     ModelExtension,
     PublicModelError,
     TemplateArrays,
-    air_fraction,
     air_side_conductance,
     leakage_factor,
     resolve_extension,
     room_order,
-    series_conductance,
 )
 
 
@@ -65,6 +63,7 @@ class RoomNight:
     fan: np.ndarray
     own_mid: np.ndarray  # this room's measured AIR at step midpoints (drives the stack term)
     neighbour_mid: dict[int, np.ndarray]  # measured neighbour AIR at step midpoints
+    neighbour_obs: dict[int, np.ndarray]  # measured neighbour AIR at the kept observation times
     obs_index: np.ndarray
     observed: np.ndarray
     obs_outdoor: np.ndarray
@@ -84,17 +83,13 @@ class RoomPhysics:
     fan_share: float
     air_fabric: float
     leakage_law: LeakageLaw | None = None
+    window: float = 0.0
 
 
 @dataclass(frozen=True)
 class NeighbourPhysics:
     index: int
     coupling: float
-    infiltration: float
-    wind_sensitivity: float
-    fan_share: float
-    air_fabric: float
-    leakage_law: LeakageLaw | None = None
 
 
 def recurrence(initial: float, dt: np.ndarray, a: np.ndarray, c: np.ndarray) -> np.ndarray:
@@ -118,32 +113,48 @@ def predict_room_air(
     initial_fabric: float,
     offset: float,
 ) -> np.ndarray:
-    """Predicted sensor readings for one room on one night, at its kept observation times."""
+    """Predicted sensor readings for one room on one night, at its kept observation times.
+
+    With measured neighbour air T_n, the air balance gives
+    T_a = (H_af T_f + H_air T_out + sum H_ij T_n) / D, D = H_af + H_air + sum H_ij.
+    Substituting into the fabric equation leaves one linear ODE in T_f. Without
+    an air layer (H_af infinite) T_a = T_f and coupling acts on the single node.
+    """
 
     factor = leakage_factor(
         room.wind_sensitivity, room.leakage_law, block.wind, block.own_mid - block.outdoor
     )
-    air_side = air_side_conductance(room.infiltration, factor, room.fan_share, block.fan)
-    loss = room.conduction + series_conductance(room.air_fabric, air_side)
-    neighbour_total = 0.0
-    neighbour_heat = np.zeros_like(block.dt)
-    for n in neighbours:
-        measured = block.neighbour_mid[n.index]
-        n_factor = leakage_factor(n.wind_sensitivity, n.leakage_law, block.wind, measured - block.outdoor)
-        n_air_side = air_side_conductance(n.infiltration, n_factor, n.fan_share, block.fan)
-        fraction = air_fraction(n.air_fabric, n_air_side)
-        fabric = (measured - fraction * block.outdoor) / (1.0 - fraction)
-        neighbour_total += n.coupling
-        neighbour_heat = neighbour_heat + n.coupling * fabric
-    a = (loss + neighbour_total) / room.capacitance
-    c = (loss * block.outdoor + neighbour_heat) / room.capacitance
+    air_side = air_side_conductance(room.infiltration, factor, room.fan_share, block.fan, room.window)
+    coupling = sum(n.coupling for n in neighbours)
+    neighbour_heat = sum(
+        (n.coupling * block.neighbour_mid[n.index] for n in neighbours), np.zeros_like(block.dt)
+    )
+    layered = math.isfinite(room.air_fabric)
+    if layered:
+        share = room.air_fabric / (room.air_fabric + air_side + coupling)
+        a = (room.conduction + share * (air_side + coupling)) / room.capacitance
+        c = (
+            room.conduction * block.outdoor + share * (air_side * block.outdoor + neighbour_heat)
+        ) / room.capacitance
+    else:
+        a = (room.conduction + air_side + coupling) / room.capacitance
+        c = ((room.conduction + air_side) * block.outdoor + neighbour_heat) / room.capacitance
     fabric_path = recurrence(initial_fabric, block.dt, a, c)[block.obs_index]
+    if not layered:
+        return fabric_path + offset
     obs_factor = leakage_factor(
         room.wind_sensitivity, room.leakage_law, block.obs_wind, block.observed - block.obs_outdoor
     )
-    obs_air_side = air_side_conductance(room.infiltration, obs_factor, room.fan_share, block.obs_fan)
-    fraction = air_fraction(room.air_fabric, obs_air_side)
-    return fabric_path - fraction * (fabric_path - block.obs_outdoor) + offset
+    obs_air_side = air_side_conductance(
+        room.infiltration, obs_factor, room.fan_share, block.obs_fan, room.window
+    )
+    obs_heat = sum(
+        (n.coupling * block.neighbour_obs[n.index] for n in neighbours), np.zeros_like(fabric_path)
+    )
+    air = (room.air_fabric * fabric_path + obs_air_side * block.obs_outdoor + obs_heat) / (
+        room.air_fabric + obs_air_side + coupling
+    )
+    return air + offset
 
 
 def _interpolate_measured(seconds: np.ndarray, values: np.ndarray, at: np.ndarray) -> np.ndarray | None:
@@ -177,16 +188,17 @@ def prepare_room_night(
     if own_mid is None:
         raise PublicModelError(f"{night.night_id}: room {room_id} has no readings")
     warnings: list[str] = []
-    neighbour_mid: dict[int, np.ndarray] = {}
+    neighbour_series: dict[int, np.ndarray] = {}
     for j in np.nonzero(arrays.coupling[room_index])[0]:
-        measured = _interpolate_measured(forcing.seconds, _series_array(night, arrays.room_ids[j]), mid)
-        if measured is None:
-            measured = own_mid
+        series = _series_array(night, arrays.room_ids[j])
+        if not np.isfinite(series).any():
+            series = own
             warnings.append(
                 f"{night.night_id}: neighbour {arrays.room_ids[j]} has no readings; "
                 "its coupling used this room's own readings"
             )
-        neighbour_mid[int(j)] = measured
+        neighbour_series[int(j)] = series
+    neighbour_mid = {j: _interpolate_measured(forcing.seconds, s, mid) for j, s in neighbour_series.items()}
     grid_lookup = {round(float(t), 6): k for k, t in enumerate(grid)}
     settling = [(switch, switch + settings.switch_skip_seconds) for switch in forcing.switch_times]
     kept = [
@@ -202,6 +214,9 @@ def prepare_room_night(
     if missing:
         warnings.append(f"{night.night_id}: {missing} missing readings for {room_id} were skipped")
     kept_seconds = forcing.seconds[kept]
+    neighbour_obs = {
+        j: _interpolate_measured(forcing.seconds, s, kept_seconds) for j, s in neighbour_series.items()
+    }
     return RoomNight(
         night_id=night.night_id,
         dt=dt,
@@ -210,6 +225,7 @@ def prepare_room_night(
         fan=fan,
         own_mid=own_mid,
         neighbour_mid=neighbour_mid,
+        neighbour_obs=neighbour_obs,
         obs_index=np.array([grid_lookup[round(float(t), 6)] for t in kept_seconds], int),
         observed=own[kept],
         obs_outdoor=forcing.outdoor[kept],
@@ -255,19 +271,9 @@ def hypothesis_physics(
         fan_share=leakage_m * shares[i] / normalizer,
         air_fabric=arrays.air_fabric[i],
         leakage_law=arrays.leakage_law,
+        window=arrays.window[i],
     )
-    neighbours = [
-        NeighbourPhysics(
-            index=int(j),
-            coupling=arrays.coupling[i, j],
-            infiltration=arrays.infiltration[j],
-            wind_sensitivity=arrays.wind_sensitivity[j],
-            fan_share=shares[j] / normalizer,
-            air_fabric=arrays.air_fabric[j],
-            leakage_law=arrays.leakage_law,
-        )
-        for j in np.nonzero(arrays.coupling[i])[0]
-    ]
+    neighbours = [NeighbourPhysics(int(j), arrays.coupling[i, j]) for j in np.nonzero(arrays.coupling[i])[0]]
     return room, neighbours
 
 

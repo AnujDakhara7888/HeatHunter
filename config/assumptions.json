@@ -64,6 +64,18 @@
         "notes": "R = 0.26 + 0.100/1.13 + 2 x 0.013/0.57 = 0.394 m2K/W, so U is about 2.5 W/m2K. HH09's partition construction is unpublished. Coupling = U x plan-derived shared-boundary length x 2.4 m. Passive cooling data cannot identify coupling, so it is fixed, not fitted. It is deliberately a different plausible construction from the simulator's assumption, so the benchmark tests model mismatch honestly."
       }
     },
+    "window_u_value": {
+      "value": 2.8,
+      "unit": "W/(m2.K)",
+      "verified": true,
+      "source": {
+        "provider": "BRE",
+        "dataset": "SAP 2012 v9.92 (Oct 2013, with RdSAP Dec 2014), Table 6e",
+        "url": "https://files.bregroup.com/SAP/SAP-2012_9-92.pdf",
+        "citation": "BRE (2014). The Government's Standard Assessment Procedure for Energy Rating of Dwellings, 2012 edition, Table 6e (p. 217): double-glazed, air filled, wood or PVC-U frame, 12 mm gap.",
+        "notes": "HH09 is documented only as 'Double glazing'. SAP says to take double glazing as air-filled without low-E unless known otherwise; the gap is unpublished, so the 12 mm column is used (6 mm: 3.1, 16 mm+: 2.7). Applies to the whole window opening including frame. Glass has negligible thermal mass, so this path cools the room AIR directly (in parallel with infiltration), not the fabric. Window conductance = U x documented window area. No curtain adjustment is applied. Deliberately the published default, not the simulator's own window coefficient."
+      }
+    },
     "fan_airflow": {
       "value": 84.950541,
       "unit": "m3/h",

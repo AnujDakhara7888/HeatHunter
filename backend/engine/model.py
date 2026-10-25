@@ -1,16 +1,21 @@
 """Public single-node-per-room RC model used for diagnosis (Kailash).
 
 Each room has ONE dynamic temperature: its fabric (walls, furniture, thermal
-mass) T_f. The measured room air is a quasi-steady layer. It settles within
-minutes between the fabric and the incoming outdoor air, so it is algebraic,
-not a second dynamic state. SI units: degC, W/K, J/K, seconds.
+mass) T_f. The measured room air T_a is a quasi-steady layer. It settles within
+minutes between the fabric, the incoming outdoor air and the neighbouring
+rooms' air, so it is algebraic, not a second dynamic state. SI units: degC,
+W/K, J/K, seconds.
 
-    H_air,i(t) = m_l H_inf0,i f_i(w, dT) + fan(t) 0.33 Q share_i
-    H_ser,i    = H_af,i H_air,i / (H_af,i + H_air,i)      (air path in series)
-    C_i dT_f,i/dt = -[m_c H_cond,i + H_ser,i(t)] (T_f,i - T_out)
-                    + sum_j H_ij (T_f,j - T_f,i)
-    T_air,i    = T_f,i - H_air,i / (H_af,i + H_air,i) (T_f,i - T_out)
+    H_air,i(t) = H_win,i + m_l H_inf0,i f_i(w, dT) + fan(t) 0.33 Q share_i
+    0          = H_af,i (T_f,i - T_a,i) - H_air,i (T_a,i - T_out)
+                 + sum_j H_ij (T_a,j - T_a,i)                 (air balance)
+    C_i dT_f,i/dt = -m_c H_cond,i (T_f,i - T_out) - H_af,i (T_f,i - T_a,i)
     share_i    = m_l,i s_i / sum_j m_l,j s_j
+
+Inter-room coupling acts AIR to AIR: a partition U-value is defined between
+the air on either side (it includes both surface resistances). This matters
+for a leaky room, whose air sits well below its fabric and is partly held up
+by warmer neighbouring air.
 
 The leakage law f is either:
 
@@ -19,9 +24,14 @@ The leakage law f is either:
   ``sqrt((dT + (Cw/Cs) w^2) / dT_ref)``, where leakage also rises with the
   indoor-outdoor difference dT.
 
-The engine-owned ``ModelExtension`` (calibrated air-fabric conductance H_af and
-the leakage law) is keyed by ``template_id``. Without an extension, H_af is
-infinite and the law is linear, so the model reduces exactly to the
+Windows (H_win = published glazing U-value x documented window area) cool
+the room air directly, in parallel with infiltration: glass has negligible
+thermal mass. A draft multiplier scales infiltration only, never the glazing.
+
+The engine-owned ``ModelExtension`` (calibrated air-fabric conductance H_af,
+the leakage law and the fixed window conductances) is keyed by
+``template_id``. Without an extension, H_af is infinite, there is no separate
+window path and the law is linear, so the model reduces exactly to the
 specification's single-node form with T_air = T_f.
 
 This module reads only public inputs. It never imports simulator code or truth.
@@ -98,7 +108,7 @@ def leakage_factor(wind_sensitivity, law: LeakageLaw | None, wind, delta_t):
 
 @dataclass(frozen=True)
 class ModelExtension:
-    """Engine-owned physics for one template: air-fabric conductances and leakage law.
+    """Engine-owned physics for one template: air-fabric and window conductances, leakage law.
 
     It is kept outside the canonical ``PublicTemplate`` contract, which has no
     fields for it, and is keyed by ``template_id`` so it cannot be paired with
@@ -110,11 +120,15 @@ class ModelExtension:
     leakage_law: LeakageLaw | None = None
     provenance: str = Provenance.MODEL_ESTIMATE.value
     note: str = ""
+    window_conductance_w_per_k: Mapping[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for room_id, value in self.air_fabric_conductance_w_per_k.items():
             if isinstance(value, bool) or not math.isfinite(value) or value <= 0:
                 raise PublicModelError(f"air-fabric conductance for {room_id} must be finite and positive")
+        for room_id, value in self.window_conductance_w_per_k.items():
+            if isinstance(value, bool) or not math.isfinite(value) or value < 0:
+                raise PublicModelError(f"window conductance for {room_id} must be finite and non-negative")
 
     def save(self, path: Path | None = None) -> Path:
         path = Path(path or DEFAULT_EXTENSION_PATH)
@@ -122,6 +136,7 @@ class ModelExtension:
         payload = {
             "template_id": self.template_id,
             "air_fabric_conductance_w_per_k": dict(self.air_fabric_conductance_w_per_k),
+            "window_conductance_w_per_k": dict(self.window_conductance_w_per_k),
             "leakage_law": None
             if self.leakage_law is None
             else {
@@ -151,6 +166,9 @@ def load_model_extension(path: str | Path | None = None) -> ModelExtension:
         leakage_law=None if law is None else LeakageLaw(**law),
         provenance=payload.get("provenance", Provenance.MODEL_ESTIMATE.value),
         note=payload.get("note", ""),
+        window_conductance_w_per_k={
+            k: float(v) for k, v in payload.get("window_conductance_w_per_k", {}).items()
+        },
     )
 
 
@@ -188,6 +206,11 @@ class TemplateArrays:
     coupling: np.ndarray  # symmetric W/K matrix with zero diagonal
     air_fabric: np.ndarray  # W/K; inf means no air layer (single-node limit)
     leakage_law: LeakageLaw | None = None
+    window: np.ndarray | None = None  # W/K glazing on the air side; None means no separate path
+
+    def __post_init__(self) -> None:
+        if self.window is None:
+            object.__setattr__(self, "window", np.zeros(len(self.room_ids)))
 
     @classmethod
     def from_template(
@@ -205,6 +228,7 @@ class TemplateArrays:
                 raise PublicModelError("template contains a duplicate coupling")
             coupling[a, b] = coupling[b, a] = edge.conductance_w_per_k
         air_fabric = np.full(len(room_ids), np.inf)
+        window = np.zeros(len(room_ids))
         law = None
         if extension is not None:
             if extension.template_id != template.template_id:
@@ -213,6 +237,10 @@ class TemplateArrays:
                 if set(extension.air_fabric_conductance_w_per_k) != set(room_ids):
                     raise PublicModelError("model extension must cover exactly the template rooms")
                 air_fabric = np.array([extension.air_fabric_conductance_w_per_k[r] for r in room_ids], float)
+            if extension.window_conductance_w_per_k:
+                if set(extension.window_conductance_w_per_k) != set(room_ids):
+                    raise PublicModelError("model extension windows must cover exactly the template rooms")
+                window = np.array([extension.window_conductance_w_per_k[r] for r in room_ids], float)
             law = extension.leakage_law
         return cls(
             room_ids=room_ids,
@@ -226,6 +254,7 @@ class TemplateArrays:
             coupling=coupling,
             air_fabric=air_fabric,
             leakage_law=law,
+            window=window,
         )
 
     def index(self, room_id: str) -> int:
@@ -249,10 +278,10 @@ def leakage_shares(nominal_shares: np.ndarray, leakage_multipliers: np.ndarray) 
     return weighted / total
 
 
-def air_side_conductance(infiltration, factor, fan_share, fan_flow):
-    """Infiltration (scaled by the leakage law factor) + fan conductance on the room air (W/K)."""
+def air_side_conductance(infiltration, factor, fan_share, fan_flow, window=0.0):
+    """Glazing + infiltration (scaled by the leakage law factor) + fan conductance on the room air (W/K)."""
 
-    return infiltration * factor + SENSIBLE_AIR_FACTOR * fan_flow * fan_share
+    return window + infiltration * factor + SENSIBLE_AIR_FACTOR * fan_flow * fan_share
 
 
 def series_conductance(air_fabric, air_side):
@@ -262,15 +291,6 @@ def series_conductance(air_fabric, air_side):
     air_side = np.asarray(air_side, float)
     with np.errstate(invalid="ignore"):
         return np.where(np.isinf(air_fabric), air_side, air_fabric * air_side / (air_fabric + air_side))
-
-
-def air_fraction(air_fabric, air_side):
-    """How far the air sits from the fabric toward outdoors (0 = air equals fabric)."""
-
-    air_fabric = np.asarray(air_fabric, float)
-    air_side = np.asarray(air_side, float)
-    with np.errstate(invalid="ignore"):
-        return np.where(np.isinf(air_fabric), 0.0, air_side / (air_fabric + air_side))
 
 
 @dataclass(frozen=True)
@@ -386,41 +406,64 @@ def simulate_trajectory(
     """Coupled forward run; returns room AIR temperatures (rooms x observation times).
 
     Each step holds coefficients constant and advances the fabric states
-    exactly with a matrix exponential. The stack term uses the fabric-outdoor
-    difference at the start of each five-minute step, the only state-dependent
-    input. Initial values are air readings, converted to fabric temperatures
-    with the same quasi-steady relation.
+    exactly with a matrix exponential. The quasi-steady air network is solved
+    at every step: M T_a = H_af T_f + H_air T_out, with
+    M = diag(H_af + H_air + sum_j H_ij) - H. The stack term uses the
+    fabric-outdoor difference at the start of each five-minute step, the only
+    state-dependent input. Initial values are air readings, converted to
+    fabric temperatures by inverting the same air balance.
     """
 
     initial_air = np.asarray(initial_air, float)
     if initial_air.shape != (len(arrays.room_ids),) or not np.all(np.isfinite(initial_air)):
         raise PublicModelError("initial temperatures must be finite for every template room")
+    layered = np.isfinite(arrays.air_fabric)
+    if layered.any() and not layered.all():
+        raise PublicModelError("the air layer must cover every room or none")
+    layered = bool(layered.all())
     conduction_m, leakage_m = _multiplier_vectors(arrays, multipliers)
+    conduction = conduction_m * arrays.conduction
     shares = leakage_shares(arrays.leakage_share, leakage_m)
     infiltration = leakage_m * arrays.infiltration
     law = arrays.leakage_law
+    n = len(arrays.room_ids)
+    coupling_out = arrays.coupling.sum(axis=1)
 
     def air_side(wind, fan, delta_t):
         factor = leakage_factor(arrays.wind_sensitivity, law, wind, delta_t)
-        return air_side_conductance(infiltration, factor, shares, fan)
+        return air_side_conductance(infiltration, factor, shares, fan, arrays.window)
+
+    def air_network(h_air):
+        return np.diag(arrays.air_fabric + h_air + coupling_out) - arrays.coupling
+
+    def air_from_fabric(fabric, h_air, outdoor):
+        if not layered:
+            return fabric
+        return np.linalg.solve(air_network(h_air), arrays.air_fabric * fabric + h_air * outdoor)
 
     fan_obs = forcing.fan_at_readings(forcing.seconds)
-    fraction0 = air_fraction(
-        arrays.air_fabric, air_side(forcing.wind[0], fan_obs[0], initial_air - forcing.outdoor[0])
-    )
-    state = (initial_air - fraction0 * forcing.outdoor[0]) / (1.0 - fraction0)
+    state = initial_air.copy()
+    if layered:
+        h0 = air_side(forcing.wind[0], fan_obs[0], initial_air - forcing.outdoor[0])
+        state = (air_network(h0) @ initial_air - h0 * forcing.outdoor[0]) / arrays.air_fabric
 
     grid = forcing.integration_grid()
     dt, outdoor, wind, fan = forcing.midpoints(grid)
-    n = len(arrays.room_ids)
-    coupling_out = arrays.coupling.sum(axis=1)
     fabric = {0.0: state.copy()}
     augmented = np.zeros((n + 1, n + 1))
     for k in range(len(dt)):
         h_air = air_side(wind[k], fan[k], state - outdoor[k])
-        exterior = conduction_m * arrays.conduction + series_conductance(arrays.air_fabric, h_air)
-        augmented[:n, :n] = (arrays.coupling - np.diag(exterior + coupling_out)) / arrays.capacitance[:, None]
-        augmented[:n, n] = exterior * outdoor[k] / arrays.capacitance
+        if layered:
+            # Eliminate the air: T_a = M^-1 (H_af T_f + H_air T_out).
+            inverse = np.linalg.inv(air_network(h_air))
+            haf = arrays.air_fabric
+            matrix = haf[:, None] * inverse * haf[None, :] - np.diag(conduction + haf)
+            source = conduction + haf * (inverse @ h_air)
+        else:
+            matrix = arrays.coupling - np.diag(conduction + h_air + coupling_out)
+            source = conduction + h_air
+        augmented[:n, :n] = matrix / arrays.capacitance[:, None]
+        augmented[:n, n] = source * outdoor[k] / arrays.capacitance
         step = expm(augmented * dt[k])
         state = step[:n, :n] @ state + step[:n, n]
         fabric[round(float(grid[k + 1]), 6)] = state.copy()
@@ -428,8 +471,7 @@ def simulate_trajectory(
     air = np.empty_like(fabric_obs)
     for k in range(len(forcing.seconds)):
         h_air = air_side(forcing.wind[k], fan_obs[k], fabric_obs[:, k] - forcing.outdoor[k])
-        fraction = air_fraction(arrays.air_fabric, h_air)
-        air[:, k] = fabric_obs[:, k] - fraction * (fabric_obs[:, k] - forcing.outdoor[k])
+        air[:, k] = air_from_fabric(fabric_obs[:, k], h_air, forcing.outdoor[k])
     return air
 
 

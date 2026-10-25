@@ -98,3 +98,18 @@ configuration/seed integration while leaving UI work paused and uncommitted.
   labelled insulation example and refresh historical calibration/seed-scan copy.
 - Anuj's held-out evaluation remains pending. No model coefficients or saved
   decision cutoff values were changed by the API integration.
+
+## API v2 and route removal — 2026-10-24 (Kailash)
+
+This supersedes the route descriptions in the integration notes above.
+
+- The product now monitors homes night after night: see "API v2" in
+  `docs/CONTRACTS.md`. Demo homes (`backend/simulation/demo_home.py`) keep their
+  planted fault private. Only `GET /api/demo/homes/{home_id}/reveal` returns it.
+- Removed routes: `/api/scenarios/*`, `/api/insight/*`, `/api/homes/template`,
+  `/api/homes/analyze` and `/api/assistant/chat`. The frontend must move to
+  API v2. `HH09ScenarioService`, the single-night controller and
+  `decision_settings.json` remain for research; no route serves them.
+- The multi-night flag rule (`backend/diagnosis/monitoring.py`) and its settings
+  fingerprint the engine assets. After any engine change, rerun
+  `backend.simulation.monitoring_study` and `backend.simulation.tune_monitoring`.

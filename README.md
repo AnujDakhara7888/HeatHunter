@@ -1,22 +1,26 @@
 # HeatHunter
 
-HeatHunter is a physics-guided home thermal diagnostic prototype: a check-engine
-light for a house. The core demo uses a controlled four-room simulator, compares
-competing heat-loss explanations, recommends an additional experiment only when
-it is useful, and verifies the effect of the diagnosed repair.
+HeatHunter is a physics-guided home thermal monitor: a check-engine light for a
+house. It watches each room night after night while the heating is off, flags a
+room that loses more heat than it should, explains whether air leaks or the
+walls, roof or floor are the likely cause, estimates the cost, and keeps
+watching after a repair to confirm it worked.
 
 This is a preliminary diagnostic concept, not a certified building energy audit.
 Synthetic benchmark performance must not be presented as real-home accuracy.
 
 ## Current state
 
-- **Fault Lab** (approximate HH09 digital twin) and **Real Homes** (real SMETER
-  HH09 measurements) in one React app, served by FastAPI for offline demos.
-- Every API route is wired to the owners' services: Mihir's hidden-fault
-  simulator and diagnosis, Kailash's public engine and money model, and Anuj's
-  real-house reader. The held-out benchmark route returns 501 until its report
-  exists.
+- **API v2** (`docs/CONTRACTS.md`): homes monitored night after night. Demo homes
+  are an approximate digital twin of SMETER house HH09 with a hidden fault, run
+  on real held-out winter weather; real homes take a plan, a location and sensor
+  uploads. The Real tab shows real HH09 measurements.
+- The flag rule (`backend/diagnosis/monitoring.py`) was tuned on simulated
+  training-winter houses; results are in `docs/PHYSICS.md`. The held-out
+  benchmark route returns 501 until its report exists.
 - Canonical Pydantic contracts → OpenAPI → generated TypeScript types.
+- The frontend still calls the removed single-night routes and needs moving to
+  API v2.
 
 ## Run the demo
 
@@ -28,13 +32,12 @@ cp .env.example .env           # optional: put ANTHROPIC_API_KEY in .env for cha
 .venv/bin/uvicorn backend.app.main:app --port 8000   # http://127.0.0.1:8000
 ```
 
-Pages: `/` scroll story, `/lab` Fault Lab, `/real` real HH09 week, `/home`
-bring your own home. Everything except chat, plan reading and weather lookup
-works offline.
+Demo homes work offline. The assistant and plan reading need
+`ANTHROPIC_API_KEY`; real homes and weather lookup need internet (Open-Meteo).
 
 Frontend development: run the API, then `cd frontend && npm run dev`
-(port 5173, proxied to the API). See `docs/DEMO.md` for the demo script and
-the guided-seed disclosure, and `docs/CONTRACTS.md` for the API.
+(port 5173, proxied to the API). See `docs/DEMO.md` for the demo script and `docs/CONTRACTS.md`
+for the API.
 
 ## Verification
 

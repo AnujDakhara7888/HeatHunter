@@ -203,3 +203,67 @@ def test_air_layer_must_match_template():
         TemplateArrays.from_template(template, ModelExtension("other-template", {"a": 50.0, "b": 50.0}))
     with pytest.raises(PublicModelError, match="exactly the template rooms"):
         TemplateArrays.from_template(template, ModelExtension(template.template_id, {"a": 50.0}))
+
+
+def test_air_to_air_coupling_matches_two_node_ode_with_light_air():
+    """The quasi-steady air network equals a two-node model whose air capacity tends to zero."""
+
+    from backend.engine.model import ModelExtension
+
+    template = two_room_template(coupling=12.0)
+    layer = ModelExtension(
+        template.template_id, {"a": 60.0, "b": 40.0}, window_conductance_w_per_k={"a": 3, "b": 1}
+    )
+    arrays = TemplateArrays.from_template(template, layer)
+    weather = synthetic_weather(outdoor=lambda h: 3 - 0.5 * h, wind=lambda h: 1 + 0.8 * h)
+    forcing = Forcing.from_weather(weather, fan(weather, hours=2))
+    multipliers = {"a": Multipliers(leakage=3.0)}
+    initial_air = np.array([20.0, 18.0])
+    ours = simulate_trajectory(arrays, forcing, initial_air, multipliers)
+
+    m_l = np.array([3.0, 1.0])
+    shares = leakage_shares(arrays.leakage_share, m_l)
+    air_capacity = 500.0  # J/K: settles in seconds, far faster than the 5-minute readings
+    haf, n = arrays.air_fabric, 2
+    out_degree = arrays.coupling.sum(axis=1)
+
+    def h_air(t):
+        wind = np.interp(t, forcing.seconds, forcing.wind)
+        flow = forcing.fan_flow_m3_per_h if forcing.fan_start_s <= t < forcing.fan_end_s else 0.0
+        return (
+            arrays.window
+            + m_l * arrays.infiltration * (1 + arrays.wind_sensitivity * wind)
+            + SENSIBLE_AIR_FACTOR * flow * shares
+        )
+
+    def rhs(t, y):
+        air, fabric = y[:n], y[n:]
+        outdoor = np.interp(t, forcing.seconds, forcing.outdoor)
+        exchange = arrays.coupling @ air - out_degree * air
+        d_air = (haf * (fabric - air) - h_air(t) * (air - outdoor) + exchange) / air_capacity
+        d_fabric = (-arrays.conduction * (fabric - outdoor) - haf * (fabric - air)) / arrays.capacitance
+        return np.concatenate([d_air, d_fabric])
+
+    # The first reading is pre-fan (air lags the switch), so start from the fan-off air balance.
+    h_start = h_air(-1.0)
+    network = np.diag(haf + h_start + out_degree) - arrays.coupling
+    initial_fabric = (network @ initial_air - h_start * forcing.outdoor[0]) / haf
+    reference = solve_ivp(
+        rhs,
+        (0, forcing.seconds[-1]),
+        np.concatenate([initial_air, initial_fabric]),
+        t_eval=forcing.seconds,
+        method="LSODA",
+        rtol=1e-9,
+        atol=1e-9,
+        max_step=30,
+    )
+    # Skip readings right at fan switches, where the light air node is mid-transient.
+    settled = [
+        k
+        for k, t in enumerate(forcing.seconds)
+        if all(abs(t - s) > 60 for s in (forcing.fan_start_s, forcing.fan_end_s))
+    ]
+    assert np.max(np.abs(ours[:, settled] - reference.y[:n, settled])) < 2e-2
+    # A leaky room's air sits well below its fabric, and the coupling holds it up.
+    assert (reference.y[n] - reference.y[0]).max() > 1.0
