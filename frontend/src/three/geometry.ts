@@ -72,6 +72,7 @@ export function wallPieces(plan: HomePlan) {
   const segments = wallSegments(plan);
   const walls: WallPiece[] = [];
   const glass: GlassPiece[] = [];
+  const doors: GlassPiece[] = [];
   for (const seg of segments) {
     const len = Math.hypot(seg.x1 - seg.x0, seg.z1 - seg.z0);
     const dx = (seg.x1 - seg.x0) / len;
@@ -91,6 +92,10 @@ export function wallPieces(plan: HomePlan) {
       const head = o.kind === "window" ? 2.1 : 2.05;
       add(o.a, o.b, 0, sill);
       add(o.a, o.b, head, WALL_H);
+      if (o.kind === "door" && seg.exterior) {
+        const [cx, cz] = at((o.a + o.b) / 2);
+        doors.push({ cx, cz, len: o.b - o.a, y0: 0, y1: 2.05, rot });
+      }
       if (o.kind === "window") {
         const [cx, cz] = at((o.a + o.b) / 2);
         glass.push({ cx, cz, len: o.b - o.a, y0: sill, y1: head, rot });
@@ -99,5 +104,5 @@ export function wallPieces(plan: HomePlan) {
     }
     add(cur, len, 0, WALL_H);
   }
-  return { segments, walls, glass };
+  return { segments, walls, glass, doors };
 }

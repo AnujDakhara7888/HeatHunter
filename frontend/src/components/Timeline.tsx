@@ -2,6 +2,8 @@ import { Pause, Play } from "lucide-react";
 import { fmtDate, fmtTime } from "../lib/rooms";
 import { useScene } from "../store/scene";
 
+const compass = (deg: number) => ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+
 type Props = {
   t: number | null;
   range: [number, number] | null;
@@ -16,6 +18,7 @@ type Props = {
 export function Timeline({ t, range, playing, onPlay, onPause, onScrub, caption, className = "" }: Props) {
   const outdoor = useScene((s) => s.outdoor);
   const wind = useScene((s) => s.wind);
+  const windFrom = useScene((s) => s.windFrom);
   if (!range || t == null) return null;
   const k = (t - range[0]) / (range[1] - range[0]);
   return (
@@ -47,6 +50,7 @@ export function Timeline({ t, range, playing, onPlay, onPause, onScrub, caption,
             Outside <b className="num text-[15px] text-ink">{outdoor == null ? "–" : `${outdoor.toFixed(1)}°`}</b>
           </div>
           <div className="num">{wind == null ? "" : `wind ${wind.toFixed(1)} m/s`}</div>
+          <div className="num text-dim">{windFrom == null ? "" : `from ${compass(windFrom)} · ${Math.round(windFrom)}°`}</div>
         </div>
       </div>
       {caption && <div className="mt-1.5 text-[11px] text-dim">{caption}</div>}

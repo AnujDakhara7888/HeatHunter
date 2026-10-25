@@ -5,7 +5,8 @@ import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { planBounds, roomCenter } from "../lib/plan";
 import { useScene, type View } from "../store/scene";
-import { Airflow, HeatFlux, Wind } from "./Effects";
+import { Airflow, Compass, HeatFlux, Wind } from "./Effects";
+import { RoomHopper, ThermalHud } from "./Overlays";
 import { outwardNormal, wallPieces } from "./geometry";
 import { House } from "./House";
 
@@ -42,16 +43,25 @@ function useShot(): Shot {
     if (view === "inside") {
       const r = room ?? plan.rooms.reduce((a, x) => (x.width * x.depth > a.width * a.depth ? x : a), plan.rooms[0]);
       const [rx, rz] = roomCenter(r);
-      const seg = wallPieces(plan).segments.find((s) => s.exterior && s.rooms.includes(r.room_id));
+      const outside = wallPieces(plan).segments.filter((s) => s.exterior && s.rooms.includes(r.room_id));
+      const score = (s: (typeof outside)[number]) =>
+        Math.hypot(s.x1 - s.x0, s.z1 - s.z0) + 3 * s.openings.filter((o) => o.kind === "window").length;
+      const seg = [...outside].sort((a, b) => score(b) - score(a))[0];
+      // Stand inside the room, near the wall opposite its outside wall, and look at the outside wall.
+      const m = 0.22;
+      const clampX = (x: number) => Math.min(r.x + r.width - m, Math.max(r.x + m, x));
+      const clampZ = (z: number) => Math.min(r.z + r.depth - m, Math.max(r.z + m, z));
       if (seg) {
         const n = outwardNormal(seg, plan);
         const wx = (seg.x0 + seg.x1) / 2;
         const wz = (seg.z0 + seg.z1) / 2;
-        // stand back from the wall, inside the room (or in the neighbouring room for tiny ones)
-        const back = Math.max(Math.abs(n[0]) ? r.width : r.depth, 2.2) * 0.85;
-        return { pos: [wx - n[0] * back + n[1] * 0.4, 1.55, wz - n[1] * back + n[0] * 0.4], target: [wx, 1.15, wz] };
+        // far corner from the wall, offset sideways so the view runs diagonally across the room
+        const side = (wx - rx) * n[1] - (wz - rz) * n[0] >= 0 ? -1 : 1;
+        const px = clampX(rx - n[0] * r.width + side * n[1] * r.width);
+        const pz = clampZ(rz - n[1] * r.depth - side * n[0] * r.depth);
+        return { pos: [px, 1.6, pz], target: [wx, 1.15, wz] };
       }
-      return { pos: [rx - 1.2, 1.55, rz - 1.2], target: [rx, 1.2, rz] };
+      return { pos: [clampX(r.x + m), 1.55, clampZ(r.z + m)], target: [rx + r.width, 1.2, rz + r.depth] };
     }
     if ((view === "open" || view === "fan") && focus && room) {
       const [rx, rz] = roomCenter(room);
@@ -126,13 +136,16 @@ function Lights() {
   if (view === "thermal") return <ambientLight intensity={1} />;
   return (
     <>
-      <hemisphereLight args={["#5d76b0", "#0a0d10", view === "exterior" ? 0.55 : 1.0]} />
+      <hemisphereLight args={["#9fb4e0", "#2a2622", view === "exterior" ? 1.25 : 1.5]} />
+      <ambientLight intensity={view === "inside" ? 0.6 : 0.35} />
+      {/* soft key light from the viewer's side so the facades read clearly at night */}
+      <directionalLight position={[b.cx + 12, 8, b.cz + 14]} intensity={0.9} color="#ffe2c4" />
       <primitive object={moonTarget} />
       <directionalLight
         position={[b.cx - 9, 14, b.cz + 10]}
         target={moonTarget}
-        intensity={view === "exterior" ? 1.0 : 1.5}
-        color="#a9c1ff"
+        intensity={view === "exterior" ? 1.6 : 1.9}
+        color="#c4d4ff"
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-14}
@@ -157,7 +170,7 @@ function Atmosphere() {
 
 export function HouseCanvas({ className, effects = true }: { className?: string; effects?: boolean }) {
   return (
-    <div className={className}>
+    <div className={`${className ?? ""} isolate`}>
       <Canvas
         shadows
         dpr={[1, 1.75]}
@@ -174,6 +187,7 @@ export function HouseCanvas({ className, effects = true }: { className?: string;
           <HeatFlux />
           <Airflow />
           <Rig />
+          <Compass />
           {effects && (
             <EffectComposer multisampling={0}>
               <Bloom intensity={0.55} luminanceThreshold={0.82} luminanceSmoothing={0.2} mipmapBlur />
@@ -182,6 +196,8 @@ export function HouseCanvas({ className, effects = true }: { className?: string;
           )}
         </Suspense>
       </Canvas>
+      <RoomHopper />
+      <ThermalHud />
     </div>
   );
 }

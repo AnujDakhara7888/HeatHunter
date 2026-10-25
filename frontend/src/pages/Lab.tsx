@@ -22,7 +22,7 @@ import { Suspects } from "../components/Suspects";
 import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
 import { assumption, bicGap, causeLabel, fitsFor, strengthOf } from "../lib/diagnosis";
-import { HH09_PLAN } from "../lib/plan";
+import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
 import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, ms, roomColor } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
@@ -179,10 +179,22 @@ export default function Lab() {
   const playingNight: NightObservations | null =
     phase === "fixed" && repair && showAfter ? repair.repaired_observations[0] : phase === "tested" && exp ? exp.observations : passive;
   const roomsPlan = useMemo(() => (playingNight ? toPlan(playingNight) : null), [playingNight]);
-  const player = useNight(roomsPlan, playingNight?.weather.outdoor_temperature, playingNight?.weather.wind_speed, 12);
+  const [windDirs, setWindDirs] = useState<Record<string, Series | null>>({});
+  const weatherId = playingNight?.weather.night_id;
+  useEffect(() => {
+    if (!weatherId || weatherId in windDirs) return;
+    // Measured direction is a companion series (not in the frozen WeatherNight contract).
+    traced("wind", "GET /weather/{night}/wind-direction", () =>
+      api.GET("/api/weather/{night_id}/wind-direction", { params: { path: { night_id: weatherId } } }),
+      (s) => `${s.values.length} measured directions`,
+    )
+      .then((s) => setWindDirs((cur) => ({ ...cur, [weatherId]: s })))
+      .catch(() => setWindDirs((cur) => ({ ...cur, [weatherId]: null })));
+  }, [weatherId, windDirs]);
+  const player = useNight(roomsPlan, playingNight?.weather.outdoor_temperature, playingNight?.weather.wind_speed, 12, weatherId ? windDirs[weatherId] : null);
 
   useEffect(() => {
-    set({ plan: HH09_PLAN, view: "exterior", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: true, names: {}, inset: 0 });
+    set({ plan: HH09_PLAN, view: "exterior", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: true, names: {}, inset: 0, ir: false, zBearing: HH09_Z_BEARING, windFrom: null });
     useTrace.getState().clear();
   }, [set]);
 

@@ -314,6 +314,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/weather/{night_id}/wind-direction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Wind Direction
+         * @description Measured wind direction (degrees from north) for an HH09-region weather night.
+         *
+         *     Kept outside ``WeatherNight`` (frozen contract); read from Anuj's companion cache.
+         */
+        get: operations["wind_direction_api_weather__night_id__wind_direction_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assistant/chat": {
         parameters: {
             query?: never;
@@ -1920,6 +1942,46 @@ export interface operations {
             };
             /** @description An optional online service (Claude, weather) is unavailable. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    wind_direction_api_weather__night_id__wind_direction_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                night_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Series"];
+                };
+            };
+            /** @description Unknown scenario, diagnosis or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

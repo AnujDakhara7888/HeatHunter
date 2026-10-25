@@ -117,3 +117,12 @@ def test_openapi_lists_experience_routes(client: TestClient) -> None:
     paths = json.loads(client.get("/openapi.json").text)["paths"]
     for route in ("/api/insight/fits", "/api/homes/analyze", "/api/assistant/chat"):
         assert route in paths
+
+
+def test_wind_direction_companion(client: TestClient) -> None:
+    response = client.get("/api/weather/smeter-hh09-2020-12-06/wind-direction")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["unit"] == "degrees_from_north" and body["provenance"] == "REAL_MEASUREMENT"
+    assert all(0 <= v <= 360 for v in body["values"] if v is not None)
+    assert client.get("/api/weather/not-a-night/wind-direction").status_code == 404
