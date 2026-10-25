@@ -119,6 +119,28 @@ def test_openapi_lists_experience_routes(client: TestClient) -> None:
         assert route in paths
 
 
+def test_money_can_price_the_runner_up(client: TestClient) -> None:
+    created = client.post(
+        "/api/scenarios", json={"mode": "guided", "guided_scenario_id": "hh09-guided-insulation-v1"}
+    ).json()
+    path = f"/api/scenarios/{created['scenario_id']}"
+    client.get(path + "/observations")
+    first = client.post(path + "/diagnose", json={}).json()
+    after = client.post(
+        path + "/experiments",
+        json={"diagnosis_id": first["diagnosis_id"], "experiment_type": "exhaust_fan_depressurization"},
+    ).json()["updated_diagnosis"]
+    lead = client.post(path + "/money", json={"diagnosis_id": after["diagnosis_id"]}).json()
+    alt = client.post(
+        path + "/money", json={"diagnosis_id": after["diagnosis_id"], "fault_type": "draft"}
+    ).json()
+    assert lead["estimate"] and alt["estimate"]
+    assert any(a["name"] == "repair_cost_add_insulation" for a in lead["estimate"]["assumptions"])
+    assert any(a["name"] == "repair_cost_seal_leaks" for a in alt["estimate"]["assumptions"])
+    bad = client.post(path + "/money", json={"diagnosis_id": after["diagnosis_id"], "fault_type": "normal"})
+    assert bad.status_code == 422
+
+
 def test_wind_direction_companion(client: TestClient) -> None:
     response = client.get("/api/weather/smeter-hh09-2020-12-06/wind-direction")
     assert response.status_code == 200

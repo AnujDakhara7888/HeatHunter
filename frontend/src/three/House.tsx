@@ -252,7 +252,10 @@ export function House() {
           onDoubleClick={(e) => {
             // Double-click any room to walk into it.
             e.stopPropagation();
-            useScene.getState().set({ focusRoom: r.room_id, view: "inside", fanOn: false });
+            const st = useScene.getState();
+            // Inside: walk to the clicked spot. Elsewhere: step into that room.
+            if (st.view === "inside") st.set({ walkTo: [e.point.x, e.point.z] });
+            else st.set({ focusRoom: r.room_id, view: "inside", fanOn: false });
           }}
           onPointerOver={() => (document.body.style.cursor = "pointer")}
           onPointerOut={() => (document.body.style.cursor = "")}

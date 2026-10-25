@@ -211,10 +211,15 @@ async def estimate_money(id: str, request: MoneyRequest) -> MoneyResponse:
             estimate=None,
             explanation=f"No money estimate: the diagnosis is {diagnosis.status.value}, not confident.",
         )
+    fit = diagnosis.ranked_causes[0]
+    if request.fault_type is not None:
+        fit = next((f for f in diagnosis.ranked_causes if f.fault_type == request.fault_type), None)
+        if fit is None:
+            raise ApiFailure(422, "INVALID_REQUEST", f"{request.fault_type.value} is not a ranked cause")
     estimate = engine_estimate(
         runtime.template,
         diagnosis.flagged_room_id,
-        diagnosis.ranked_causes[0],
+        fit,
         overrides=MoneyOverrides(
             gas_price_pence_per_kwh=request.gas_price_pence_per_kwh,
             repair_cost_gbp=request.repair_cost_gbp,

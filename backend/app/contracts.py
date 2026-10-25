@@ -348,6 +348,9 @@ class MoneyRequest(ContractModel):
     diagnosis_id: str
     gas_price_pence_per_kwh: PositiveFloat | None = None
     repair_cost_gbp: NonNegativeFloat | None = None
+    # Price a competing hypothesis from the same diagnosis ("what if it were a leak?").
+    # Defaults to the leading cause. It never changes the diagnosis itself.
+    fault_type: HypothesisType | None = None
 
 
 class MoneyResponse(ContractModel):

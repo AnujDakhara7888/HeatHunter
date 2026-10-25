@@ -9,6 +9,7 @@ import { Airflow, Compass, HeatFlux, Wind } from "./Effects";
 import { RoomHopper, ThermalHud } from "./Overlays";
 import { outwardNormal, wallPieces } from "./geometry";
 import { House } from "./House";
+import { blocked, roomAt } from "./walk";
 
 type Shot = { pos: [number, number, number]; target: [number, number, number] };
 
@@ -75,29 +76,178 @@ function Rig() {
   const ref = useRef<CameraControls>(null);
   const shot = useShot();
   const view = useScene((s) => s.view);
+  const plan = useScene((s) => s.plan);
+  const focus = useScene((s) => s.focusRoom);
+  const walkTo = useScene((s) => s.walkTo);
   const autoRotate = useScene((s) => s.autoRotate);
+  const inset = useScene((s) => s.inset);
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
-  const inset = useScene((s) => s.inset);
+  const gl = useThree((s) => s.gl);
+  const segments = useMemo(() => wallPieces(plan).segments, [plan]);
+  const inside = view === "inside";
+
+  // First-person state for walk-in (orbit controls are switched off there).
+  const walk = useRef({
+    pos: new THREE.Vector3(),
+    goal: new THREE.Vector3(),
+    yaw: 0,
+    goalYaw: 0,
+    pitch: -0.08,
+    ready: false,
+  });
+  const walkedInto = useRef<string | null>(null);
+  const keys = useRef(new Set<string>());
+  const wheel = useRef(0);
+
   useEffect(() => {
     // Keep the house centred in the space left of a side panel.
     if (inset !== 0 && size.width > 900) camera.setViewOffset(size.width, size.height, inset / 2, 0, size.width, size.height);
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }, [inset, size, camera]);
+
+  // Orbit views: fly the orbit controls to the shot.
   useEffect(() => {
-    camera.fov = view === "inside" ? 68 : 38;
+    const c = ref.current;
+    if (!c) return;
+    c.enabled = !inside;
+    camera.fov = inside ? 68 : 38;
     camera.updateProjectionMatrix();
-    // Narrow canvases need the camera further back to fit the house.
+    if (inside) return;
+    walk.current.ready = false;
+    walkedInto.current = null;
+    // resume orbiting from wherever the walk left the camera
+    const fwd = camera.getWorldDirection(new THREE.Vector3());
+    c.setLookAt(camera.position.x, camera.position.y, camera.position.z, camera.position.x + fwd.x * 3, camera.position.y + fwd.y * 3, camera.position.z + fwd.z * 3, false);
     const aspect = size.width / size.height;
-    const k = view === "inside" ? 1 : Math.min(1.7, Math.max(1, 1.5 / aspect));
+    const k = Math.min(1.7, Math.max(1, 1.5 / aspect));
     const [px, py, pz] = shot.pos;
     const [tx, ty, tz] = shot.target;
-    ref.current?.setLookAt(tx + (px - tx) * k, ty + (py - ty) * k, tz + (pz - tz) * k, tx, ty, tz, true);
-  }, [shot, view, camera, size.width, size.height]);
-  useFrame((_, dt) => {
-    if (autoRotate && ref.current && !ref.current.active) ref.current.azimuthAngle += dt * 0.08;
+    c.setLookAt(tx + (px - tx) * k, ty + (py - ty) * k, tz + (pz - tz) * k, tx, ty, tz, true);
+  }, [shot, inside, camera, size.width, size.height]);
+
+  // Walk-in: glide to the room's standing point unless we walked there ourselves.
+  useEffect(() => {
+    if (!inside) return;
+    const w = walk.current;
+    if (w.ready && focus && walkedInto.current === focus) return;
+    const [px, , pz] = shot.pos;
+    const [tx, , tz] = shot.target;
+    if (!w.ready) {
+      w.pos.copy(camera.position);
+      w.yaw = Math.atan2(-(tz - camera.position.z), tx - camera.position.x);
+      w.ready = true;
+    }
+    w.goal.set(px, 1.6, pz);
+    w.goalYaw = Math.atan2(-(tz - pz), tx - px);
+    // turn the short way round
+    while (w.goalYaw - w.yaw > Math.PI) w.goalYaw -= 2 * Math.PI;
+    while (w.goalYaw - w.yaw < -Math.PI) w.goalYaw += 2 * Math.PI;
+    w.pitch = -0.08;
+    walkedInto.current = focus;
+  }, [shot, inside, focus, camera]);
+
+  // Double-clicked floor point: walk there.
+  useEffect(() => {
+    if (!walkTo || !inside) return;
+    const room = roomAt(plan, walkTo[0], walkTo[1]);
+    if (room) {
+      walk.current.goal.set(walkTo[0], 1.6, walkTo[1]);
+      walkedInto.current = room;
+      useScene.getState().set({ focusRoom: room, walkTo: null });
+    } else useScene.getState().set({ walkTo: null });
+  }, [walkTo, inside, plan]);
+
+  // Keyboard, wheel and drag-to-look while walking.
+  useEffect(() => {
+    if (!inside) return;
+    const el = gl.domElement;
+    const down = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === "INPUT") return;
+      const k = e.key.toLowerCase();
+      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) {
+        keys.current.add(k);
+        e.preventDefault();
+      }
+    };
+    const up = (e: KeyboardEvent) => keys.current.delete(e.key.toLowerCase());
+    const onWheel = (e: WheelEvent) => {
+      wheel.current += -e.deltaY * 0.004;
+      e.preventDefault();
+    };
+    let dragging = false;
+    const pd = (e: PointerEvent) => {
+      dragging = true;
+      el.setPointerCapture(e.pointerId);
+    };
+    const pm = (e: PointerEvent) => {
+      if (!dragging) return;
+      const w = walk.current;
+      w.goalYaw -= e.movementX * 0.005;
+      w.pitch = Math.max(-0.9, Math.min(0.7, w.pitch - e.movementY * 0.004));
+    };
+    const pu = () => (dragging = false);
+    const keySet = keys.current;
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("pointerdown", pd);
+    el.addEventListener("pointermove", pm);
+    el.addEventListener("pointerup", pu);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("pointerdown", pd);
+      el.removeEventListener("pointermove", pm);
+      el.removeEventListener("pointerup", pu);
+      keySet.clear();
+    };
+  }, [inside, gl]);
+
+  useFrame((_, rawDt) => {
+    const dt = Math.min(rawDt, 0.1);
+    const c = ref.current;
+    if (!inside) {
+      if (autoRotate && c && !c.active) c.azimuthAngle += dt * 0.08;
+      return;
+    }
+    const w = walk.current;
+    if (!w.ready) return;
+    const k = keys.current;
+    w.goalYaw += ((k.has("arrowleft") ? 1 : 0) - (k.has("arrowright") ? 1 : 0)) * dt * 1.6;
+    const fwd = (k.has("w") || k.has("arrowup") ? 1 : 0) - (k.has("s") || k.has("arrowdown") ? 1 : 0);
+    const side = (k.has("d") ? 1 : 0) - (k.has("a") ? 1 : 0);
+    const push = wheel.current;
+    wheel.current = 0;
+    if (fwd || side || push) {
+      const dir = new THREE.Vector3(Math.cos(w.goalYaw), 0, -Math.sin(w.goalYaw));
+      const right = new THREE.Vector3(-dir.z, 0, dir.x);
+      const step = dir.multiplyScalar(fwd * dt * 1.8 + push).add(right.multiplyScalar(side * dt * 1.4));
+      const from: [number, number] = [w.goal.x, w.goal.z];
+      const next: [number, number] = [w.goal.x + step.x, w.goal.z + step.z];
+      // slide along walls: try the full step, then each axis on its own
+      for (const cand of [next, [next[0], from[1]] as [number, number], [from[0], next[1]] as [number, number]]) {
+        if (!blocked(plan, segments, from, cand)) {
+          w.goal.set(cand[0], 1.6, cand[1]);
+          break;
+        }
+      }
+      const room = roomAt(plan, w.goal.x, w.goal.z);
+      if (room && room !== useScene.getState().focusRoom) {
+        walkedInto.current = room;
+        useScene.getState().set({ focusRoom: room });
+      }
+    }
+    const a = 1 - Math.exp(-dt * 6);
+    w.pos.lerp(w.goal, a);
+    w.yaw += (w.goalYaw - w.yaw) * a;
+    camera.position.copy(w.pos);
+    const look = new THREE.Vector3(Math.cos(w.yaw) * Math.cos(w.pitch), Math.sin(w.pitch), -Math.sin(w.yaw) * Math.cos(w.pitch));
+    camera.lookAt(w.pos.clone().add(look));
   });
+
   return (
     <CameraControls
       ref={ref}

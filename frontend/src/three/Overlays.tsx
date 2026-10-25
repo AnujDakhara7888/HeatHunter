@@ -25,8 +25,6 @@ export function RoomHopper() {
     if (view !== "inside") return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === "INPUT") return;
-      if (e.key === "ArrowRight") go(1);
-      if (e.key === "ArrowLeft") go(-1);
       if (e.key === "Escape") set({ view: "open" });
     };
     window.addEventListener("keydown", onKey);
@@ -66,7 +64,26 @@ export function RoomHopper() {
             <LogOut size={15} />
           </button>
         </motion.div>
-      ) : (
+      ) : null}
+      {view === "inside" && (
+        <motion.div
+          key="walkpad"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute bottom-6 z-20 flex flex-col items-center gap-1.5"
+          style={{ right: `${Math.max(0, inset) + 28}px` }}
+        >
+          <WalkKey k="ArrowUp" label="▲" />
+          <div className="flex gap-1.5">
+            <WalkKey k="ArrowLeft" label="↺" />
+            <WalkKey k="ArrowDown" label="▼" />
+            <WalkKey k="ArrowRight" label="↻" />
+          </div>
+          <div className="glass mt-1 rounded-full px-3 py-1 text-[10.5px] text-mute">W A S D / arrows · drag to look · scroll to step · double-click floor to go there</div>
+        </motion.div>
+      )}
+      {view !== "inside" && (
         (view === "open" || view === "fan" || view === "top") && (
           <motion.div
             key="hint"
@@ -141,5 +158,24 @@ export function ThermalHud() {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/** On-screen walk button: holds the matching key down while pressed. */
+function WalkKey({ k, label }: { k: string; label: string }) {
+  const send = (type: "keydown" | "keyup") => window.dispatchEvent(new KeyboardEvent(type, { key: k }));
+  return (
+    <button
+      onPointerDown={(e) => {
+        (e.target as Element).setPointerCapture(e.pointerId);
+        send("keydown");
+      }}
+      onPointerUp={() => send("keyup")}
+      onPointerCancel={() => send("keyup")}
+      className="glass grid h-10 w-10 select-none place-items-center rounded-xl text-[14px] text-ink active:bg-white/20"
+      aria-label={k}
+    >
+      {label}
+    </button>
   );
 }

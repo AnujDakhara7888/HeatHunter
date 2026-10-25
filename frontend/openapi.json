@@ -2417,6 +2417,16 @@
               }
             ],
             "title": "Repair Cost Gbp"
+          },
+          "fault_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HypothesisType"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,

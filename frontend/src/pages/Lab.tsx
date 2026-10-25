@@ -7,6 +7,7 @@ import type {
   ExperimentResponse,
   GroundTruth,
   InsightResponse,
+  MoneyEstimate,
   MoneyResponse,
   NightObservations,
   RepairResult,
@@ -167,6 +168,7 @@ export default function Lab() {
   const [exp, setExp] = useState<ExperimentResponse | null>(null);
   const [fits2, setFits2] = useState<InsightResponse | null>(null);
   const [money, setMoney] = useState<MoneyResponse | null>(null);
+  const [altMoney, setAltMoney] = useState<MoneyEstimate | null>(null);
   const [gas, setGas] = useState<number | null>(null);
   const [repairCost, setRepairCost] = useState<number | null>(null);
   const [effectiveness, setEffectiveness] = useState(1);
@@ -266,7 +268,7 @@ export default function Lab() {
 
   const start = (req: ScenarioCreateRequest, label: string) =>
     run("Loading the night…", async () => {
-      for (const reset of [setDiag, setFits1, setExp, setFits2, setMoney, setRepair, setTruth] as ((v: null) => void)[]) reset(null);
+      for (const reset of [setDiag, setFits1, setExp, setFits2, setMoney, setAltMoney, setRepair, setTruth] as ((v: null) => void)[]) reset(null);
       const created = await traced("create", "POST /scenarios", () => api.POST("/api/scenarios", { body: req }), (d) => `${d.mode} · ${d.scenario_id.slice(0, 8)}`);
       const obs = await traced("obs", "GET /observations", () => api.GET("/api/scenarios/{id}/observations", { params: { path: { id: created.scenario_id } } }), (d) => `${Object.keys(d.nights[0].room_temperature_series).length} rooms · ${d.nights[0].weather.outdoor_temperature.values.length} readings`);
       setScenario({ id: created.scenario_id, label });
@@ -287,7 +289,7 @@ export default function Lab() {
       setFits1(f);
       setPhase("diagnosed");
       set({ view: "thermal", focusRoom: d.flagged_room_id ? SIM_TO_PLAN[d.flagged_room_id] : null });
-      if (d.status === "confident") void priceIt(d.diagnosis_id);
+      if (d.status === "confident") void priceIt(d.diagnosis_id, d.ranked_causes[1]?.fault_type);
     });
 
   const runTest = () =>
@@ -303,10 +305,10 @@ export default function Lab() {
       setFits2(f);
       setPhase("tested");
       setTimeout(() => player.play(), 600);
-      if (e.updated_diagnosis.status === "confident") void priceIt(e.updated_diagnosis.diagnosis_id);
+      if (e.updated_diagnosis.status === "confident") void priceIt(e.updated_diagnosis.diagnosis_id, e.updated_diagnosis.ranked_causes[1]?.fault_type);
     });
 
-  const priceIt = async (diagnosisId: string, overrides?: { gas?: number | null; repair?: number | null }) => {
+  const priceIt = async (diagnosisId: string, runner: string | undefined, overrides?: { gas?: number | null; repair?: number | null }) => {
     const m = await traced("money", "POST /money", () =>
       api.POST("/api/scenarios/{id}/money", {
         params: { path: { id: scenario!.id } },
@@ -315,6 +317,17 @@ export default function Lab() {
       (r) => (r.estimate ? `${fmtMoney(r.estimate.annual_cost_estimate_usd)}/yr` : "no estimate"),
     ).catch(() => null);
     if (m) setMoney(m);
+    // Also price the runner-up explanation, so each option can show its own numbers.
+    if (runner && runner !== "normal") {
+      const alt = await traced("money", "POST /money (other suspect)", () =>
+        api.POST("/api/scenarios/{id}/money", {
+          params: { path: { id: scenario!.id } },
+          body: { diagnosis_id: diagnosisId, fault_type: runner as "draft" | "envelope_conduction", gas_price_pence_per_kwh: overrides?.gas ?? undefined },
+        }),
+        (r) => (r.estimate ? `if ${causeLabel(runner).toLowerCase()}: ${fmtMoney(r.estimate.annual_cost_estimate_usd)}/yr` : "no estimate"),
+      ).catch(() => null);
+      setAltMoney(alt?.estimate ?? null);
+    }
   };
 
   const applyFix = () =>
@@ -658,7 +671,7 @@ export default function Lab() {
     const reprice = (g: number | null, r: number | null) => {
       setGas(g);
       setRepairCost(r);
-      void priceIt(final!.diagnosis_id, { gas: g, repair: r });
+      void priceIt(final!.diagnosis_id, final!.ranked_causes[1]?.fault_type, { gas: g, repair: r });
     };
     const gasDefault = Number(est?.assumptions.find((a) => a.name === "gas_unit_price")?.value ?? 7.97);
     const fx = Number(est?.assumptions.find((a) => a.name === "gbp_to_usd")?.value ?? 1.34);
@@ -686,17 +699,43 @@ export default function Lab() {
         ) : (
           <div className="text-[12px] text-mute pulse-dot">Pricing the extra heat loss…</div>
         )}
-        <div className="space-y-1.5 text-[12px]">
-          <Option label={repairName} note="recommended · verified below" tone="ok" active={preview === lead.fault_type} onClick={() => setPreview(lead.fault_type as CauseKey)} />
-          {runner && (
+        <div className="text-[12px]">
+          <div className="grid grid-cols-[1fr_54px_64px_58px] gap-x-2 px-2.5 pb-1 text-[10px] uppercase tracking-wider text-dim">
+            <span>Option</span>
+            <span className="text-right">Costs</span>
+            <span className="text-right">Saves/yr</span>
+            <span className="text-right">Payback</span>
+          </div>
+          <div className="space-y-1.5">
             <Option
-              label={runner.fault_type === "draft" ? "Seal drafts instead" : "Insulate instead"}
-              note="the other suspect · ruled out by the evidence"
-              active={preview === runner.fault_type}
-              onClick={() => setPreview(runner.fault_type as CauseKey)}
+              label={repairName}
+              note="recommended"
+              tone="ok"
+              cost={est ? fmtMoney(est.repair_cost_usd) : "…"}
+              saves={est ? fmtMoney(est.annual_cost_estimate_usd) : "…"}
+              payback={est?.simple_payback_years ? `${est.simple_payback_years.toFixed(1)} yr` : "–"}
+              active={preview === lead.fault_type}
+              onClick={() => setPreview(lead.fault_type as CauseKey)}
             />
+            {runner && runner.fault_type !== "normal" && (
+              <Option
+                label={runner.fault_type === "draft" ? "Seal drafts instead" : "Insulate instead"}
+                note="ruled out by the fan test"
+                cost={altMoney ? fmtMoney(altMoney.repair_cost_usd) : "…"}
+                saves="≈ $0"
+                payback="never"
+                active={preview === runner.fault_type}
+                onClick={() => setPreview(runner.fault_type as CauseKey)}
+              />
+            )}
+            <Option label="Do nothing" note={est ? `keep losing ${fmtMoney(est.annual_cost_estimate_usd)}/yr` : ""} cost="$0" saves="$0" payback="–" active={preview === null} onClick={() => setPreview(null)} />
+          </div>
+          {runner && runner.fault_type !== "normal" && altMoney && (
+            <p className="mt-1.5 px-1 text-[10.5px] leading-snug text-dim">
+              Sealing drafts would only pay off if the loss were an air leak (then ~{fmtMoney(altMoney.annual_cost_estimate_usd)}/yr). The evidence says
+              it is the wall, so it would fix almost nothing.
+            </p>
           )}
-          <Option label="Do nothing" note={est ? `keep losing ~${fmtMoney(est.annual_cost_estimate_usd)}/yr` : "keep losing heat"} active={preview === null} onClick={() => setPreview(null)} />
         </div>
         <label className="block text-[11.5px] text-mute">
           Repair quality <span className="num text-ink">{Math.round(effectiveness * 100)}%</span>
@@ -729,15 +768,23 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
   );
 }
 
-function Option({ label, note, tone, active, onClick }: { label: string; note: string; tone?: "ok"; active?: boolean; onClick?: () => void }) {
+type OptionProps = { label: string; note: string; tone?: "ok"; active?: boolean; onClick?: () => void; cost: string; saves: string; payback: string };
+
+/** One repair option; clicking it also previews that explanation in 3D. */
+function Option({ label, note, tone, active, onClick, cost, saves, payback }: OptionProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition hover:bg-white/[0.07] ${tone === "ok" ? "bg-ok/10 text-ink" : "bg-white/[0.03] text-mute"} ${active ? "ring-1 ring-white/50" : ""}`}
+      className={`grid w-full grid-cols-[1fr_54px_64px_58px] items-center gap-x-2 rounded-lg px-2.5 py-1.5 text-left transition hover:bg-white/[0.07] ${tone === "ok" ? "bg-ok/10 text-ink" : "bg-white/[0.03] text-mute"} ${active ? "ring-1 ring-white/50" : ""}`}
     >
-      <span>{label}</span>
-      <span className="text-[10.5px] text-dim">{note}</span>
+      <span className="min-w-0">
+        <span className="block truncate">{label}</span>
+        <span className="block truncate text-[10px] text-dim">{note}</span>
+      </span>
+      <span className="num text-right">{cost}</span>
+      <span className={`num text-right ${tone === "ok" ? "text-ok" : ""}`}>{saves}</span>
+      <span className="num text-right">{payback}</span>
     </button>
   );
 }

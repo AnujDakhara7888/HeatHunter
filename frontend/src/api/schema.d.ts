@@ -804,6 +804,7 @@ export interface components {
             gas_price_pence_per_kwh?: number | null;
             /** Repair Cost Gbp */
             repair_cost_gbp?: number | null;
+            fault_type?: components["schemas"]["HypothesisType"] | null;
         };
         /** MoneyResponse */
         MoneyResponse: {

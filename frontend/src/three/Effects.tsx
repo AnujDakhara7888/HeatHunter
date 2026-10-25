@@ -118,11 +118,11 @@ export function Compass() {
       <Line points={ring} color="#ffffff" transparent opacity={0.35} lineWidth={1} />
       <Line points={[[c[0], 0.03, c[1]], [c[0] + nx * r, 0.03, c[1] + nz * r]]} color="#ffffff" lineWidth={2} />
       {wind && <Line points={[[c[0] + wind[0] * r * 1.6, 0.04, c[1] + wind[1] * r * 1.6], [c[0] + wind[0] * r * 0.3, 0.04, c[1] + wind[1] * r * 0.3]]} color="#7fb6ff" lineWidth={3} />}
-      <Html position={[c[0] + nx * (r + 0.35), 0.05, c[1] + nz * (r + 0.35)]} center style={{ pointerEvents: "none" }}>
+      <Html position={[c[0] + nx * (r + 0.35), 0.05, c[1] + nz * (r + 0.35)]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
         <span style={{ font: "600 12px Inter Variable, sans-serif", color: "#fff" }}>N</span>
       </Html>
       {wind && (
-        <Html position={[c[0] + wind[0] * r * 2, 0.05, c[1] + wind[1] * r * 2]} center style={{ pointerEvents: "none" }}>
+        <Html position={[c[0] + wind[0] * r * 2, 0.05, c[1] + wind[1] * r * 2]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
           <span style={{ font: "500 10.5px Inter Variable, sans-serif", color: "#9cc8ff", whiteSpace: "nowrap" }}>wind from {Math.round(windFrom!)}°</span>
         </Html>
       )}
