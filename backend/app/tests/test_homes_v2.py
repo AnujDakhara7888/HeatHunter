@@ -118,6 +118,34 @@ def test_healthy_demo_home_stays_clear(client) -> None:
     assert set(statuses(health).values()) == {"healthy"} and health["home"]["status"] == "all_clear"
 
 
+def test_fan_test_settles_an_unclear_cause_without_new_alarms(client) -> None:
+    home = demo(client, fault={"type": "draft", "room_id": "kitchen", "severity": 1.5}, seed=1)
+    before = advance(client, home, 2)
+    assert statuses(before)["kitchen"] == "issue_cause_unclear"
+    report = ok(client.get(f"/api/homes/{home}/rooms/kitchen"))
+    assert report["fan_test_available"] and "fan test" in report["suggested_check"]
+
+    after = ok(client.post(f"/api/demo/homes/{home}/fan-test"))
+    kitchen = next(r for r in after["rooms"] if r["room_id"] == "kitchen")
+    assert kitchen["status"] == "issue" and kitchen["likely_cause"] == "draft"
+    # the fan night only names causes: no other room changes status because of it
+    assert {r: s for r, s in statuses(after).items() if r != "kitchen"} == {
+        r: s for r, s in statuses(before).items() if r != "kitchen"
+    }
+    history = ok(client.get(f"/api/homes/{home}/history"))
+    assert [n["kind"] for n in history["nights"]] == ["passive", "passive", "fan_test"]
+    shots = next(r for r in history["rooms"] if r["room_id"] == "kitchen")["snapshots"]
+    assert shots[-1]["fan_test_nights"] == 1 and shots[-1]["named_cause"] == "draft"
+    assert all(s["fan_test_nights"] == 0 for s in shots[:-1])
+
+    # named now, so no further fan test is offered, and a house with nothing unclear refuses one
+    assert not ok(client.get(f"/api/homes/{home}/rooms/kitchen"))["fan_test_available"]
+    assert client.post(f"/api/demo/homes/{home}/fan-test").status_code == 409
+    healthy = demo(client, seed=9)
+    advance(client, healthy, 2)
+    assert client.post(f"/api/demo/homes/{healthy}/fan-test").status_code == 409
+
+
 def test_deleting_a_demo_home_forgets_it(client) -> None:
     home = demo(client, seed=11)
     advance(client, home)
@@ -201,6 +229,8 @@ def test_real_home_turns_uploads_into_nights_and_persists(tmp_path, monkeypatch)
     assert {room.status for room in health.rooms} <= {"healthy", "watching", "issue", "issue_cause_unclear"}
     with pytest.raises(Exception, match="simulated clock"):
         service.advance(summary.home_id, 1)
+    with pytest.raises(Exception, match="occupant runs the fan test"):
+        service.fan_test(summary.home_id)
 
     reloaded = HomeService(homes_dir=tmp_path)  # restart: home and cached weather come back from disk
     again = reloaded.health(summary.home_id)

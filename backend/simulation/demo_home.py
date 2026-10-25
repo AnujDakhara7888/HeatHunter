@@ -16,19 +16,20 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from typing import Literal
 
 from backend.app.contracts import FaultType, NightObservations, Split
 from backend.data_pipeline.weather_timeline import night_dates, timeline_night
 
-from .observations import nighttime_weather, passive_protocol, simulate_night, sub_seed
+from .observations import fan_protocol, nighttime_weather, passive_protocol, simulate_night, sub_seed
 from .physics import Fault, build_house, checked_seed, inject_fault, repair_house
 
 MAX_NIGHTS = 28
 RANDOM_SEVERITIES = (0.6, 1.2, 2.0)
 FixAction = Literal["seal_leaks", "add_insulation", "other"]
 FIXED_PATH = {"seal_leaks": FaultType.DRAFT, "add_insulation": FaultType.ENVELOPE_CONDUCTION}
+FAN_START_HOURS = 1  # the extract fan runs 23:00-01:00 inside the 22:00-06:00 heating-off window
 
 
 @dataclass(frozen=True)
@@ -90,9 +91,11 @@ class DemoHome:
     def next_night_date(self) -> date | None:
         return self._dates[self._next] if self.nights_remaining else None
 
-    def _observe(self, house, index: int) -> NightObservations:
+    def _observe(self, house, index: int, *, fan: bool = False) -> NightObservations:
         weather = nighttime_weather(timeline_night(Split.HELDOUT.value, self._dates[index]))
-        return simulate_night(house, weather, passive_protocol(), sensor_seed=self.__sensor_seed).observations
+        start = weather.outdoor_temperature.timestamps[0] + timedelta(hours=FAN_START_HOURS)
+        protocol = fan_protocol(start) if fan else passive_protocol()
+        return simulate_night(house, weather, protocol, sensor_seed=self.__sensor_seed).observations
 
     def next_nights(self, count: int) -> list[NightObservations]:
         if not 1 <= count <= self.nights_remaining:
@@ -100,6 +103,15 @@ class DemoHome:
         out = [self._observe(self.__current, self._next + k) for k in range(count)]
         self._next += count
         return out
+
+    def fan_night(self) -> NightObservations:
+        """The next night with a 2-hour extract-fan test (doors closed), as an occupant would run it."""
+
+        if not self.nights_remaining:
+            raise ValueError("no nights left for a fan test")
+        night = self._observe(self.__current, self._next, fan=True)
+        self._next += 1
+        return night
 
     def apply_manual_fix(self, room_id: str, action: FixAction, effectiveness: float = 1.0) -> None:
         if room_id not in self.room_ids:

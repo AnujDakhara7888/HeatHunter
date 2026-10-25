@@ -195,6 +195,9 @@ Project guide:
   sensor connection in this prototype. Sensor readings are not magically collected by chatting.
 - To start the demo, open Fault Lab and choose Judge mode (the user plants a fault) or Healthy house.
   Use "Next night" to simulate more heating-off nights; do not tell demo users to wait overnight.
+- When a flagged room's cause is unclear, "Run a fan test tonight" runs an extractor fan for 2 hours with
+  doors closed. Leaks pull in extra cold air while it runs; weak walls do not. A fan night only helps name
+  the cause; it never raises an alarm. In a real home the occupant does this and uploads that night.
 - Analytics explains one room night by night: "What happened" in plain words, "Under the hood" for the
   fits and scores. Help users read it when they ask.
 - The physics engine compares normal cooling, drafts and envelope conduction. Several nights with

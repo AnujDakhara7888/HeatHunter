@@ -110,6 +110,7 @@ Only four routes are demo-only.
 | 8 | POST | `/api/homes/{home_id}/rooms/{room_id}/fix` | all | "I've fixed it": starts verification |
 | 9 | POST | `/api/homes/{home_id}/readings` | real | Sensors upload readings |
 | 10 | POST | `/api/demo/homes/{home_id}/advance` | demo | Move the demo clock on by N nights |
+| 10b | POST | `/api/demo/homes/{home_id}/fan-test` | demo | Run the next night as a fan test (only when a flagged room's cause is unclear; 409 otherwise) |
 | 12 | POST | `/api/homes/{home_id}/assistant` | all | Chat about this home (OpenAI or Claude; server-built context) |
 
 The single-night routes it replaced were removed on 2026-10-24 (see "HTTP
@@ -235,6 +236,14 @@ nights are added and every room is re-checked. Returns `HomeHealth`.
 
 ### 10. `POST /api/demo/homes/{home_id}/advance`
 `{ "nights": 1 }` (1–14). Simulates the next nights and re-checks. Returns `HomeHealth`.
+
+### 10b. `POST /api/demo/homes/{home_id}/fan-test`
+No body. Simulates the next night with a 2-hour extract fan and re-checks;
+returns `HomeHealth`. Offered when `RoomReport.fan_test_available` is true (a
+flagged room's cause is unclear). A fan night only helps name the cause; it
+never flags a room (see `docs/PHYSICS.md`, "Fan test"). `NightInfo.kind` is
+`fan_test` for it, and `RoomNightSnapshot.fan_test_nights` counts the fan nights
+that helped name the cause.
 
 ### 12. `POST /api/homes/{home_id}/assistant`
 `{ "messages": [ { "role": "user", "content": "Why the bedroom?" } ] }` →

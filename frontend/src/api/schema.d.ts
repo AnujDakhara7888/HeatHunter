@@ -366,6 +366,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo/homes/{home_id}/fan-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fan Test Demo
+         * @description Run the next night as a fan test (2 h extract fan); it only helps name an unclear cause.
+         */
+        post: operations["fan_test_demo_api_demo_homes__home_id__fan_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assistant/help": {
         parameters: {
             query?: never;
@@ -902,6 +922,12 @@ export interface components {
             mean_outdoor_c: number;
             /** Mean Wind M S */
             mean_wind_m_s: number;
+            /**
+             * Kind
+             * @default passive
+             * @enum {string}
+             */
+            kind: "passive" | "fan_test";
         };
         /** PlanOpening */
         PlanOpening: {
@@ -1073,6 +1099,11 @@ export interface components {
             fits: components["schemas"]["HypothesisSummary"][];
             /** Annual Cost Gbp */
             annual_cost_gbp: number | null;
+            /**
+             * Fan Test Nights
+             * @default 0
+             */
+            fan_test_nights: number;
         };
         /** RoomReadings */
         RoomReadings: {
@@ -1098,6 +1129,11 @@ export interface components {
             /** Suggested Check */
             suggested_check: string | null;
             fix: components["schemas"]["FixRecord"] | null;
+            /**
+             * Fan Test Available
+             * @default false
+             */
+            fan_test_available: boolean;
         };
         /**
          * RoomStatus
@@ -2281,6 +2317,73 @@ export interface operations {
                 "application/json": components["schemas"]["AdvanceRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeHealth"];
+                };
+            };
+            /** @description Unknown home, room or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid for this home now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (assistant, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    fan_test_demo_api_demo_homes__home_id__fan_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

@@ -51,7 +51,8 @@ def screen_context(screen: AssistantScreen | None, *, has_home: bool = False) ->
             "IR is a visualisation computed from temperatures, not a thermal-camera measurement."
         ) if screen.infrared else None,
         "available_controls": PAGE_CONTROLS.get(screen.page, (
-            ["Next night", "Week", "room details", "repair buttons", "Analytics", "3D view buttons"]
+            ["Next night", "Week", "room details", "Run a fan test tonight (when a cause is unclear)",
+             "repair buttons", "Analytics", "3D view buttons"]
             if has_home else ["Judge mode", "Healthy house"]
         )),
     }

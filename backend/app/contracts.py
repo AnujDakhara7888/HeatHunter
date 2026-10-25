@@ -628,6 +628,8 @@ class NightInfo(ContractModel):
     end: datetime
     mean_outdoor_c: float
     mean_wind_m_s: NonNegativeFloat
+    # a fan-test night (extract fan run for 2 hours) is used only to name a flagged room's cause
+    kind: Literal["passive", "fan_test"] = "passive"
 
 
 class RoomReadings(ContractModel):
@@ -681,6 +683,7 @@ class RoomReport(ContractModel):
     evidence_by_night: list[NightEvidence]
     suggested_check: str | None
     fix: FixRecord | None
+    fan_test_available: bool = False  # a demo house can run a fan test night now
 
 
 class HypothesisSummary(ContractModel):
@@ -718,6 +721,7 @@ class RoomNightSnapshot(ContractModel):
     candidate: bool
     fits: list[HypothesisSummary]
     annual_cost_gbp: NonNegativeFloat | None
+    fan_test_nights: int = Field(default=0, ge=0)  # fan nights that helped name the cause
 
 
 class RoomHistory(ContractModel):

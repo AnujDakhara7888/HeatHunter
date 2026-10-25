@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, CalendarDays, FastForward, Gavel, HeartPulse, Home as HomeIcon, Lock, Play, Plus, SkipForward, Square, X } from "lucide-react";
+import { BarChart3, CalendarDays, Fan, FastForward, Gavel, HeartPulse, Home as HomeIcon, Lock, Play, Plus, SkipForward, Square, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, traced } from "../api/client";
 import type { DemoHomeCreate, DemoWeek, FixAction, HomeHealth, HomeHistory, HomeReadings, HomeSummary, RoomHealthView, RoomReport, RoomTechnical, Series } from "../api/types";
@@ -224,6 +224,9 @@ export default function Lab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.playing, player.t, weekPlay]);
 
+  const fanRunning = night?.kind === "fan_test" && player.t != null && player.t >= ms(night.start) + 3.6e6 && player.t <= ms(night.start) + 3 * 3.6e6;
+  useEffect(() => set({ fanOn: fanRunning }), [fanRunning, set]);
+
   // Rooms as the app saw them after the selected night: looking back never shows later evidence.
   const asOf = (nightIdx ?? nights.length - 1) + 1;
   const latest = asOf >= nights.length;
@@ -375,6 +378,14 @@ export default function Lab() {
       setHistory(await api.GET("/api/homes/{home_id}/history", { params: { path: { home_id: home!.home_id } } }).then((x) => x.data ?? null));
     });
 
+  /** Run tonight as a fan test: it only helps name an unclear cause, it never raises an alarm. */
+  const fanTest = () =>
+    run("Running a fan test tonight…", async () => {
+      const h = await traced("fan", "POST /demo/homes/{id}/fan-test", () => api.POST("/api/demo/homes/{home_id}/fan-test", { params: { path: { home_id: home!.home_id } } }), (d) => `night ${d.home.nights_monitored} · fan test`);
+      await refresh(home!.home_id, h);
+      setTimeout(() => player.play(), 300);
+    });
+
   /** Forget a simulated house and all its nights; back to the start card if it was on screen. */
   const removeHouse = (h: HomeSummary) => {
     if (!window.confirm(`Delete "${loadLabels()[h.home_id] ?? h.name}" and all its nights? This cannot be undone.`)) return;
@@ -514,8 +525,8 @@ export default function Lab() {
                     <button
                       key={n.night_id}
                       onClick={() => (setWeekPlay(null), setNightIdx(i), setTimeout(() => player.play(), 100))}
-                      title={`${n.night_id.replace("hh09-night-", "")} · ${n.mean_outdoor_c.toFixed(1)}°C · wind ${n.mean_wind_m_s.toFixed(1)} m/s`}
-                      className={`num h-7 min-w-7 rounded-md px-1.5 text-[11px] ${i === (nightIdx ?? nights.length - 1) ? "bg-ink font-semibold text-black" : n.mean_wind_m_s >= 4 ? "bg-[#1c2a44] text-[#9cc8ff] hover:text-ink" : "bg-white/[0.06] text-mute hover:text-ink"}`}
+                      title={`${n.night_id.replace("hh09-night-", "")} · ${n.mean_outdoor_c.toFixed(1)}°C · wind ${n.mean_wind_m_s.toFixed(1)} m/s${n.kind === "fan_test" ? " · fan test" : ""}`}
+                      className={`num h-7 min-w-7 rounded-md px-1.5 text-[11px] ${i === (nightIdx ?? nights.length - 1) ? "bg-ink font-semibold text-black" : n.kind === "fan_test" ? "bg-[#103a40] text-[#7fe0f0] hover:text-ink" : n.mean_wind_m_s >= 4 ? "bg-[#1c2a44] text-[#9cc8ff] hover:text-ink" : "bg-white/[0.06] text-mute hover:text-ink"}`}
                     >
                       {i + 1}
                     </button>
@@ -523,7 +534,9 @@ export default function Lab() {
                 })}
               </div>
             ))}
-            <div className="text-[10px] text-dim">Blue nights were windy (≥ 4 m/s). Play a week to watch its nights back to back.</div>
+            <div className="text-[10px] text-dim">
+              Blue nights were windy (≥ 4 m/s){nights.some((x) => x.kind === "fan_test") ? "; teal nights were fan tests" : ""}. Play a week to watch its nights back to back.
+            </div>
           </div>
 
           {/* rooms, as of the selected night */}
@@ -575,6 +588,16 @@ export default function Lab() {
                   {sel.annual_cost_gbp != null && ` · £${Math.round(sel.annual_cost_gbp)}/yr`}
                 </span>
               </div>
+              {latest && report?.fan_test_available && report.room_id === sel.room_id && (
+                <div className="rounded-xl border border-[#2fc6d9]/40 bg-[#2fc6d9]/10 p-2.5">
+                  <div className="text-[11.5px] leading-snug text-[#bdeef5]">
+                    Leak or walls? Not clear yet. A fan test usually settles it: tonight an extractor fan runs for 2 hours and pulls extra outside air through any gaps.
+                  </div>
+                  <button className="btn btn-primary mt-2 w-full !py-1.5 !text-[12px]" disabled={!!busy} onClick={fanTest}>
+                    <Fan size={14} /> Run a fan test tonight
+                  </button>
+                </div>
+              )}
               {canFix && (
                 <div>
                   <div className="mb-1 text-[11px] text-mute">Do a repair, then keep watching:</div>
@@ -622,7 +645,7 @@ export default function Lab() {
             onPlay={player.play}
             onPause={player.pause}
             onScrub={player.setT}
-            caption={night ? `Night ${(nightIdx ?? nights.length - 1) + 1} · heating off · real winter 2020-21 weather · ${night.mean_outdoor_c.toFixed(1)}°C avg` : "No nights yet"}
+            caption={night ? `Night ${(nightIdx ?? nights.length - 1) + 1} · heating off${night.kind === "fan_test" ? " · fan test, extractor on 23:00–01:00" : ""} · real winter 2020-21 weather · ${night.mean_outdoor_c.toFixed(1)}°C avg` : "No nights yet"}
           />
         </div>
       )}

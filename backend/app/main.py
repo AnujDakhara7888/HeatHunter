@@ -438,6 +438,15 @@ async def advance_demo(home_id: str, request: AdvanceRequest) -> HomeHealth:
     return await _v2(_homes().advance, home_id, request.nights)
 
 
+@app.post(
+    "/api/demo/homes/{home_id}/fan-test", response_model=HomeHealth, responses=V2_ERRORS, tags=["homes-v2"]
+)
+async def fan_test_demo(home_id: str) -> HomeHealth:
+    """Run the next night as a fan test (2 h extract fan); it only helps name an unclear cause."""
+
+    return await _v2(_homes().fan_test, home_id)
+
+
 @app.delete(
     "/api/homes/{home_id}",
     status_code=status.HTTP_204_NO_CONTENT,

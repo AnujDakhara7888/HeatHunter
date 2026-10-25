@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ChevronLeft, ChevronRight, Cpu, Eye, Flag, MessageCircle, Search, Sparkles, Wrench } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Cpu, Eye, Fan, Flag, MessageCircle, Search, Sparkles, Wrench } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { HomeHistory, HomeReadings, RoomHistory, RoomNightSnapshot, RoomReport, RoomStatus, RoomTechnical, Series } from "../api/types";
 import { ROOM_STATUS, causeLabel } from "../lib/diagnosis";
@@ -26,6 +26,10 @@ const gbp = (v: number) => `£${v < 100 ? v.toFixed(0) : Math.round(v).toLocaleS
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${Math.round(v)}%`;
 const FLAGGED: RoomStatus[] = ["issue", "issue_cause_unclear", "still_an_issue"];
 const WINDY = 4;
+const FAN_COLOR = "#2fc6d9";
+/** Night numbers (1-based, up to n) that were fan-test nights. */
+const fanNights = (history: HomeHistory, n: number) =>
+  history.nights.slice(0, n).flatMap((x, i) => (x.kind === "fan_test" ? [i + 1] : []));
 
 function slice(s: Series, a: number, b: number): Series {
   const idx = s.timestamps.map((t, i) => [ms(t), i] as const).filter(([t]) => t >= a && t <= b).map(([, i]) => i);
@@ -178,7 +182,7 @@ function headline(name: string, s: RoomNightSnapshot | null): { big: string; sub
     case "issue":
       return { big: `${name} is losing heat it shouldn't.`, sub: cause };
     case "issue_cause_unclear":
-      return { big: `${name} is losing extra heat.`, sub: "Leak or walls? Too close to call yet. Windy nights will split them." };
+      return { big: `${name} is losing extra heat.`, sub: "Leak or walls? Too close to call yet. Windy nights, or a fan test, will split them." };
     case "verifying":
       return { big: `Checking your repair in the ${name.toLowerCase()}.`, sub: `${s?.nights_judged ?? 0} night${s?.nights_judged === 1 ? "" : "s"} since the fix.` };
     case "resolved":
@@ -188,8 +192,9 @@ function headline(name: string, s: RoomNightSnapshot | null): { big: string; sub
   }
 }
 
-function streakAt(room: RoomHistory, n: number) {
-  const shots = room.snapshots.filter((s) => s.night_number <= n);
+/** Ordinary nights above the alarm in a row; fan-test nights never count toward an alarm. */
+function streakAt(room: RoomHistory, n: number, history: HomeHistory) {
+  const shots = room.snapshots.filter((s) => s.night_number <= n && history.nights[s.night_number - 1]?.kind !== "fan_test");
   let k = 0;
   for (let i = shots.length - 1; i >= 0 && shots[i].candidate; i--) k++;
   return k;
@@ -199,7 +204,7 @@ function Story({ history, room, n, setAsOf, setRoom, report }: { history: HomeHi
   const snap = snapAt(room, n);
   const h = headline(room.name, snap);
   const m = milestones(room, n);
-  const streak = streakAt(room, n);
+  const streak = streakAt(room, n, history);
   const nights = history.nights.slice(0, n);
   const strip = statusStrip(room, n);
   const status = snap?.status ?? "not_enough_data";
@@ -259,6 +264,7 @@ function Story({ history, room, n, setAsOf, setRoom, report }: { history: HomeHi
             marks={[
               ...(m.flagged ? [{ night: m.flagged.night_number, label: "flagged", color: "#ff6a3d" }] : []),
               ...(m.fixAt ? [{ night: m.fixAt.night_number, label: "after fix", color: "#7aa8ff" }] : []),
+              ...fanNights(history, n).map((k) => ({ night: k, label: "fan test", color: FAN_COLOR })),
             ]}
             tooltipExtra={(k) => <div className="mt-1 text-mute">wind {nights[k - 1]?.mean_wind_m_s.toFixed(1)} m/s · {nights[k - 1]?.mean_outdoor_c.toFixed(1)}°C</div>}
           />
@@ -275,7 +281,7 @@ function Story({ history, room, n, setAsOf, setRoom, report }: { history: HomeHi
       {/* suspects */}
       <Section kicker="The suspects" title="Who explains these nights best?">
         {snap ? (
-          <Suspects snap={snap} weights={weights} gapRule={history.cause_gap_bic} strip={strip} showLead={strip.some((s) => s.snap?.candidate)} />
+          <Suspects snap={snap} weights={weights} gapRule={history.cause_gap_bic} strip={strip} showLead={strip.some((s) => s.snap?.candidate)} fans={fanNights(history, n)} />
         ) : (
           <Empty>No nights scored yet.</Empty>
         )}
@@ -347,6 +353,18 @@ function StoryRail({ history, room, n, setAsOf }: { history: HomeHistory; room: 
   if (m.fixAt) steps.push({ at: m.fixAt, icon: <Wrench size={14} />, title: "Repair reported", line: "From here only nights after the fix count.", color: "#7aa8ff" });
   if (m.resolved) steps.push({ at: m.resolved, icon: <Eye size={14} />, title: "Confirmed fixed", line: `${history.persistence_nights} normal nights after the repair.`, color: "#2fd18b" });
   if (m.stillBad) steps.push({ at: m.stillBad, icon: <Flag size={14} />, title: "Repair didn't help", line: "Still above the alarm after the fix.", color: "#ff3b5c" });
+  const fan = room.snapshots.find((s) => s.night_number <= n && history.nights[s.night_number - 1]?.kind === "fan_test");
+  if (fan)
+    steps.push({
+      at: fan,
+      icon: <Fan size={14} />,
+      title: "Fan test",
+      line: fan.named_cause
+        ? `2 hours of extractor fan pulled in outside air. That settled it: ${causeLabel(fan.named_cause).toLowerCase()}.`
+        : "2 hours of extractor fan pulled in outside air, but leak and walls still fit about equally.",
+      color: FAN_COLOR,
+    });
+  steps.sort((x, y) => x.at.night_number - y.at.night_number);
 
   if (!steps.length)
     return (
@@ -389,7 +407,7 @@ function Swimlane({ history, n, focus, setAsOf, setRoom }: { history: HomeHistor
               <th className="w-28" />
               {history.nights.map((x, i) => (
                 <th key={x.night_id} className={`num min-w-6 pb-1 text-center text-[10px] font-normal ${i + 1 > n ? "text-[#2b303b]" : x.mean_wind_m_s >= WINDY ? "text-[#9cc8ff]" : "text-dim"}`} title={`${shortDate(x.start)} · wind ${x.mean_wind_m_s.toFixed(1)} m/s`}>
-                  {x.mean_wind_m_s >= WINDY && i + 1 <= n ? "≋" : ""}
+                  {x.kind === "fan_test" && i + 1 <= n ? <span style={{ color: FAN_COLOR }}>◆</span> : x.mean_wind_m_s >= WINDY && i + 1 <= n ? "≋" : ""}
                   <div>{i + 1}</div>
                 </th>
               ))}
@@ -437,12 +455,13 @@ function Swimlane({ history, n, focus, setAsOf, setRoom }: { history: HomeHistor
           </span>
         ))}
         <span className="inline-flex items-center gap-1 text-[#9cc8ff]">≋ windy night</span>
+        {history.nights.some((x) => x.kind === "fan_test") && <span className="inline-flex items-center gap-1" style={{ color: FAN_COLOR }}>◆ fan test night</span>}
       </div>
     </div>
   );
 }
 
-function Suspects({ snap, weights, gapRule, strip, showLead }: { snap: RoomNightSnapshot; weights: Record<string, number>; gapRule: number; strip: { night: number; snap: RoomNightSnapshot | null }[]; showLead: boolean }) {
+function Suspects({ snap, weights, gapRule, strip, showLead, fans }: { snap: RoomNightSnapshot; weights: Record<string, number>; gapRule: number; strip: { night: number; snap: RoomNightSnapshot | null }[]; showLead: boolean; fans: number[] }) {
   const order: CauseKey[] = ["draft", "envelope_conduction", "normal"];
   const best = order.reduce((a, b) => ((weights[b] ?? 0) > (weights[a] ?? 0) ? b : a), "normal" as CauseKey);
   const fit = (c: CauseKey) => snap.fits.find((f) => f.fault_type === c);
@@ -491,7 +510,7 @@ function Suspects({ snap, weights, gapRule, strip, showLead }: { snap: RoomNight
           {strip.map(({ night, snap: s }) => (
             <div key={night} className="flex-1" title={s ? `Night ${night}: ${causeLabel(s.leading_cause)} ahead (gap ${s.cause_gap_bic.toFixed(1)})` : `Night ${night}`}>
               <div className="h-6 rounded-[5px]" style={{ background: s ? CAUSE[s.leading_cause as CauseKey].color : "#ffffff0d", opacity: s ? Math.min(1, 0.3 + s.cause_gap_bic / (gapRule * 2)) : 1 }} />
-              <div className="num mt-1 text-center text-[9.5px] text-dim">{night}</div>
+              <div className="num mt-1 text-center text-[9.5px]" style={{ color: fans.includes(night) ? FAN_COLOR : undefined }}>{fans.includes(night) ? `◆${night}` : night}</div>
             </div>
           ))}
         </div>
@@ -503,7 +522,18 @@ function Suspects({ snap, weights, gapRule, strip, showLead }: { snap: RoomNight
             <i className="h-2.5 w-2.5 rounded-[3px]" style={{ background: CAUSE.envelope_conduction.color }} /> Weak insulation ahead
           </span>
           <span>faded = narrow lead</span>
+          {fans.length > 0 && <span style={{ color: FAN_COLOR }}>◆ fan test night</span>}
         </div>
+        {snap.fan_test_nights > 0 && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl px-3 py-2 text-[12.5px]" style={{ background: `${FAN_COLOR}14`, color: "#bdeef5" }}>
+            <Fan size={14} className="mt-0.5 shrink-0" />
+            <span>
+              The cause was judged with {snap.fan_test_nights === 1 ? "a fan test" : `${snap.fan_test_nights} fan tests`}: 2 hours of extractor fan pull extra
+              outside air in through any gaps, which shows up in a leaky room but not in one with weak walls. Fan nights only help name the cause; they never
+              raise an alarm on their own.
+            </span>
+          </div>
+        )}
       </div>
       )}
     </div>
@@ -657,10 +687,12 @@ function Tech({ history, readings, room, n, setAsOf, report, technical }: { hist
                     <td className="pr-3">{shortDate(x.start)}</td>
                     <td className="pr-3">{x.mean_outdoor_c.toFixed(1)}°</td>
                     <td className={`pr-3 ${x.mean_wind_m_s >= WINDY ? "text-[#9cc8ff]" : ""}`}>{x.mean_wind_m_s.toFixed(1)}</td>
-                    <td className="pr-3">{s ? `${s.nights_judged}${s.after_fix ? " (post-fix)" : ""}` : "–"}</td>
-                    <td className="pr-3">{s ? `${s.extra_heat_loss_percent.toFixed(1)}%` : "–"}</td>
-                    <td className="pr-3">{s ? `${s.threshold_percent.toFixed(1)}%` : "–"}</td>
-                    <td className={`pr-3 ${s?.candidate ? "text-hot" : "text-dim"}`}>{s ? (s.candidate ? "yes" : "no") : "–"}</td>
+                    <td className="pr-3" style={{ color: x.kind === "fan_test" ? FAN_COLOR : undefined }}>
+                      {x.kind === "fan_test" ? "fan test: names cause only" : s ? `${s.nights_judged}${s.after_fix ? " (post-fix)" : ""}` : "–"}
+                    </td>
+                    <td className="pr-3">{s && x.kind !== "fan_test" ? `${s.extra_heat_loss_percent.toFixed(1)}%` : "–"}</td>
+                    <td className="pr-3">{s && x.kind !== "fan_test" ? `${s.threshold_percent.toFixed(1)}%` : "–"}</td>
+                    <td className={`pr-3 ${s?.candidate && x.kind !== "fan_test" ? "text-hot" : "text-dim"}`}>{s && x.kind !== "fan_test" ? (s.candidate ? "yes" : "no") : "–"}</td>
                     <td className="pr-3" style={{ color: s ? CAUSE[s.leading_cause as CauseKey].color : undefined }}>
                       {s ? causeLabel(s.leading_cause) : "–"}
                     </td>

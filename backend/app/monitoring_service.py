@@ -7,6 +7,12 @@ heating-off night, each room is re-scored with the tuned multi-night flag rule
 ``FIT_WINDOW_NIGHTS`` (the range the rule was tuned on). Rooms are scored in
 parallel worker processes, because a 14-night fit takes seconds.
 
+A fan-test night (an extract fan run for 2 hours) never decides whether a room
+is flagged: the fan cools every room faster, so it would raise false alarms.
+For a room that is flagged, the fan night joins its ordinary nights only to name
+the cause, leak or walls, which it does far better than another ordinary night
+(see ``docs/PHYSICS.md``, "Fan test").
+
 A reported fix starts a fresh evidence window for that room: only nights from
 the fix onward are judged. The room is ``resolved`` once the latest
 ``persistence_nights`` of them are healthy, and ``still_an_issue`` if the rule
@@ -39,6 +45,7 @@ from backend.engine import (
     MoneyOverrides,
     PublicModelEngine,
     estimate_money,
+    excess_fraction,
     fit_hypothesis_detailed,
     load_model_extension,
     load_public_template,
@@ -122,6 +129,12 @@ FAN_CHECK = (
     "extractor fan for 2 hours. If this room cools noticeably faster than usual, an air leak is "
     "likely. Do not do this if the home has an open-flued gas, oil or solid-fuel appliance."
 )
+DEMO_FAN_CHECK = (
+    "The cause is not clear yet. Run a fan test: tonight the house runs an extractor fan for 2 hours "
+    "with the internal doors closed. Air leaks pull in extra cold air while the fan runs; weak walls "
+    "do not, which usually settles the cause."
+)
+FAN_TEST = "fan_test"
 ISSUE_STATUSES = {RoomStatus.ISSUE, RoomStatus.ISSUE_CAUSE_UNCLEAR, RoomStatus.STILL_AN_ISSUE}
 
 
@@ -213,9 +226,25 @@ class FixState:
 class RoomTrack:
     history: list[NightScore] = field(default_factory=list)  # scores after 1, 2, ... judged nights
     judged_ids: list[str] = field(default_factory=list)
-    # (night id, scores so far, status) after every scored night; unlike history, kept across a fix
-    snapshots: list[tuple[str, NightScore, RoomStatus, bool]] = field(default_factory=list)
+    # (night id, score, status, after fix, fan nights used) after every night; kept across a fix
+    snapshots: list[tuple[str, NightScore, RoomStatus, bool, int]] = field(default_factory=list)
     fix: FixState | None = None
+    evaluated: int = 0  # nights since the fix (ordinary and fan) already judged
+    cause: NightScore | None = None  # latest score with its cause named using fan-test nights
+    cause_fans: int = 0
+
+    def reset(self) -> None:
+        self.history.clear()
+        self.judged_ids.clear()
+        self.evaluated = 0
+        self.cause = None
+        self.cause_fans = 0
+
+    @property
+    def latest(self) -> NightScore | None:
+        """The latest score, with the cause named by fan-test nights when there are any."""
+
+        return self.cause or (self.history[-1] if self.history else None)
 
 
 @dataclass
@@ -236,7 +265,9 @@ class HomeState:
     home_template: HomeTemplate | None = None
     readings_cache: tuple[tuple, dict[str, dict[str, Series]]] | None = None
 
-    def judged_nights(self, room_id: str) -> list[NightObservations]:
+    def evaluated_nights(self, room_id: str) -> list[NightObservations]:
+        """Every night (ordinary and fan test) since the room's fix, if any."""
+
         fix = self.tracks[room_id].fix
         if fix is None:
             return self.nights
@@ -245,6 +276,11 @@ class HomeState:
             for n in self.nights
             if n.weather.local_night_date and n.weather.local_night_date >= fix.first_night
         ]
+
+    def judged_nights(self, room_id: str) -> list[NightObservations]:
+        """The ordinary nights that decide whether the room is flagged."""
+
+        return [n for n in self.evaluated_nights(room_id) if n.kind != FAN_TEST]
 
 
 def _night_info(night: NightObservations) -> NightInfo:
@@ -257,6 +293,24 @@ def _night_info(night: NightObservations) -> NightInfo:
             sum(weather.outdoor_temperature.values) / len(weather.outdoor_temperature.values), 2
         ),
         mean_wind_m_s=round(sum(weather.wind_speed.values) / len(weather.wind_speed.values), 2),
+        kind=night.kind,
+    )
+
+
+def _named_with_fans(passive: NightScore, fans: NightScore, room_id: str, state: HomeState) -> NightScore:
+    """The ordinary-night score with its cause (and gap) taken from the fit that includes fan nights.
+
+    Every quantity (extra heat loss, alarm, fits, money) still comes from the ordinary nights.
+    """
+
+    excess = passive.excess_fraction
+    if fans.leading_cause != passive.leading_cause:
+        multiplier = passive.fits[fans.leading_cause].fitted_multiplier
+        excess = excess_fraction(
+            state.template, room_id, fans.leading_cause, multiplier, extension=state.extension
+        )
+    return replace(
+        passive, leading_cause=fans.leading_cause, cause_gap_bic=fans.cause_gap_bic, excess_fraction=excess
     )
 
 
@@ -403,27 +457,50 @@ class HomeService:
         merged = sorted([*state.nights, *new], key=_night_date)
         if state.nights and _night_date(new[0]) < _night_date(state.nights[-1]):
             for track in state.tracks.values():  # an earlier night arrived late: rescore from scratch
-                track.history.clear()
-                track.judged_ids.clear()
+                track.reset()
                 track.snapshots.clear()
         state.nights = merged
 
     def _refresh(self, state: HomeState) -> None:
-        """Score every room on each judged night it has not been scored on yet."""
+        """Judge every room on each night it has not been judged on yet.
 
-        jobs, keys = [], []
+        An ordinary night adds a score on the latest ordinary nights. When fan-test
+        nights fall inside that window, a second fit including them names the cause.
+        """
+
+        jobs, points = [], []
+        args = (state.template, state.settings, state.extension)
         for room_id, track in state.tracks.items():
-            judged = state.judged_nights(room_id)
-            for count in range(len(track.history) + 1, len(judged) + 1):
-                window = judged[max(0, count - FIT_WINDOW_NIGHTS) : count]
-                jobs.append((_score_job, window, room_id, state.template, state.settings, state.extension))
-                keys.append((room_id, judged[count - 1].night_id))
-        for (room_id, night_id), score in zip(keys, _run(jobs), strict=True):
+            nights = state.evaluated_nights(room_id)
+            for night in nights[track.evaluated :]:
+                day = _night_date(night)
+                judged = [n for n in nights if n.kind != FAN_TEST and _night_date(n) <= day]
+                judged = judged[-FIT_WINDOW_NIGHTS:]
+                first = _night_date(judged[0]) if judged else day
+                fans = [n for n in nights if n.kind == FAN_TEST and first <= _night_date(n) <= day]
+                fans = fans if judged else []
+                ordinary = cause = None
+                if judged and night.kind != FAN_TEST:
+                    ordinary = len(jobs)
+                    jobs.append((_score_job, judged, room_id, *args))
+                if fans:
+                    cause = len(jobs)
+                    jobs.append((_score_job, sorted([*judged, *fans], key=_night_date), room_id, *args))
+                points.append((room_id, night.night_id, ordinary, cause, len(fans)))
+        results = _run(jobs)
+        for room_id, night_id, ordinary, cause, fans in points:
             track = state.tracks[room_id]
-            track.history.append(score)
-            track.judged_ids.append(night_id)
+            track.evaluated += 1
+            if ordinary is not None:
+                track.history.append(results[ordinary])
+                track.judged_ids.append(night_id)
+            if not track.history:
+                continue
+            latest = track.history[-1]
+            track.cause = _named_with_fans(latest, results[cause], room_id, state) if fans else None
+            track.cause_fans = fans
             status, _ = self._status(state, room_id)
-            track.snapshots.append((night_id, score, status, track.fix is not None))
+            track.snapshots.append((night_id, track.latest, status, track.fix is not None, fans))
 
     def _ensure_current(self, state: HomeState) -> None:
         with state.lock:
@@ -438,6 +515,10 @@ class HomeService:
         if not track.history:
             return (RoomStatus.VERIFYING if track.fix else RoomStatus.NOT_ENOUGH_DATA), 0
         status, streak = room_status(track.history, state.settings)
+        if track.cause is not None and status in {"issue", "issue_cause_unclear"}:
+            # flagged by ordinary nights; the fan-test nights decide whether the cause is clear
+            clear = track.cause.cause_gap_bic > state.settings.cause_gap_bic
+            status = "issue" if clear else "issue_cause_unclear"
         if track.fix is None:
             return RoomStatus(status), streak
         if status in {"issue", "issue_cause_unclear"}:
@@ -450,14 +531,14 @@ class HomeService:
     @staticmethod
     def _named(track: RoomTrack, status: RoomStatus) -> HypothesisType | None:
         if status in {RoomStatus.ISSUE, RoomStatus.STILL_AN_ISSUE} and track.history:
-            return track.history[-1].leading_cause
+            return track.latest.leading_cause
         return None
 
     def _likely(self, state: HomeState, room_id: str, status: RoomStatus) -> HypothesisType | None:
         track = state.tracks[room_id]
         if status == RoomStatus.STILL_AN_ISSUE:
-            gap = track.history[-1].cause_gap_bic
-            return track.history[-1].leading_cause if gap > state.settings.cause_gap_bic else None
+            gap = track.latest.cause_gap_bic
+            return track.latest.leading_cause if gap > state.settings.cause_gap_bic else None
         return self._named(track, status)
 
     def _summary(self, state: HomeState) -> HomeSummary:
@@ -489,7 +570,7 @@ class HomeService:
     def _money(
         self, state: HomeState, room_id: str, named: HypothesisType | None, score: NightScore | None = None
     ) -> RoomMoney | None:
-        score = score or state.tracks[room_id].history[-1]
+        score = score or state.tracks[room_id].latest
         fit = score.fits[score.leading_cause]
         overrides = None
         if state.kind == HomeKind.REAL and named is not None:
@@ -531,7 +612,7 @@ class HomeService:
             return "Waiting for the first heating-off night."
         if status == RoomStatus.HEALTHY:
             return "Behaving as expected."
-        latest = track.history[-1] if track.history else None
+        latest = track.latest
         percent = self._percent(latest.excess_fraction) if latest else 0
         if status == RoomStatus.WATCHING:
             return f"{name} cooled faster than expected last night; checking again on the next night."
@@ -553,7 +634,7 @@ class HomeService:
         name = state.room_names[room_id].lower()
         if not track.history:
             return []
-        latest = track.history[-1]
+        latest = track.latest
         judged = len(track.history)
         if status in {RoomStatus.HEALTHY, RoomStatus.RESOLVED}:
             since = " since the fix" if track.fix else ""
@@ -578,6 +659,7 @@ class HomeService:
             else sum(n.weather.wind_speed.values) / len(n.weather.wind_speed.values)
             for n in state.judged_nights(room_id)[-FIT_WINDOW_NIGHTS:]
         ]
+        fan = " and during the fan test" if track.cause is not None else ""
         if latest.cause_gap_bic > state.settings.cause_gap_bic:
             other = "wall heat loss" if latest.leading_cause == HypothesisType.DRAFT else "an air leak"
             leading = (
@@ -586,12 +668,17 @@ class HomeService:
                 else "Heat escaping through the walls, roof or floor"
             )
             lines.append(
-                f"{leading} explains how it cooled on calm and windy nights better than {other} does."
+                f"{leading} explains how it cooled on calm and windy nights{fan} better than {other} does."
+            )
+        elif track.cause is not None:
+            lines.append(
+                "Even with the fan test, an air leak and wall heat loss explain the nights about "
+                "equally well; more nights with different wind will tell them apart."
             )
         else:
             lines.append(
                 "An air leak and wall heat loss explain the nights about equally well so far; "
-                "nights with different wind will tell them apart."
+                "nights with different wind, or a fan test, will tell them apart."
             )
         lines.append(f"Average winds on those nights ranged from {min(winds):.1f} to {max(winds):.1f} m/s.")
         if status == RoomStatus.STILL_AN_ISSUE:
@@ -610,7 +697,7 @@ class HomeService:
             status=status,
             headline=self._headline(state, room_id, status),
             likely_cause=likely.value if likely else None,
-            extra_heat_loss_percent=self._percent(track.history[-1].excess_fraction) if issue else None,
+            extra_heat_loss_percent=self._percent(track.latest.excess_fraction) if issue else None,
             annual_cost_gbp=money.annual_cost_gbp if money else None,
             nights_seen=len(track.history),
         )
@@ -706,9 +793,44 @@ class HomeService:
                 what_to_do=what,
                 money=money,
                 evidence_by_night=evidence,
-                suggested_check=FAN_CHECK if status == RoomStatus.ISSUE_CAUSE_UNCLEAR else None,
+                suggested_check=(
+                    (DEMO_FAN_CHECK if state.kind == HomeKind.DEMO else FAN_CHECK)
+                    if self._unclear(state, room_id)
+                    else None
+                ),
                 fix=fix,
+                fan_test_available=self._fan_test_available(state, room_id),
             )
+
+    def _unclear(self, state: HomeState, room_id: str) -> bool:
+        """Flagged, but leak and walls still explain it about equally well."""
+
+        status, _ = self._status(state, room_id)
+        return status == RoomStatus.ISSUE_CAUSE_UNCLEAR or (
+            status == RoomStatus.STILL_AN_ISSUE and self._likely(state, room_id, status) is None
+        )
+
+    def _fan_test_available(self, state: HomeState, room_id: str) -> bool:
+        demo = state.kind == HomeKind.DEMO
+        return demo and state.demo.nights_remaining > 0 and self._unclear(state, room_id)
+
+    def fan_test(self, home_id: str) -> HomeHealth:
+        """Run the demo house's next night as a fan test (2 hours of extract fan, doors closed)."""
+
+        state = self._get(home_id)
+        if state.kind != HomeKind.DEMO:
+            raise HomeStateError("in a real home the occupant runs the fan test and uploads that night")
+        self._ensure_current(state)
+        with state.lock:
+            if not any(self._unclear(state, room) for room in state.tracks):
+                raise HomeStateError("a fan test is offered when a flagged room's cause is not clear yet")
+            try:
+                state.nights.append(state.demo.fan_night())
+            except ValueError as exc:
+                raise HomeStateError(str(exc)) from exc
+            state.readings_cache = None
+            self._refresh(state)
+        return self.health(home_id)
 
     def room_technical(self, home_id: str, room_id: str) -> RoomTechnical:
         state = self._get(home_id)
@@ -716,7 +838,7 @@ class HomeService:
         with state.lock:
             track = self._room(state, room_id)
             _, streak = self._status(state, room_id)
-            latest = track.history[-1] if track.history else None
+            latest = track.latest
             s = state.settings
             rule = [
                 Assumption(
@@ -764,7 +886,7 @@ class HomeService:
             rooms = []
             for room_id, track in state.tracks.items():
                 snapshots = []
-                for night_id, score, status, after_fix in track.snapshots:
+                for night_id, score, status, after_fix, fans in track.snapshots:
                     named = (
                         score.leading_cause
                         if status in {RoomStatus.ISSUE, RoomStatus.STILL_AN_ISSUE}
@@ -794,6 +916,7 @@ class HomeService:
                                 for cause, fit in score.fits.items()
                             ],
                             annual_cost_gbp=money.annual_cost_gbp if money else None,
+                            fan_test_nights=fans,
                         )
                     )
                 rooms.append(
@@ -840,8 +963,7 @@ class HomeService:
                 first_night=first,
                 found_before=before,
             )
-            track.history.clear()
-            track.judged_ids.clear()
+            track.reset()
             if state.kind == HomeKind.REAL:
                 state.record.fixes[room_id] = track.fix.to_json()
                 save_home(state.record, self._homes_dir)

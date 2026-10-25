@@ -516,6 +516,39 @@ template's calibration used the legacy night 2020-12-06, which lies in that
 winter, so the benchmark must exclude that night or the template must first be
 recalibrated on winter 2019-20 nights only.
 
+### Fan test (2026-10-25)
+
+When a flagged room's cause is unclear, a demo house can run its next night as
+a **fan test**: a 2-hour extract fan (the simulator's 50 cfm, 23:00–01:00, doors
+closed). The fan pulls outside air through the leakage paths, so a leaky room
+cools noticeably faster while it runs and a room with weak walls does not.
+
+**Rule (`backend/app/monitoring_service.py`).** A fan night never decides
+whether a room is flagged: status, alarm level and streak come from ordinary
+nights only. For a flagged room, the fan nights inside its fit window join its
+ordinary nights in a second fit, and only that fit's leading cause and BIC gap
+are used to name the cause (same `cause_gap_bic`). Extra heat loss, money and
+the fits shown stay those of the ordinary nights.
+
+**Evidence (TRAINING winter 2019-20, 24 fault cases × 8 houses per setting).**
+After K ordinary nights, one more ordinary night was compared with one fan
+night, in the same houses and weather:
+
+| K | Unclear rooms | +1 ordinary night names right | +1 fan night names right | Named wrong |
+|---|---|---|---|---|
+| 2 | 46 | 21 | 39 | 0 |
+| 3 | 28 | 11 | 26 | 0 |
+| 4 | 24 | 9 | 19 | 0 |
+
+Over all faults the fan night also cut confident wrong names (2–3 versus 4–5).
+Letting the fan night count toward *flagging* would have raised false alarms:
+healthy neighbour rooms crossed the alarm in 18–38 of 224 cases, versus 5–7 with
+an ordinary night, because the fan cools every room. Hence the cause-only rule.
+On the held-out demo path, 15 of 16 unclear rooms were named correctly after a
+fan test, none wrongly, and no room changed status because of it. Simulated
+results only, not real-home accuracy; in a real home the occupant runs the fan
+(not with an open-flued appliance) and uploads that night.
+
 ## Calibration (`calibrate_public_template`)
 
 - **Inputs:** healthy, simulated, TRAINING-split observations only. 40 houses

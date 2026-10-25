@@ -78,6 +78,7 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
         "/api/homes/{home_id}/rooms/{room_id}/technical",
         "/api/homes/{home_id}/rooms/{room_id}/fix",
         "/api/demo/homes/{home_id}/advance",
+        "/api/demo/homes/{home_id}/fan-test",
         "/api/homes/{home_id}/assistant",
     }
     assert set(schema["paths"]) == expected_paths
