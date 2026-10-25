@@ -197,6 +197,157 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/insight/fits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Insight Fits
+         * @description Fit normal / draft / insulation per room and return each hypothesis's predicted curve.
+         */
+        post: operations["insight_fits_api_insight_fits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/insight/predict": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Insight Predict
+         * @description Forward-predict a night under competing fitted hypotheses (out-of-sample check).
+         */
+        post: operations["insight_predict_api_insight_predict_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/sample-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sample Plan
+         * @description The documented HH09 plan, in the same format a user's plan uses.
+         */
+        get: operations["sample_plan_api_homes_sample_plan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Home Template */
+        post: operations["home_template_api_homes_template_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homes/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Home Analyze
+         * @description Screen a user's own readings with the public engine (no fault labels exist for real homes).
+         */
+        post: operations["home_analyze_api_homes_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/weather/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Weather Lookup
+         * @description Hourly gridded weather for a place and time window (needs internet).
+         */
+        get: operations["weather_lookup_api_weather_lookup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assistant Chat */
+        post: operations["assistant_chat_api_assistant_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/floor-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assistant Floor Plan */
+        post: operations["assistant_floor_plan_api_assistant_floor_plan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -224,6 +375,11 @@ export interface components {
              */
             provenance: "ASSUMPTION";
         };
+        /** Body_assistant_floor_plan_api_assistant_floor_plan_post */
+        Body_assistant_floor_plan_api_assistant_floor_plan_post: {
+            /** File */
+            file: string;
+        };
         /** BuildingCharacteristic */
         BuildingCharacteristic: {
             /** Name */
@@ -237,6 +393,44 @@ export interface components {
              * @enum {string}
              */
             provenance: "REAL_MEASUREMENT" | "ASSUMPTION";
+        };
+        /** ChatAction */
+        ChatAction: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "focus_room" | "set_view" | "set_time";
+            /** Target */
+            target: string;
+        };
+        /** ChatMessage */
+        ChatMessage: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Content */
+            content: string;
+        };
+        /** ChatReply */
+        ChatReply: {
+            /** Reply */
+            reply: string;
+            /** Actions */
+            actions?: components["schemas"]["ChatAction"][];
+            /** Model */
+            model: string;
+        };
+        /** ChatRequest */
+        ChatRequest: {
+            /** Messages */
+            messages: components["schemas"]["ChatMessage"][];
+            /** Context */
+            context?: {
+                [key: string]: unknown;
+            };
         };
         /** ConfusionMatrix */
         ConfusionMatrix: {
@@ -350,6 +544,37 @@ export interface components {
          * @enum {string}
          */
         FaultType: "draft" | "envelope_conduction" | "none";
+        /**
+         * FitCurve
+         * @description One fitted hypothesis for one room, with its predicted readings per night.
+         */
+        FitCurve: {
+            fault_type: components["schemas"]["HypothesisType"];
+            /** Fitted Multiplier */
+            fitted_multiplier: number;
+            /** Bic */
+            bic: number;
+            /** Residual Rmse Deg C */
+            residual_rmse_deg_c: number;
+            /** Sensor Offset Deg C */
+            sensor_offset_deg_c: number;
+            /** Converged */
+            converged: boolean;
+            /** Predicted */
+            predicted: {
+                [key: string]: components["schemas"]["Series"];
+            };
+            /** Warnings */
+            warnings?: string[];
+        };
+        /** FloorPlanDraft */
+        FloorPlanDraft: {
+            plan: components["schemas"]["HomePlan"];
+            /** Notes */
+            notes: string[];
+            /** Model */
+            model: string;
+        };
         /** GroundTruth */
         GroundTruth: {
             fault_type: components["schemas"]["FaultType"];
@@ -383,6 +608,68 @@ export interface components {
              */
             service: "heat-hunter-api";
         };
+        /** HomeAnalysis */
+        HomeAnalysis: {
+            status: components["schemas"]["DiagnosisStatus"];
+            /** Flagged Room Id */
+            flagged_room_id: string | null;
+            /** Ranked Causes */
+            ranked_causes: components["schemas"]["HypothesisFit"][];
+            /** Rooms */
+            rooms: components["schemas"]["RoomInsight"][];
+            money_estimate: components["schemas"]["MoneyEstimate"] | null;
+            /** Nights */
+            nights: components["schemas"]["NightObservations"][];
+            home: components["schemas"]["HomeTemplate"];
+            /** Evidence */
+            evidence: components["schemas"]["Evidence"][];
+            /** Uncertainty */
+            uncertainty: string[];
+            /** Elapsed Ms */
+            elapsed_ms: number;
+        };
+        /** HomeAnalyzeRequest */
+        HomeAnalyzeRequest: {
+            plan: components["schemas"]["HomePlan"];
+            /** Room Temperature Series */
+            room_temperature_series: {
+                [key: string]: components["schemas"]["Series"];
+            };
+            outdoor_temperature: components["schemas"]["Series"];
+            wind_speed?: components["schemas"]["Series"] | null;
+            /** Location Name */
+            location_name?: string | null;
+        };
+        /** HomePlan */
+        HomePlan: {
+            /** Plan Id */
+            plan_id: string;
+            /** Name */
+            name: string;
+            /** Rooms */
+            rooms: components["schemas"]["PlanRoom"][];
+            /** Openings */
+            openings?: components["schemas"]["PlanOpening"][];
+            /**
+             * Ceiling Height M
+             * @default 2.4
+             */
+            ceiling_height_m: number;
+        };
+        /** HomeTemplate */
+        HomeTemplate: {
+            template: components["schemas"]["PublicTemplate"];
+            /** Exterior Wall Length M */
+            exterior_wall_length_m: {
+                [key: string]: number;
+            };
+            /** Window Area M2 */
+            window_area_m2: {
+                [key: string]: number;
+            };
+            /** Assumptions */
+            assumptions: components["schemas"]["Assumption"][];
+        };
         /** HypothesisFit */
         HypothesisFit: {
             fault_type: components["schemas"]["HypothesisType"];
@@ -406,6 +693,34 @@ export interface components {
          * @enum {string}
          */
         HypothesisType: "normal" | "draft" | "envelope_conduction";
+        /** InsightRequest */
+        InsightRequest: {
+            /** Nights */
+            nights: components["schemas"]["NightObservations"][];
+            /** Room Ids */
+            room_ids?: string[] | null;
+            template?: components["schemas"]["PublicTemplate"] | null;
+        };
+        /** InsightResponse */
+        InsightResponse: {
+            /** Template Id */
+            template_id: string;
+            /** Rooms */
+            rooms: components["schemas"]["RoomInsight"][];
+            /** Model Evaluations */
+            model_evaluations: number;
+            /** Elapsed Ms */
+            elapsed_ms: number;
+        };
+        /** InterRoomCoupling */
+        InterRoomCoupling: {
+            /** Room A Id */
+            room_a_id: string;
+            /** Room B Id */
+            room_b_id: string;
+            /** Conductance W Per K */
+            conductance_w_per_k: number;
+        };
         /** Location */
         Location: {
             /** Name */
@@ -499,6 +814,80 @@ export interface components {
             /** Nights */
             nights: components["schemas"]["NightObservations"][];
         };
+        /** PlanOpening */
+        PlanOpening: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "window" | "door";
+            /** X0 */
+            x0: number;
+            /** Z0 */
+            z0: number;
+            /** X1 */
+            x1: number;
+            /** Z1 */
+            z1: number;
+        };
+        /**
+         * PlanRoom
+         * @description Axis-aligned rectangular room on the plan, in metres (x right, z down).
+         */
+        PlanRoom: {
+            /** Room Id */
+            room_id: string;
+            /** Name */
+            name: string;
+            /** X */
+            x: number;
+            /** Z */
+            z: number;
+            /** Width */
+            width: number;
+            /** Depth */
+            depth: number;
+            /**
+             * Has Sensor
+             * @default true
+             */
+            has_sensor: boolean;
+            /**
+             * Exposed Floor
+             * @default true
+             */
+            exposed_floor: boolean;
+            /**
+             * Exposed Roof
+             * @default true
+             */
+            exposed_roof: boolean;
+        };
+        /**
+         * PredictionRequest
+         * @description Out-of-sample check: predict a later night from fits made on earlier nights.
+         */
+        PredictionRequest: {
+            /** Room Id */
+            room_id: string;
+            /** Causes */
+            causes: components["schemas"]["HypothesisFit"][];
+            night: components["schemas"]["NightObservations"];
+            template?: components["schemas"]["PublicTemplate"] | null;
+        };
+        /** PredictionResponse */
+        PredictionResponse: {
+            /** Room Id */
+            room_id: string;
+            /** Night Id */
+            night_id: string;
+            /** Predictions */
+            predictions: {
+                [key: string]: components["schemas"]["Series"];
+            };
+            /** Elapsed Ms */
+            elapsed_ms: number;
+        };
         /** Protocol */
         Protocol: {
             /** Heating Off */
@@ -519,6 +908,27 @@ export interface components {
          * @enum {string}
          */
         Provenance: "REAL_MEASUREMENT" | "SIMULATED_MEASUREMENT" | "SIMULATED_GROUND_TRUTH" | "MODEL_ESTIMATE" | "ASSUMPTION";
+        /** PublicTemplate */
+        PublicTemplate: {
+            /** Template Id */
+            template_id: string;
+            /** Rooms */
+            rooms: components["schemas"]["RoomTemplate"][];
+            /** Inter Room Couplings */
+            inter_room_couplings: components["schemas"]["InterRoomCoupling"][];
+            /**
+             * Calibrated From Split
+             * @default training
+             * @constant
+             */
+            calibrated_from_split: "training";
+            /**
+             * Provenance
+             * @default MODEL_ESTIMATE
+             * @constant
+             */
+            provenance: "MODEL_ESTIMATE";
+        };
         /** RealHouse */
         RealHouse: {
             /** House Id */
@@ -583,6 +993,34 @@ export interface components {
              * @constant
              */
             provenance: "SIMULATED_MEASUREMENT";
+        };
+        /** RoomInsight */
+        RoomInsight: {
+            /** Room Id */
+            room_id: string;
+            /** Fits */
+            fits: components["schemas"]["FitCurve"][];
+            /** Anomaly Score */
+            anomaly_score: number;
+        };
+        /** RoomTemplate */
+        RoomTemplate: {
+            /** Room Id */
+            room_id: string;
+            /** Room Name */
+            room_name: string;
+            /** Volume M3 */
+            volume_m3: number;
+            /** Nominal Capacitance J Per K */
+            nominal_capacitance_j_per_k: number;
+            /** Nominal Envelope Conductance W Per K */
+            nominal_envelope_conductance_w_per_k: number;
+            /** Nominal Infiltration Conductance W Per K */
+            nominal_infiltration_conductance_w_per_k: number;
+            /** Wind Sensitivity S Per M */
+            wind_sensitivity_s_per_m: number;
+            /** Nominal Leakage Share */
+            nominal_leakage_share: number;
         };
         /** ScenarioCreateRequest */
         ScenarioCreateRequest: {
@@ -684,6 +1122,13 @@ export interface components {
             end: string;
             /** Note */
             note?: string | null;
+        };
+        /** WeatherLookup */
+        WeatherLookup: {
+            location: components["schemas"]["Location"];
+            outdoor_temperature: components["schemas"]["Series"];
+            wind_speed: components["schemas"]["Series"];
+            source: components["schemas"]["SourceMetadata"];
         };
         /** WeatherNight */
         WeatherNight: {
@@ -1254,6 +1699,311 @@ export interface operations {
             };
             /** @description The owning scientific or data service is not available. */
             501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    insight_fits_api_insight_fits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsightRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightResponse"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    insight_predict_api_insight_predict_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PredictionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionResponse"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    sample_plan_api_homes_sample_plan_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomePlan"];
+                };
+            };
+        };
+    };
+    home_template_api_homes_template_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomePlan"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeTemplate"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    home_analyze_api_homes_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomeAnalyzeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeAnalysis"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    weather_lookup_api_weather_lookup_get: {
+        parameters: {
+            query: {
+                query: string;
+                start: string;
+                end: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherLookup"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    assistant_chat_api_assistant_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatReply"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    assistant_floor_plan_api_assistant_floor_plan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_assistant_floor_plan_api_assistant_floor_plan_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FloorPlanDraft"];
+                };
+            };
+            /** @description The request is invalid for this scenario. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

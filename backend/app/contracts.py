@@ -441,6 +441,152 @@ class ApiError(ContractModel):
     code: str
 
 
+# ---------------------------------------------------------------------------
+# Experience API: fitted curves, custom homes and the assistant.
+# These read public observations only; none of them accept or return truth.
+# ---------------------------------------------------------------------------
+
+
+class FitCurve(ContractModel):
+    """One fitted hypothesis for one room, with its predicted readings per night."""
+
+    fault_type: HypothesisType
+    fitted_multiplier: PositiveFloat
+    bic: float
+    residual_rmse_deg_c: NonNegativeFloat
+    sensor_offset_deg_c: float
+    converged: bool
+    predicted: dict[str, Series]
+    warnings: list[str] = Field(default_factory=list)
+
+
+class RoomInsight(ContractModel):
+    room_id: str
+    fits: list[FitCurve]
+    anomaly_score: float  # BIC(normal) - BIC(best fault); larger = less normal
+
+
+class InsightRequest(ContractModel):
+    nights: list[NightObservations] = Field(min_length=1)
+    room_ids: list[str] | None = None
+    template: PublicTemplate | None = None
+
+
+class InsightResponse(ContractModel):
+    template_id: str
+    rooms: list[RoomInsight]
+    model_evaluations: int
+    elapsed_ms: float
+
+
+class PredictionRequest(ContractModel):
+    """Out-of-sample check: predict a later night from fits made on earlier nights."""
+
+    room_id: str
+    causes: list[HypothesisFit] = Field(min_length=2)
+    night: NightObservations
+    template: PublicTemplate | None = None
+
+
+class PredictionResponse(ContractModel):
+    room_id: str
+    night_id: str
+    predictions: dict[str, Series]
+    elapsed_ms: float
+
+
+class PlanRoom(ContractModel):
+    """Axis-aligned rectangular room on the plan, in metres (x right, z down)."""
+
+    room_id: str = Field(pattern=r"^[a-z0-9_]{1,40}$")
+    name: str = Field(min_length=1, max_length=60)
+    x: float
+    z: float
+    width: PositiveFloat
+    depth: PositiveFloat
+    has_sensor: bool = True
+    exposed_floor: bool = True
+    exposed_roof: bool = True
+
+
+class PlanOpening(ContractModel):
+    kind: Literal["window", "door"]
+    x0: float
+    z0: float
+    x1: float
+    z1: float
+
+
+class HomePlan(ContractModel):
+    plan_id: str = Field(min_length=1, max_length=80)
+    name: str = Field(min_length=1, max_length=80)
+    rooms: list[PlanRoom] = Field(min_length=1, max_length=16)
+    openings: list[PlanOpening] = Field(default_factory=list)
+    ceiling_height_m: Annotated[float, Field(gt=1.8, le=5)] = 2.4
+
+
+class HomeTemplate(ContractModel):
+    template: PublicTemplate
+    exterior_wall_length_m: dict[str, NonNegativeFloat]
+    window_area_m2: dict[str, NonNegativeFloat]
+    assumptions: list[Assumption]
+
+
+class HomeAnalyzeRequest(ContractModel):
+    plan: HomePlan
+    room_temperature_series: dict[str, Series]
+    outdoor_temperature: Series
+    wind_speed: Series | None = None
+    location_name: str | None = None
+
+
+class HomeAnalysis(ContractModel):
+    status: DiagnosisStatus
+    flagged_room_id: str | None
+    ranked_causes: list[HypothesisFit]
+    rooms: list[RoomInsight]
+    money_estimate: MoneyEstimate | None
+    nights: list[NightObservations]
+    home: HomeTemplate
+    evidence: list[Evidence]
+    uncertainty: list[str]
+    elapsed_ms: float
+
+
+class WeatherLookup(ContractModel):
+    location: Location
+    outdoor_temperature: Series
+    wind_speed: Series
+    source: SourceMetadata
+
+
+class ChatMessage(ContractModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=4000)
+
+
+class ChatRequest(ContractModel):
+    messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+    context: dict[str, object] = Field(default_factory=dict)
+
+
+class ChatAction(ContractModel):
+    type: Literal["focus_room", "set_view", "set_time"]
+    target: str
+
+
+class ChatReply(ContractModel):
+    reply: str
+    actions: list[ChatAction] = Field(default_factory=list)
+    model: str
+
+
+class FloorPlanDraft(ContractModel):
+    plan: HomePlan
+    notes: list[str]
+    model: str
+
+
 def public_contract_models() -> dict[str, type[BaseModel]]:
     """Named model registry used by fixture validation and integration tooling."""
 
