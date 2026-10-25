@@ -7,7 +7,7 @@ import { planBounds, roomCenter } from "../lib/plan";
 import { displayName, tempRGB } from "../lib/rooms";
 import { useScene } from "../store/scene";
 import { WALL_H, WALL_T, outwardNormal, roofLayout, wallPieces } from "./geometry";
-import { createThermalMaterial } from "./thermal";
+import { MAX_ROOMS, createThermalMaterial } from "./thermal";
 
 const LOWERED = 0.46;
 
@@ -196,6 +196,19 @@ export function House() {
     mats.tRoof.uniforms.uBase.value = inside ? 0.66 : 0.2;
     mats.tGlass.uniforms.uBase.value = inside ? 0.12 : 0.62;
   }, [finding, geo, mats, inside]);
+
+  // Measured room temperatures drive the IR surfaces, scaled to the night's range.
+  const range = useScene((s) => s.tempRange);
+  useEffect(() => {
+    const sensed = plan.rooms.filter((r) => temps[r.room_id] != null).slice(0, MAX_ROOMS);
+    for (const m of [mats.tExt, mats.tInt, mats.tRoof]) {
+      m.uniforms.uRoomCount.value = sensed.length;
+      sensed.forEach((r, i) => {
+        (m.uniforms.uRooms.value[i] as THREE.Vector4).set(r.x, r.z, r.x + r.width, r.z + r.depth);
+        m.uniforms.uWarm.value[i] = THREE.MathUtils.clamp((temps[r.room_id]! - range[0]) / Math.max(range[1] - range[0], 0.1), 0, 1);
+      });
+    }
+  }, [plan, temps, range, mats]);
 
   const walls = useRef<THREE.Group>(null);
   const roofGroup = useRef<THREE.Group>(null);
