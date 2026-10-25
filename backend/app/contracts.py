@@ -376,6 +376,19 @@ class MeasuredMetric(ContractModel):
     provenance: Literal[Provenance.REAL_MEASUREMENT]
 
 
+class SurfaceInsulation(ContractModel):
+    """How well insulated each room's outside surfaces are; the UI's infrared view
+    uses it to estimate surface temperatures from measured air temperatures."""
+
+    envelope_u_w_per_m2k: dict[str, PositiveFloat]  # per room, keyed like the response's rooms
+    # each room's nominal seasonal heat loss (W/K): what extra_heat_loss_percent is a fraction of
+    room_heat_loss_w_per_k: dict[str, PositiveFloat]
+    default_envelope_u_w_per_m2k: PositiveFloat  # for rooms with no figure of their own
+    window_u_w_per_m2k: PositiveFloat
+    provenance: Literal[Provenance.MODEL_ESTIMATE] = Provenance.MODEL_ESTIMATE
+    notes: str
+
+
 class RealHouse(ContractModel):
     house_id: str
     display_name: str
@@ -391,6 +404,7 @@ class RealHouse(ContractModel):
     measurement_end: datetime
     timestamp_notes: str
     scientific_disclaimer: str
+    insulation: SurfaceInsulation | None = None
 
 
 class ConfusionMatrix(ContractModel):
@@ -501,8 +515,7 @@ class FloorPlanDraft(ContractModel):
 
 # ---------------------------------------------------------------------------
 # API v2: homes monitored night after night (docs/CONTRACTS.md, "API v2").
-# Demo and real homes share these shapes. No model here carries hidden truth
-# except DemoReveal, which only the reveal route returns.
+# Demo and real homes share these shapes. No model here carries hidden truth.
 # ---------------------------------------------------------------------------
 
 
@@ -544,6 +557,22 @@ class HomeSummary(ContractModel):
     nights_monitored: int = Field(ge=0)
     last_night: date | None
     created_at: datetime
+    shape_id: str | None = None  # a demo house's shape (see /api/house-shapes); "hh09" is the twin
+
+
+class HouseShape(ContractModel):
+    """A single-storey house a demo can be simulated on: the HH09 twin, a preset or a saved plan."""
+
+    shape_id: str
+    name: str
+    kind: Literal["twin", "preset", "saved"]
+    sensed_rooms: int = Field(ge=1)
+    plan: HomePlan
+
+
+class HouseShapeCreate(ContractModel):
+    name: str = Field(min_length=1, max_length=80)
+    plan: HomePlan
 
 
 class DemoFault(ContractModel):
@@ -553,7 +582,7 @@ class DemoFault(ContractModel):
 
 
 class DemoHomeCreate(ContractModel):
-    house: Literal["hh09"] = "hh09"
+    house: str = Field(default="hh09", pattern=r"^[a-z0-9-]{1,48}$")  # a HouseShape.shape_id
     fault: DemoFault | None = None
     random_fault: bool = False
     start_date: date | None = None
@@ -615,6 +644,8 @@ class NightInfo(ContractModel):
     end: datetime
     mean_outdoor_c: float
     mean_wind_m_s: NonNegativeFloat
+    # a fan-test night (extract fan run for 2 hours) is used only to name a flagged room's cause
+    kind: Literal["passive", "fan_test"] = "passive"
 
 
 class RoomReadings(ContractModel):
@@ -628,6 +659,7 @@ class HomeReadings(ContractModel):
     wind_speed: Series
     rooms: dict[str, RoomReadings]
     nights: list[NightInfo]
+    insulation: SurfaceInsulation | None = None
 
 
 class RoomMoney(ContractModel):
@@ -667,6 +699,7 @@ class RoomReport(ContractModel):
     evidence_by_night: list[NightEvidence]
     suggested_check: str | None
     fix: FixRecord | None
+    fan_test_available: bool = False  # a demo house can run a fan test night now
 
 
 class HypothesisSummary(ContractModel):
@@ -704,6 +737,7 @@ class RoomNightSnapshot(ContractModel):
     candidate: bool
     fits: list[HypothesisSummary]
     annual_cost_gbp: NonNegativeFloat | None
+    fan_test_nights: int = Field(default=0, ge=0)  # fan nights that helped name the cause
 
 
 class RoomHistory(ContractModel):
@@ -747,18 +781,6 @@ class DemoWeek(ContractModel):
 
 class AdvanceRequest(ContractModel):
     nights: int = Field(default=1, ge=1, le=14)
-
-
-class DemoReveal(ContractModel):
-    fault_type: FaultType
-    room_id: str | None
-    severity: NonNegativeFloat
-    app_found_it: bool
-    nights_to_find: int | None
-    summary: str
-    fault_free_twin: dict[str, Series]
-    fault_free_night_id: str
-    provenance: Literal[Provenance.SIMULATED_GROUND_TRUTH] = Provenance.SIMULATED_GROUND_TRUTH
 
 
 class AssistantScreen(ContractModel):

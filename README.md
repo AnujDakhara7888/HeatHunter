@@ -29,10 +29,9 @@ Built in 36 hours at **SBUHacks 2026**.
 
 | | |
 |---|---|
-| **Fault Lab** | A digital twin of SMETER house HH09, a real bungalow in England, running on real weather from a winter the model never saw. You, a judge, or chance plants a hidden fault. Run night by night or a week at a time and watch it get caught, then reveal the answer. |
+| **Fault Lab** | A digital twin of SMETER house HH09, a real bungalow in England, or one of four other house shapes, running on real weather from a winter the model never saw. A judge plants a fault in secret (or picks a healthy house). Run night by night or a week at a time and watch it get caught. If the cause is unclear, run a fan test night to settle it. |
 | **Analytics** | Two layers for any room, as of any night. *What happened* covers the verdict, a timeline of when it started, every room on every night, the suspects and the cost. *Under the hood* shows the model fits, the cause gap against the wind, and the night-by-night log the rule used. |
 | **Infrared view** | A FLIR-style view of the house coloured from measured room temperatures. The crosshair reads out whatever room it points at. |
-| **Real home** | A week of real HH09 sensor data replayed in 3D, room by room. |
 | **Your home** | Draw or upload a floor plan (Claude can read a plan image), set your town and heating-off hours, then upload sensor logs (CSV). |
 | **Ask HeatHunter** | A chat that explains the results on screen in plain English and can move the 3D view. It only explains; the physics does the diagnosing. |
 
@@ -71,8 +70,8 @@ Details are in [`docs/PHYSICS.md`](docs/PHYSICS.md) and
             ▼                                            ▼
   simulator: HH09 digital twin              ┌──────────────────────────────┐
   with a hidden fault  ───────────────────▶ │  engine: per-room thermal     │
-  (truth kept private;                      │  model fitted 3 ways each     │
-   only Reveal can read it)                 │  night (normal / leak / wall) │
+  (the planted fault never                 │  model fitted 3 ways each     │
+   leaves the simulator)                    │  night (normal / leak / wall) │
                                             └──────────────┬───────────────┘
                                                            ▼
                                    flag rule: alarm level a + b/√nights per cause,
@@ -120,7 +119,7 @@ needs an API key (with only `OPENAI_API_KEY` set it uses OpenAI, otherwise
 Claude), and "Your home" needs internet for weather.
 
 ```bash
-.venv/bin/pytest                # 254 tests
+.venv/bin/pytest                # 261 tests
 .venv/bin/ruff check backend
 ```
 
@@ -137,7 +136,7 @@ For frontend development, run the API, then `cd frontend && npm run dev`.
   validated on real homes with known faults.
 - Costs are screening estimates from stated assumptions, not quotes or a
   certified energy audit.
-- The "Real home" week had the heating on, so it is replayed but not diagnosed.
+- The optional fan test only helps name an unclear cause; it never raises an alarm.
 
 ## Data and credits
 

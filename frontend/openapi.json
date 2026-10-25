@@ -609,13 +609,245 @@
         }
       }
     },
+    "/api/house-shapes": {
+      "get": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "House Shapes",
+        "description": "House shapes a demo can run on: the HH09 twin, presets and saved plans.",
+        "operationId": "house_shapes_api_house_shapes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HouseShape"
+                  },
+                  "type": "array",
+                  "title": "Response House Shapes Api House Shapes Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (assistant, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Save House Shape",
+        "description": "Save a drawn single-storey plan to reuse for simulations.",
+        "operationId": "save_house_shape_api_house_shapes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HouseShapeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseShape"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (assistant, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/house-shapes/{shape_id}": {
+      "delete": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Delete House Shape",
+        "description": "Delete a saved shape (presets and the HH09 twin stay).",
+        "operationId": "delete_house_shape_api_house_shapes__shape_id__delete",
+        "parameters": [
+          {
+            "name": "shape_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Shape Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (assistant, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/demo/homes": {
       "post": {
         "tags": [
           "homes-v2"
         ],
         "summary": "Create Demo Home",
-        "description": "Load any scenario on the simulated HH09 twin: a chosen fault, a random hidden one, or none.",
+        "description": "Load a scenario on a house shape (default the HH09 twin): a chosen fault, a random one, or none.",
         "operationId": "create_demo_home_api_demo_homes_post",
         "requestBody": {
           "content": {
@@ -720,6 +952,80 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (assistant, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Delete Home",
+        "description": "Forget a home and all its nights (a real home's saved file is deleted too).",
+        "operationId": "delete_home_api_homes__home_id__delete",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "404": {
             "description": "Unknown home, room or asset.",
@@ -1460,14 +1766,14 @@
         }
       }
     },
-    "/api/demo/homes/{home_id}/reveal": {
-      "get": {
+    "/api/demo/homes/{home_id}/fan-test": {
+      "post": {
         "tags": [
           "homes-v2"
         ],
-        "summary": "Reveal Demo",
-        "description": "The hidden fault, whether the app found it, and the same night without the fault.",
-        "operationId": "reveal_demo_api_demo_homes__home_id__reveal_get",
+        "summary": "Fan Test Demo",
+        "description": "Run the next night as a fan test (2 h extract fan); it only helps name an unclear cause.",
+        "operationId": "fan_test_demo_api_demo_homes__home_id__fan_test_post",
         "parameters": [
           {
             "name": "home_id",
@@ -1485,7 +1791,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DemoReveal"
+                  "$ref": "#/components/schemas/HomeHealth"
                 }
               }
             }
@@ -2169,7 +2475,7 @@
         "properties": {
           "house": {
             "type": "string",
-            "const": "hh09",
+            "pattern": "^[a-z0-9-]{1,48}$",
             "title": "House",
             "default": "hh09"
           },
@@ -2217,78 +2523,6 @@
         "additionalProperties": false,
         "type": "object",
         "title": "DemoHomeCreate"
-      },
-      "DemoReveal": {
-        "properties": {
-          "fault_type": {
-            "$ref": "#/components/schemas/FaultType"
-          },
-          "room_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Room Id"
-          },
-          "severity": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Severity"
-          },
-          "app_found_it": {
-            "type": "boolean",
-            "title": "App Found It"
-          },
-          "nights_to_find": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nights To Find"
-          },
-          "summary": {
-            "type": "string",
-            "title": "Summary"
-          },
-          "fault_free_twin": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/Series"
-            },
-            "type": "object",
-            "title": "Fault Free Twin"
-          },
-          "fault_free_night_id": {
-            "type": "string",
-            "title": "Fault Free Night Id"
-          },
-          "provenance": {
-            "type": "string",
-            "const": "SIMULATED_GROUND_TRUTH",
-            "title": "Provenance",
-            "default": "SIMULATED_GROUND_TRUTH"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "fault_type",
-          "room_id",
-          "severity",
-          "app_found_it",
-          "nights_to_find",
-          "summary",
-          "fault_free_twin",
-          "fault_free_night_id"
-        ],
-        "title": "DemoReveal"
       },
       "DemoWeek": {
         "properties": {
@@ -2456,15 +2690,6 @@
           "disclaimer"
         ],
         "title": "EvaluationSummary"
-      },
-      "FaultType": {
-        "type": "string",
-        "enum": [
-          "draft",
-          "envelope_conduction",
-          "none"
-        ],
-        "title": "FaultType"
       },
       "FixAction": {
         "type": "string",
@@ -2899,6 +3124,16 @@
             },
             "type": "array",
             "title": "Nights"
+          },
+          "insulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SurfaceInsulation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -2964,6 +3199,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "shape_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shape Id"
           }
         },
         "additionalProperties": false,
@@ -2979,6 +3225,66 @@
           "created_at"
         ],
         "title": "HomeSummary"
+      },
+      "HouseShape": {
+        "properties": {
+          "shape_id": {
+            "type": "string",
+            "title": "Shape Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "twin",
+              "preset",
+              "saved"
+            ],
+            "title": "Kind"
+          },
+          "sensed_rooms": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Sensed Rooms"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/HomePlan"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "shape_id",
+          "name",
+          "kind",
+          "sensed_rooms",
+          "plan"
+        ],
+        "title": "HouseShape",
+        "description": "A single-storey house a demo can be simulated on: the HH09 twin, a preset or a saved plan."
+      },
+      "HouseShapeCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/HomePlan"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "plan"
+        ],
+        "title": "HouseShapeCreate"
       },
       "HypothesisSummary": {
         "properties": {
@@ -3192,6 +3498,15 @@
             "type": "number",
             "minimum": 0.0,
             "title": "Mean Wind M S"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "passive",
+              "fan_test"
+            ],
+            "title": "Kind",
+            "default": "passive"
           }
         },
         "additionalProperties": false,
@@ -3406,6 +3721,16 @@
           "scientific_disclaimer": {
             "type": "string",
             "title": "Scientific Disclaimer"
+          },
+          "insulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SurfaceInsulation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -3676,6 +4001,12 @@
               }
             ],
             "title": "Annual Cost Gbp"
+          },
+          "fan_test_nights": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Fan Test Nights",
+            "default": 0
           }
         },
         "additionalProperties": false,
@@ -3790,6 +4121,11 @@
                 "type": "null"
               }
             ]
+          },
+          "fan_test_available": {
+            "type": "boolean",
+            "title": "Fan Test Available",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -4059,6 +4395,57 @@
           "dataset"
         ],
         "title": "SourceMetadata"
+      },
+      "SurfaceInsulation": {
+        "properties": {
+          "envelope_u_w_per_m2k": {
+            "additionalProperties": {
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "type": "object",
+            "title": "Envelope U W Per M2K"
+          },
+          "room_heat_loss_w_per_k": {
+            "additionalProperties": {
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "type": "object",
+            "title": "Room Heat Loss W Per K"
+          },
+          "default_envelope_u_w_per_m2k": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Default Envelope U W Per M2K"
+          },
+          "window_u_w_per_m2k": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Window U W Per M2K"
+          },
+          "provenance": {
+            "type": "string",
+            "const": "MODEL_ESTIMATE",
+            "title": "Provenance",
+            "default": "MODEL_ESTIMATE"
+          },
+          "notes": {
+            "type": "string",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "envelope_u_w_per_m2k",
+          "room_heat_loss_w_per_k",
+          "default_envelope_u_w_per_m2k",
+          "window_u_w_per_m2k",
+          "notes"
+        ],
+        "title": "SurfaceInsulation",
+        "description": "How well insulated each room's outside surfaces are; the UI's infrared view\nuses it to estimate surface temperatures from measured air temperatures."
       },
       "WeatherLookup": {
         "properties": {

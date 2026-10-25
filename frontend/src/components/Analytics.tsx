@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ChevronLeft, ChevronRight, Cpu, Eye, Flag, Search, Sparkles, Wrench } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Cpu, Eye, Fan, Flag, MessageCircle, Search, Sparkles, Wrench } from "lucide-react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { HomeHistory, HomeReadings, RoomHistory, RoomNightSnapshot, RoomReport, RoomStatus, RoomTechnical, Series } from "../api/types";
 import { ROOM_STATUS, causeLabel } from "../lib/diagnosis";
-import { bicWeights, milestones, nightGaps, shortDate, snapAt, statusStrip } from "../lib/history";
+import { bicWeights, milestones, shortDate, snapAt, statusStrip } from "../lib/history";
 import { CAUSE, SIM_TO_PLAN, ms, roomColor, type CauseKey } from "../lib/rooms";
 import { LineChart } from "./LineChart";
 import { NightsChart } from "./NightsChart";
@@ -20,13 +20,20 @@ type Props = {
   report: RoomReport | null;
   technical: RoomTechnical | null;
   onClose: () => void;
-  onShow3D: (cause: CauseKey) => void;
+  /** API room id -> the plan room id the 3D house and room colours use (the HH09 twin maps bedroom_1 -> bedroom). */
+  planRoom?: (id: string) => string;
 };
+
+const RoomColor = createContext<(id: string) => string>((id) => roomColor(SIM_TO_PLAN[id] ?? id));
 
 const gbp = (v: number) => `£${v < 100 ? v.toFixed(0) : Math.round(v).toLocaleString()}`;
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${Math.round(v)}%`;
 const FLAGGED: RoomStatus[] = ["issue", "issue_cause_unclear", "still_an_issue"];
 const WINDY = 4;
+const FAN_COLOR = "#2fc6d9";
+/** Night numbers (1-based, up to n) that were fan-test nights. */
+const fanNights = (history: HomeHistory, n: number) =>
+  history.nights.slice(0, n).flatMap((x, i) => (x.kind === "fan_test" ? [i + 1] : []));
 
 function slice(s: Series, a: number, b: number): Series {
   const idx = s.timestamps.map((t, i) => [ms(t), i] as const).filter(([t]) => t >= a && t <= b).map(([, i]) => i);
@@ -34,7 +41,7 @@ function slice(s: Series, a: number, b: number): Series {
 }
 
 /** Two layers over a home's analysis as of one night: the story, then the engine underneath. */
-export function Analytics({ label, history, readings, asOf, setAsOf, room, setRoom, report, technical, onClose, onShow3D }: Props) {
+export function Analytics({ label, history, readings, asOf, setAsOf, room, setRoom, report, technical, onClose, planRoom }: Props) {
   const [layer, setLayer] = useState<"story" | "tech">("story");
   const page = useRef<HTMLDivElement>(null);
   const switchLayer = (k: "story" | "tech") => {
@@ -47,6 +54,7 @@ export function Analytics({ label, history, readings, asOf, setAsOf, room, setRo
   const rooms = history.rooms;
   const focus = rooms.find((r) => r.room_id === room) ?? rooms.find((r) => FLAGGED.includes(snapAt(r, n)?.status ?? "healthy")) ?? rooms[0];
   const night = history.nights[n - 1];
+  const colorOf = (id: string) => roomColor(planRoom ? planRoom(id) : SIM_TO_PLAN[id] ?? id);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -59,6 +67,7 @@ export function Analytics({ label, history, readings, asOf, setAsOf, room, setRo
   }, [n, total, onClose, setAsOf]);
 
   return (
+    <RoomColor.Provider value={colorOf}>
     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} ref={page} className="fixed inset-0 z-[60] overflow-y-auto bg-[#05070bf5] backdrop-blur-xl scroll-thin">
       {/* top bar */}
       <div className="sticky top-0 z-20 border-b border-line bg-[#05070bd9] backdrop-blur-xl">
@@ -110,7 +119,7 @@ export function Analytics({ label, history, readings, asOf, setAsOf, room, setRo
               const s = snapAt(r, n)?.status ?? "not_enough_data";
               return (
                 <button key={r.room_id} onClick={() => setRoom(r.room_id)} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] ${focus.room_id === r.room_id ? "border-white/50 bg-white/10 text-ink" : "border-line text-mute hover:text-ink"}`}>
-                  <i className="h-2 w-2 rounded-full" style={{ background: roomColor(SIM_TO_PLAN[r.room_id] ?? r.room_id) }} />
+                  <i className="h-2 w-2 rounded-full" style={{ background: colorOf(r.room_id) }} />
                   {r.name}
                   <span style={{ color: ROOM_STATUS[s].color }} aria-label={ROOM_STATUS[s].label}>
                     {ROOM_STATUS[s].icon}
@@ -128,10 +137,17 @@ export function Analytics({ label, history, readings, asOf, setAsOf, room, setRo
             Looking back: this is only what the app knew after night {n}. Nights {n + 1}–{total} are hidden.
           </div>
         )}
+        <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-line bg-white/[0.03] px-4 py-3 text-[13px] text-mute">
+          <MessageCircle size={15} className="mt-0.5 shrink-0 text-warm" />
+          <span>
+            {layer === "story" ? "What happened to this room, in plain words." : "The engine's working behind the verdict: its fits, scores and rules."} Not sure what something means?{" "}
+            <b className="text-ink">Ask HeatHunter</b> (bottom right): the AI assistant can explain any number or chart on this page.
+          </span>
+        </div>
         <AnimatePresence mode="wait">
           <motion.div key={layer + focus.room_id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
             {layer === "story" ? (
-              <Story history={history} room={focus} n={n} setAsOf={setAsOf} setRoom={setRoom} report={latest ? report : null} onShow3D={onShow3D} />
+              <Story history={history} room={focus} n={n} setAsOf={setAsOf} setRoom={setRoom} report={latest ? report : null} />
             ) : (
               <Tech history={history} readings={readings} room={focus} n={n} setAsOf={setAsOf} report={latest ? report : null} technical={latest ? technical : null} />
             )}
@@ -139,6 +155,7 @@ export function Analytics({ label, history, readings, asOf, setAsOf, room, setRo
         </AnimatePresence>
       </div>
     </motion.div>
+    </RoomColor.Provider>
   );
 }
 
@@ -172,7 +189,7 @@ function headline(name: string, s: RoomNightSnapshot | null): { big: string; sub
     case "issue":
       return { big: `${name} is losing heat it shouldn't.`, sub: cause };
     case "issue_cause_unclear":
-      return { big: `${name} is losing extra heat.`, sub: "Leak or walls? Too close to call yet. Windy nights will split them." };
+      return { big: `${name} is losing extra heat.`, sub: "Leak or walls? Too close to call yet. Windy nights, or a fan test, will split them." };
     case "verifying":
       return { big: `Checking your repair in the ${name.toLowerCase()}.`, sub: `${s?.nights_judged ?? 0} night${s?.nights_judged === 1 ? "" : "s"} since the fix.` };
     case "resolved":
@@ -182,24 +199,25 @@ function headline(name: string, s: RoomNightSnapshot | null): { big: string; sub
   }
 }
 
-function streakAt(room: RoomHistory, n: number) {
-  const shots = room.snapshots.filter((s) => s.night_number <= n);
+/** Ordinary nights above the alarm in a row; fan-test nights never count toward an alarm. */
+function streakAt(room: RoomHistory, n: number, history: HomeHistory) {
+  const shots = room.snapshots.filter((s) => s.night_number <= n && history.nights[s.night_number - 1]?.kind !== "fan_test");
   let k = 0;
   for (let i = shots.length - 1; i >= 0 && shots[i].candidate; i--) k++;
   return k;
 }
 
-function Story({ history, room, n, setAsOf, setRoom, report, onShow3D }: { history: HomeHistory; room: RoomHistory; n: number; setAsOf: (n: number) => void; setRoom: (id: string) => void; report: RoomReport | null; onShow3D: (c: CauseKey) => void }) {
+function Story({ history, room, n, setAsOf, setRoom, report }: { history: HomeHistory; room: RoomHistory; n: number; setAsOf: (n: number) => void; setRoom: (id: string) => void; report: RoomReport | null }) {
   const snap = snapAt(room, n);
   const h = headline(room.name, snap);
   const m = milestones(room, n);
-  const streak = streakAt(room, n);
+  const streak = streakAt(room, n, history);
   const nights = history.nights.slice(0, n);
   const strip = statusStrip(room, n);
   const status = snap?.status ?? "not_enough_data";
   const flagged = FLAGGED.includes(status) || status === "watching";
   const weights = snap ? bicWeights(snap.fits) : {};
-  const color = roomColor(SIM_TO_PLAN[room.room_id] ?? room.room_id);
+  const color = useContext(RoomColor)(room.room_id);
   const advice = snap?.named_cause ? history.advice[snap.named_cause] : status === "issue_cause_unclear" ? [history.advice.draft[0], history.advice.envelope_conduction[0]] : [];
   const costs = strip.map((s) => s.snap?.annual_cost_gbp ?? null);
 
@@ -218,7 +236,7 @@ function Story({ history, room, n, setAsOf, setRoom, report, onShow3D }: { histo
         <h2 className="mt-3 max-w-[820px] text-[clamp(28px,4.4vw,46px)] font-bold leading-[1.04] tracking-[-0.03em]">{h.big}</h2>
         {h.sub && <p className="mt-2 text-[17px] text-mute">{h.sub}</p>}
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Tile label="Extra heat loss" value={snap ? pct(snap.extra_heat_loss_percent) : "–"} sub={snap ? `alarm at ${Math.round(snap.threshold_percent)}%` : "no night yet"} tone={snap && snap.extra_heat_loss_percent > snap.threshold_percent ? "hot" : undefined} />
+          <Tile label="Extra heat loss" value={snap ? pct(Math.max(0, snap.extra_heat_loss_percent)) : "–"} sub={snap ? `alarm at ${Math.round(snap.threshold_percent)}%` : "no night yet"} tone={snap && snap.extra_heat_loss_percent > snap.threshold_percent ? "hot" : undefined} />
           <Tile label="Costing you" value={snap?.annual_cost_gbp != null ? `${gbp(snap.annual_cost_gbp)}` : "£0"} sub={snap?.annual_cost_gbp != null ? "per year if left" : "nothing flagged"} tone={snap?.annual_cost_gbp ? "hot" : "ok"} />
           <Tile label="Nights above alarm" value={`${streak}`} sub={`in a row · ${history.persistence_nights} needed to flag`} />
           <Tile label="First sign" value={m.firstSign ? `Night ${m.firstSign.night_number}` : "None"} sub={m.firstSign ? shortDate(history.nights[m.firstSign.night_number - 1].start) : "every night normal"} />
@@ -247,19 +265,22 @@ function Story({ history, room, n, setAsOf, setRoom, report, onShow3D }: { histo
             current={n}
             onPick={setAsOf}
             series={[
-              { id: "x", label: "Extra heat loss", color, values: strip.map((s) => s.snap?.extra_heat_loss_percent ?? null) },
+              { id: "x", label: "Extra heat loss", color, values: strip.map((s) => (s.snap ? Math.max(0, s.snap.extra_heat_loss_percent) : null)) },
               { id: "t", label: "Alarm level", color: "#f2f3f5", dashed: true, values: strip.map((s) => s.snap?.threshold_percent ?? null) },
             ]}
             marks={[
               ...(m.flagged ? [{ night: m.flagged.night_number, label: "flagged", color: "#ff6a3d" }] : []),
               ...(m.fixAt ? [{ night: m.fixAt.night_number, label: "after fix", color: "#7aa8ff" }] : []),
+              ...fanNights(history, n).map((k) => ({ night: k, label: "fan test", color: FAN_COLOR })),
             ]}
             tooltipExtra={(k) => <div className="mt-1 text-mute">wind {nights[k - 1]?.mean_wind_m_s.toFixed(1)} m/s · {nights[k - 1]?.mean_outdoor_c.toFixed(1)}°C</div>}
           />
           <div className="mt-1 text-[11px] text-mute">Wind each night (m/s) · windy nights in blue</div>
           <NightsChart nights={n} height={80} legend={false} current={n} onPick={setAsOf} format={(v) => v.toFixed(0)} series={[{ id: "w", label: "Wind", color: "#4a5162", kind: "bar", values: nights.map((x) => x.mean_wind_m_s), barColors: nights.map((x) => (x.mean_wind_m_s >= WINDY ? "#3987e5" : null)) }]} />
           <p className="mt-3 text-[13px] text-mute">
-            The alarm starts high and drops as nights add up: one odd night can't trigger it, a steady pattern does. Shaded = above the alarm.
+            Extra heat loss is how much faster than a healthy room it loses heat (0% = as expected). The alarm starts high and drops as nights add up, so one odd
+            night can't trigger it but a steady pattern does. An air leak has a lower alarm than weak insulation, so the line steps when the leading suspect
+            changes. Shaded = above the alarm.
           </p>
         </div>
       </Section>
@@ -267,7 +288,7 @@ function Story({ history, room, n, setAsOf, setRoom, report, onShow3D }: { histo
       {/* suspects */}
       <Section kicker="The suspects" title="Who explains these nights best?">
         {snap ? (
-          <Suspects snap={snap} weights={weights} gapRule={history.cause_gap_bic} onShow3D={onShow3D} strip={strip} />
+          <Suspects snap={snap} weights={weights} gapRule={history.cause_gap_bic} strip={strip} showLead={strip.some((s) => s.snap?.candidate)} fans={fanNights(history, n)} />
         ) : (
           <Empty>No nights scored yet.</Empty>
         )}
@@ -339,6 +360,18 @@ function StoryRail({ history, room, n, setAsOf }: { history: HomeHistory; room: 
   if (m.fixAt) steps.push({ at: m.fixAt, icon: <Wrench size={14} />, title: "Repair reported", line: "From here only nights after the fix count.", color: "#7aa8ff" });
   if (m.resolved) steps.push({ at: m.resolved, icon: <Eye size={14} />, title: "Confirmed fixed", line: `${history.persistence_nights} normal nights after the repair.`, color: "#2fd18b" });
   if (m.stillBad) steps.push({ at: m.stillBad, icon: <Flag size={14} />, title: "Repair didn't help", line: "Still above the alarm after the fix.", color: "#ff3b5c" });
+  const fan = room.snapshots.find((s) => s.night_number <= n && history.nights[s.night_number - 1]?.kind === "fan_test");
+  if (fan)
+    steps.push({
+      at: fan,
+      icon: <Fan size={14} />,
+      title: "Fan test",
+      line: fan.named_cause
+        ? `2 hours of extractor fan pulled in outside air. That settled it: ${causeLabel(fan.named_cause).toLowerCase()}.`
+        : "2 hours of extractor fan pulled in outside air, but leak and walls still fit about equally.",
+      color: FAN_COLOR,
+    });
+  steps.sort((x, y) => x.at.night_number - y.at.night_number);
 
   if (!steps.length)
     return (
@@ -370,6 +403,7 @@ function StoryRail({ history, room, n, setAsOf }: { history: HomeHistory; room: 
 }
 
 function Swimlane({ history, n, focus, setAsOf, setRoom }: { history: HomeHistory; n: number; focus: string; setAsOf: (n: number) => void; setRoom: (id: string) => void }) {
+  const colorOf = useContext(RoomColor);
   const total = history.nights.length;
   const seen = new Set<RoomStatus>();
   return (
@@ -381,7 +415,7 @@ function Swimlane({ history, n, focus, setAsOf, setRoom }: { history: HomeHistor
               <th className="w-28" />
               {history.nights.map((x, i) => (
                 <th key={x.night_id} className={`num min-w-6 pb-1 text-center text-[10px] font-normal ${i + 1 > n ? "text-[#2b303b]" : x.mean_wind_m_s >= WINDY ? "text-[#9cc8ff]" : "text-dim"}`} title={`${shortDate(x.start)} · wind ${x.mean_wind_m_s.toFixed(1)} m/s`}>
-                  {x.mean_wind_m_s >= WINDY && i + 1 <= n ? "≋" : ""}
+                  {x.kind === "fan_test" && i + 1 <= n ? <span style={{ color: FAN_COLOR }}>◆</span> : x.mean_wind_m_s >= WINDY && i + 1 <= n ? "≋" : ""}
                   <div>{i + 1}</div>
                 </th>
               ))}
@@ -392,7 +426,7 @@ function Swimlane({ history, n, focus, setAsOf, setRoom }: { history: HomeHistor
               <tr key={r.room_id}>
                 <td>
                   <button onClick={() => setRoom(r.room_id)} className={`flex items-center gap-1.5 text-left text-[12.5px] ${focus === r.room_id ? "font-semibold text-ink" : "text-mute hover:text-ink"}`}>
-                    <i className="h-2 w-2 rounded-full" style={{ background: roomColor(SIM_TO_PLAN[r.room_id] ?? r.room_id) }} />
+                    <i className="h-2 w-2 rounded-full" style={{ background: colorOf(r.room_id) }} />
                     {r.name}
                   </button>
                 </td>
@@ -429,12 +463,13 @@ function Swimlane({ history, n, focus, setAsOf, setRoom }: { history: HomeHistor
           </span>
         ))}
         <span className="inline-flex items-center gap-1 text-[#9cc8ff]">≋ windy night</span>
+        {history.nights.some((x) => x.kind === "fan_test") && <span className="inline-flex items-center gap-1" style={{ color: FAN_COLOR }}>◆ fan test night</span>}
       </div>
     </div>
   );
 }
 
-function Suspects({ snap, weights, gapRule, onShow3D, strip }: { snap: RoomNightSnapshot; weights: Record<string, number>; gapRule: number; onShow3D: (c: CauseKey) => void; strip: { night: number; snap: RoomNightSnapshot | null }[] }) {
+function Suspects({ snap, weights, gapRule, strip, showLead, fans }: { snap: RoomNightSnapshot; weights: Record<string, number>; gapRule: number; strip: { night: number; snap: RoomNightSnapshot | null }[]; showLead: boolean; fans: number[] }) {
   const order: CauseKey[] = ["draft", "envelope_conduction", "normal"];
   const best = order.reduce((a, b) => ((weights[b] ?? 0) > (weights[a] ?? 0) ? b : a), "normal" as CauseKey);
   const fit = (c: CauseKey) => snap.fits.find((f) => f.fault_type === c);
@@ -469,23 +504,21 @@ function Suspects({ snap, weights, gapRule, onShow3D, strip }: { snap: RoomNight
               </div>
               <p className="mt-3 text-[13px] leading-snug text-mute">{blurb[c]}</p>
               {f && c !== "normal" && <div className="num mt-2 text-[11.5px] text-dim">fits as ×{f.fitted_multiplier.toFixed(2)} normal heat loss · ±{f.residual_rmse_deg_c.toFixed(2)}°</div>}
-              <button onClick={() => onShow3D(c)} className="mt-3 inline-flex items-center gap-1 text-[12px] text-ink underline-offset-2 hover:underline">
-                <Eye size={13} /> See it in 3D
-              </button>
             </motion.div>
           );
         })}
       </div>
+      {showLead && (
       <div className="mt-4 rounded-2xl border border-line bg-white/[0.02] p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-[13px] font-semibold">Who led, night by night</div>
+          <div className="text-[13px] font-semibold">Leak or walls? Which fault fitted better, night by night</div>
           <div className={`text-[12px] ${clear ? "text-ok" : "text-warm"}`}>{clear ? `Clear lead now (gap ${snap.cause_gap_bic.toFixed(1)} > ${gapRule})` : `Too close to call (gap ${snap.cause_gap_bic.toFixed(1)} ≤ ${gapRule})`}</div>
         </div>
         <div className="mt-2 flex gap-1">
           {strip.map(({ night, snap: s }) => (
             <div key={night} className="flex-1" title={s ? `Night ${night}: ${causeLabel(s.leading_cause)} ahead (gap ${s.cause_gap_bic.toFixed(1)})` : `Night ${night}`}>
               <div className="h-6 rounded-[5px]" style={{ background: s ? CAUSE[s.leading_cause as CauseKey].color : "#ffffff0d", opacity: s ? Math.min(1, 0.3 + s.cause_gap_bic / (gapRule * 2)) : 1 }} />
-              <div className="num mt-1 text-center text-[9.5px] text-dim">{night}</div>
+              <div className="num mt-1 text-center text-[9.5px]" style={{ color: fans.includes(night) ? FAN_COLOR : undefined }}>{fans.includes(night) ? `◆${night}` : night}</div>
             </div>
           ))}
         </div>
@@ -497,8 +530,20 @@ function Suspects({ snap, weights, gapRule, onShow3D, strip }: { snap: RoomNight
             <i className="h-2.5 w-2.5 rounded-[3px]" style={{ background: CAUSE.envelope_conduction.color }} /> Weak insulation ahead
           </span>
           <span>faded = narrow lead</span>
+          {fans.length > 0 && <span style={{ color: FAN_COLOR }}>◆ fan test night</span>}
         </div>
+        {snap.fan_test_nights > 0 && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl px-3 py-2 text-[12.5px]" style={{ background: `${FAN_COLOR}14`, color: "#bdeef5" }}>
+            <Fan size={14} className="mt-0.5 shrink-0" />
+            <span>
+              The cause was judged with {snap.fan_test_nights === 1 ? "a fan test" : `${snap.fan_test_nights} fan tests`}: 2 hours of extractor fan pull extra
+              outside air in through any gaps, which shows up in a leaky room but not in one with weak walls. Fan nights only help name the cause; they never
+              raise an alarm on their own.
+            </span>
+          </div>
+        )}
       </div>
+      )}
     </div>
   );
 }
@@ -520,12 +565,11 @@ function Card({ title, sub, children, className = "" }: { title: string; sub?: s
 function Tech({ history, readings, room, n, setAsOf, report, technical }: { history: HomeHistory; readings: HomeReadings; room: RoomHistory; n: number; setAsOf: (n: number) => void; report: RoomReport | null; technical: RoomTechnical | null }) {
   const info = history.nights[n - 1];
   const rr = readings.rooms[room.room_id];
-  const color = roomColor(SIM_TO_PLAN[room.room_id] ?? room.room_id);
+  const color = useContext(RoomColor)(room.room_id);
   const a = ms(info.start);
   const b = ms(info.end);
   const strip = statusStrip(room, n);
   const snap = snapAt(room, n);
-  const gaps = useMemo(() => nightGaps(readings, room.room_id, n), [readings, room.room_id, n]);
   const weights = snap ? bicWeights(snap.fits) : {};
   const mult = (c: string) => strip.map((s) => s.snap?.fits.find((f) => f.fault_type === c)?.fitted_multiplier ?? null);
 
@@ -574,36 +618,6 @@ function Tech({ history, readings, room, n, setAsOf, report, technical }: { hist
         </Card>
       </div>
 
-      <Card title="Every night, side by side" sub="Measured (solid) vs healthy-room model (dashed). Outline = what the app said after that night. Click to jump.">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-          {gaps.map((g) => {
-            const s = room.snapshots.find((x) => x.night_number === g.night);
-            const st = s ? ROOM_STATUS[s.status] : null;
-            const ga = ms(g.info.start);
-            const gb = ms(g.info.end);
-            return (
-              <button key={g.night} onClick={() => setAsOf(g.night)} className={`rounded-2xl border bg-black/20 p-2 text-left transition hover:bg-white/[0.05] ${g.night === n ? "ring-2 ring-white/60" : ""}`} style={{ borderColor: st && s!.status !== "healthy" ? st.color : "#ffffff14" }}>
-                <div className="flex items-center justify-between text-[10.5px]">
-                  <span className="num font-semibold">N{g.night}</span>
-                  <span className={`num ${g.info.mean_wind_m_s >= WINDY ? "text-[#9cc8ff]" : "text-dim"}`}>{g.info.mean_wind_m_s.toFixed(1)} m/s</span>
-                </div>
-                {rr && (
-                  <LineChart
-                    compact
-                    legend={false}
-                    height={54}
-                    data={[
-                      { id: "m", label: "Measured", color, series: slice(rr.measured, ga, gb) },
-                      ...(rr.expected_if_healthy ? [{ id: "e", label: "Expected", color: "#2fd18b", series: slice(rr.expected_if_healthy, ga, gb), dashed: true, width: 1.5 }] : []),
-                    ]}
-                  />
-                )}
-                <div className="num text-[10.5px] text-mute">{g.drop != null ? `−${g.drop.toFixed(1)}° overnight · ${g.info.mean_outdoor_c.toFixed(0)}° out` : "–"}</div>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Model fits after each night" sub="How much bigger than normal each kind of heat loss would have to be to match the readings (×1 = healthy).">
@@ -681,10 +695,12 @@ function Tech({ history, readings, room, n, setAsOf, report, technical }: { hist
                     <td className="pr-3">{shortDate(x.start)}</td>
                     <td className="pr-3">{x.mean_outdoor_c.toFixed(1)}°</td>
                     <td className={`pr-3 ${x.mean_wind_m_s >= WINDY ? "text-[#9cc8ff]" : ""}`}>{x.mean_wind_m_s.toFixed(1)}</td>
-                    <td className="pr-3">{s ? `${s.nights_judged}${s.after_fix ? " (post-fix)" : ""}` : "–"}</td>
-                    <td className="pr-3">{s ? `${s.extra_heat_loss_percent.toFixed(1)}%` : "–"}</td>
-                    <td className="pr-3">{s ? `${s.threshold_percent.toFixed(1)}%` : "–"}</td>
-                    <td className={`pr-3 ${s?.candidate ? "text-hot" : "text-dim"}`}>{s ? (s.candidate ? "yes" : "no") : "–"}</td>
+                    <td className="pr-3" style={{ color: x.kind === "fan_test" ? FAN_COLOR : undefined }}>
+                      {x.kind === "fan_test" ? "fan test: names cause only" : s ? `${s.nights_judged}${s.after_fix ? " (post-fix)" : ""}` : "–"}
+                    </td>
+                    <td className="pr-3">{s && x.kind !== "fan_test" ? `${s.extra_heat_loss_percent.toFixed(1)}%` : "–"}</td>
+                    <td className="pr-3">{s && x.kind !== "fan_test" ? `${s.threshold_percent.toFixed(1)}%` : "–"}</td>
+                    <td className={`pr-3 ${s?.candidate && x.kind !== "fan_test" ? "text-hot" : "text-dim"}`}>{s && x.kind !== "fan_test" ? (s.candidate ? "yes" : "no") : "–"}</td>
                     <td className="pr-3" style={{ color: s ? CAUSE[s.leading_cause as CauseKey].color : undefined }}>
                       {s ? causeLabel(s.leading_cause) : "–"}
                     </td>

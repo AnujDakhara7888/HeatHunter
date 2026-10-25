@@ -1,0 +1,147 @@
+{
+  "plan_id": "l-shaped-bungalow",
+  "name": "L-shaped bungalow",
+  "ceiling_height_m": 2.4,
+  "rooms": [
+    {
+      "room_id": "living_room",
+      "name": "Living room",
+      "x": 0,
+      "z": 0,
+      "width": 5.0,
+      "depth": 4.5
+    },
+    {
+      "room_id": "kitchen",
+      "name": "Kitchen",
+      "x": 5.0,
+      "z": 0,
+      "width": 3.6,
+      "depth": 4.5
+    },
+    {
+      "room_id": "hall",
+      "name": "Hall",
+      "x": 0,
+      "z": 4.5,
+      "width": 1.4,
+      "depth": 6.0
+    },
+    {
+      "room_id": "main_bedroom",
+      "name": "Main bedroom",
+      "x": 1.4,
+      "z": 4.5,
+      "width": 3.6,
+      "depth": 3.4
+    },
+    {
+      "room_id": "guest_bedroom",
+      "name": "Guest bedroom",
+      "x": 1.4,
+      "z": 7.9,
+      "width": 3.6,
+      "depth": 2.6
+    }
+  ],
+  "openings": [
+    {
+      "kind": "window",
+      "x0": 0.8,
+      "z0": 0,
+      "x1": 3.8,
+      "z1": 0
+    },
+    {
+      "kind": "door",
+      "x0": 4.1,
+      "z0": 0,
+      "x1": 4.9,
+      "z1": 0
+    },
+    {
+      "kind": "window",
+      "x0": 5.8,
+      "z0": 0,
+      "x1": 7.8,
+      "z1": 0
+    },
+    {
+      "kind": "window",
+      "x0": 8.6,
+      "z0": 1.2,
+      "x1": 8.6,
+      "z1": 3.0
+    },
+    {
+      "kind": "window",
+      "x0": 6.0,
+      "z0": 4.5,
+      "x1": 7.6,
+      "z1": 4.5
+    },
+    {
+      "kind": "window",
+      "x0": 5.0,
+      "z0": 5.2,
+      "x1": 5.0,
+      "z1": 7.0
+    },
+    {
+      "kind": "window",
+      "x0": 2.0,
+      "z0": 10.5,
+      "x1": 4.4,
+      "z1": 10.5
+    },
+    {
+      "kind": "window",
+      "x0": 5.0,
+      "z0": 8.6,
+      "x1": 5.0,
+      "z1": 9.8
+    },
+    {
+      "kind": "door",
+      "x0": 0,
+      "z0": 8.8,
+      "x1": 0,
+      "z1": 9.7
+    },
+    {
+      "kind": "window",
+      "x0": 0,
+      "z0": 5.6,
+      "x1": 0,
+      "z1": 6.6
+    },
+    {
+      "kind": "door",
+      "x0": 5.0,
+      "z0": 1.5,
+      "x1": 5.0,
+      "z1": 2.4
+    },
+    {
+      "kind": "door",
+      "x0": 0.3,
+      "z0": 4.5,
+      "x1": 1.1,
+      "z1": 4.5
+    },
+    {
+      "kind": "door",
+      "x0": 1.4,
+      "z0": 5.4,
+      "x1": 1.4,
+      "z1": 6.2
+    },
+    {
+      "kind": "door",
+      "x0": 1.4,
+      "z0": 8.6,
+      "x1": 1.4,
+      "z1": 9.4
+    }
+  ]
+}

@@ -98,7 +98,7 @@ def test_assistant_passes_on_topic_answers_and_sees_server_context(client: TestC
     assert answer["reply"] == "The kitchen looks fine so far."
     assert answer["actions"] == [{"type": "focus_room", "target": "kitchen"}]  # only room focus is offered
     prompt = seen["messages"][-1]["content"]
-    assert "<home>" in prompt and '"hidden_answer": "not revealed"' in prompt
+    assert "<home>" in prompt and "hidden_answer" not in prompt
 
 
 def test_site_assistant_answers_without_a_home(client: TestClient, monkeypatch) -> None:

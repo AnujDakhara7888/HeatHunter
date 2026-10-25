@@ -12,7 +12,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app import assistant
-from backend.app.contracts import ChatMessage
 from backend.app.main import app
 
 REPLY = {"on_topic": True, "reply": "We need more nights before naming a cause.", "actions": []}
@@ -78,7 +77,7 @@ def test_openai_success_uses_server_context_without_truth(monkeypatch):
     assert "Project guide:" in request["instructions"]
     assert "no live physical" in request["instructions"]
     content = request["input"][-1]["content"]
-    assert '"hidden_answer": "not revealed"' in content
+    assert "hidden_answer" not in content
     assert "severity" not in content and "sensor_seed" not in content
     assert seen["closed"] is True
 
@@ -146,7 +145,7 @@ def test_selected_room_uses_server_report_and_cannot_supply_its_own(monkeypatch)
     payload = json.loads(prompt.split("<home>", 1)[1].split("</home>", 1)[0])
     assert payload["selected_room"]["room_id"] == "kitchen"
     assert payload["selected_room"]["status"] == "not_enough_data"
-    assert payload["hidden_answer"] == "not revealed"
+    assert "hidden_answer" not in payload
     response = client.post("/api/assistant/help", json={
         "messages": [{"role": "user", "content": "Explain"}],
         "screen": {"page": "fault_lab", "diagnosis": "confirmed draft"},
@@ -288,15 +287,14 @@ def test_invalid_provider_is_an_explicit_error(monkeypatch):
     assert ask(TestClient(app)).status_code == 503
 
 
-def test_hidden_truth_is_available_only_after_reveal(monkeypatch):
+def test_planted_fault_never_reaches_the_chat(monkeypatch):
     seen = fake_provider(monkeypatch)
-    context = {"home": {"rooms": []}, "hidden_answer": "not revealed"}
-    assistant.home_chat([ChatMessage(role="user", content="What is the hidden fault?")], context)
-    assert '"hidden_answer": "not revealed"' in seen["request"]["input"][-1]["content"]
-    # This context represents the public reveal already performed by the caller, not a truth-store read.
-    context["hidden_answer"] = {"fault_type": "draft", "room_id": "kitchen"}
-    assistant.home_chat([ChatMessage(role="user", content="Explain the revealed answer")], context)
-    assert '"fault_type": "draft"' in seen["request"]["input"][-1]["content"]
+    client = TestClient(app)
+    planted = {"fault": {"type": "draft", "room_id": "kitchen", "severity": 2.0}, "seed": 3}
+    home = client.post("/api/demo/homes", json=planted).json()["home_id"]
+    assert ask(client, home=home).status_code == 200
+    content = seen["request"]["input"][-1]["content"]
+    assert "hidden_answer" not in content and "severity" not in content and "fault_type" not in content
 
 
 @pytest.mark.parametrize(

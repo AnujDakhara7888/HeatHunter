@@ -1,5 +1,4 @@
-import type { HomeReadings, HypothesisSummary, NightInfo, RoomHistory, RoomNightSnapshot, RoomStatus } from "../api/types";
-import { ms } from "./rooms";
+import type { HypothesisSummary, RoomHistory, RoomNightSnapshot, RoomStatus } from "../api/types";
 
 /** What the app knew about a room right after night `n` (1-based), or null before its first scored night. */
 export function snapAt(room: RoomHistory | undefined, n: number): RoomNightSnapshot | null {
@@ -51,19 +50,6 @@ export function milestones(room: RoomHistory | undefined, n: number): Milestones
     resolved: after.find((s) => s.status === "resolved") ?? null,
     stillBad: after.find((s) => s.status === "still_an_issue") ?? null,
   };
-}
-
-export type NightDrop = { night: number; info: NightInfo; drop: number | null };
-
-/** How far a room's measured temperature fell over each heating-off night. */
-export function nightGaps(readings: HomeReadings, roomId: string, upTo: number): NightDrop[] {
-  const r = readings.rooms[roomId];
-  return readings.nights.slice(0, upTo).map((info, i) => {
-    const a = ms(info.start);
-    const b = ms(info.end);
-    const vals = r ? r.measured.timestamps.map((t, k) => [ms(t), r.measured.values[k]] as const).filter(([t, v]) => t >= a && t <= b && v != null) : [];
-    return { night: i + 1, info, drop: vals.length > 1 ? (vals[0][1] as number) - (vals[vals.length - 1][1] as number) : null };
-  });
 }
 
 export const shortDate = (iso: string) =>

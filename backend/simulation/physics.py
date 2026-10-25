@@ -49,6 +49,9 @@ class Room:
         finite(self.window_h, "window_h", 0, 1e5)
 
 
+MAX_ROOMS = 16  # the HH09 twin has 4; a plan-built house has its sensed rooms
+
+
 @dataclass(frozen=True)
 class House:
     rooms: tuple[Room, ...]
@@ -60,9 +63,10 @@ class House:
     wind_coefficient: float = 0.06
 
     def __post_init__(self) -> None:
-        if len(self.rooms) != 4 or len({r.room_id for r in self.rooms}) != 4:
-            raise ValueError("house must have four unique rooms")
-        if len(self.initial_air) != 4 or len(self.initial_mass) != 4:
+        n = len(self.rooms)
+        if not 1 <= n <= MAX_ROOMS or len({r.room_id for r in self.rooms}) != n:
+            raise ValueError(f"house must have 1 to {MAX_ROOMS} unique rooms")
+        if len(self.initial_air) != n or len(self.initial_mass) != n:
             raise ValueError("initial states must match rooms")
         for value in (*self.initial_air, *self.initial_mass):
             finite(value, "initial temperature", -60, 80)
@@ -70,7 +74,7 @@ class House:
         finite(self.wind_coefficient, "wind coefficient", 0, 1)
         seen = set()
         for a, b, conductance in self.couplings:
-            if type(a) is not int or type(b) is not int or not (0 <= a < b < 4) or (a, b) in seen:
+            if type(a) is not int or type(b) is not int or not (0 <= a < b < n) or (a, b) in seen:
                 raise ValueError("couplings must be unique ordered room-index pairs")
             finite(conductance, "coupling", 0, 1e5)
             seen.add((a, b))
@@ -203,8 +207,9 @@ def fan_shares(house: House) -> tuple[float, ...]:
 def derivative(
     house: House, state: tuple[float, ...], outdoor: float, wind: float, fan_flow: float = 0
 ) -> tuple[float, ...]:
-    """Eight derivatives: four air nodes followed by four mass nodes."""
-    air, mass = state[:4], state[4:]
+    """2n derivatives: the n air nodes followed by the n mass nodes."""
+    n = len(house.rooms)
+    air, mass = state[:n], state[n:]
     shares = fan_shares(house)
     qa, qm = [], []
     for i, r in enumerate(house.rooms):

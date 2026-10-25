@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, FlaskConical, Home, Upload } from "lucide-react";
+import { ArrowRight, FlaskConical, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, traced } from "../api/client";
@@ -10,6 +10,7 @@ import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
 import { coolingRate, fmtTime, ms, valueAt } from "../lib/rooms";
 import { useScene, type View } from "../store/scene";
 import { HouseCanvas } from "../three/Scene";
+import { toInsulation } from "../three/thermal";
 
 const NIGHT: [string, string] = ["2021-02-18T22:00:00Z", "2021-02-19T06:00:00Z"];
 
@@ -127,11 +128,14 @@ export default function Landing() {
   useEffect(() => {
     if (!night) return;
     const values = Object.values(night.rooms).flatMap((s) => s.values).filter((v): v is number => v != null);
+    const out = night.outdoor.values.filter((v): v is number => v != null);
     set({
       tempRange: [Math.min(...values) - 0.5, Math.max(...values) + 0.5],
+      outdoorRange: out.length ? [Math.min(...out), Math.max(...out)] : null,
+      insulation: house?.insulation ? toInsulation(house.insulation) : null,
       rates: Object.fromEntries(Object.entries(night.rooms).map(([k, s]) => [k, coolingRate(s)])),
     });
-  }, [night, set]);
+  }, [night, house, set]);
 
   // Scroll drives the camera chapter and, in chapter 1, the clock.
   useEffect(() => {
@@ -180,7 +184,7 @@ export default function Landing() {
       autoRotate: false,
       fanOn: !!c.fan,
       focusRoom: c.view === "inside" ? "hall" : null,
-      finding: c.finding ? { room: "hall", cause: "envelope_conduction", strength: 0.8 } : null,
+      finding: c.finding ? { room: "hall", cause: "envelope_conduction", strength: 0.8, extra: 0.32 } : null, // illustrative
     });
   }, [chapter, set]);
 
@@ -213,9 +217,6 @@ export default function Landing() {
             </div>
             <div>
               <div className="text-[28px] font-bold text-ink">3</div>suspects tested
-            </div>
-            <div>
-              <div className="text-[28px] font-bold text-ink">0</div>pre-baked answers
             </div>
           </div>
         </motion.div>
@@ -258,12 +259,11 @@ export default function Landing() {
 
       <section className="relative flex min-h-screen flex-col justify-center px-[6vw]">
         <h2 className="max-w-3xl text-[clamp(40px,5.5vw,72px)] font-bold leading-[1] tracking-[-0.04em]">
-          Nothing on this page is scripted. <span className="text-mute">Try it.</span>
+          Pick a home. Watch it cool. <span className="text-mute">Catch the leak.</span>
         </h2>
-        <div className="pointer-events-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
+        <div className="pointer-events-auto mt-10 grid max-w-4xl gap-4 md:grid-cols-2">
           {[
-            { to: "/lab", icon: <FlaskConical size={20} />, t: "Fault Lab", d: "Hide a fault in the digital twin, or let a judge hide it. Advance night by night and watch it get caught." },
-            { to: "/real", icon: <Home size={20} />, t: "Real home", d: "A week of real HH09 sensor data, replayed in 3D, room by room." },
+            { to: "/lab", icon: <FlaskConical size={20} />, t: "Fault Lab", d: "Plant a fault in a simulated house, or let a judge plant it. Advance night by night and watch it get caught." },
             { to: "/home", icon: <Upload size={20} />, t: "Your home", d: "Upload a floor plan and your sensor logs. HeatHunter watches your rooms night after night." },
           ].map((c) => (
             <Link key={c.t} to={c.to} className="glass group rounded-3xl p-6 transition hover:-translate-y-1">

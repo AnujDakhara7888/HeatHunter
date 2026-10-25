@@ -218,6 +218,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/house-shapes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * House Shapes
+         * @description House shapes a demo can run on: the HH09 twin, presets and saved plans.
+         */
+        get: operations["house_shapes_api_house_shapes_get"];
+        put?: never;
+        /**
+         * Save House Shape
+         * @description Save a drawn single-storey plan to reuse for simulations.
+         */
+        post: operations["save_house_shape_api_house_shapes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/house-shapes/{shape_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete House Shape
+         * @description Delete a saved shape (presets and the HH09 twin stay).
+         */
+        delete: operations["delete_house_shape_api_house_shapes__shape_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demo/homes": {
         parameters: {
             query?: never;
@@ -229,7 +273,7 @@ export interface paths {
         put?: never;
         /**
          * Create Demo Home
-         * @description Load any scenario on the simulated HH09 twin: a chosen fault, a random hidden one, or none.
+         * @description Load a scenario on a house shape (default the HH09 twin): a chosen fault, a random one, or none.
          */
         post: operations["create_demo_home_api_demo_homes_post"];
         delete?: never;
@@ -252,7 +296,11 @@ export interface paths {
         get: operations["home_health_api_homes__home_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Home
+         * @description Forget a home and all its nights (a real home's saved file is deleted too).
+         */
+        delete: operations["delete_home_api_homes__home_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -382,20 +430,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/demo/homes/{home_id}/reveal": {
+    "/api/demo/homes/{home_id}/fan-test": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Reveal Demo
-         * @description The hidden fault, whether the app found it, and the same night without the fault.
-         */
-        get: operations["reveal_demo_api_demo_homes__home_id__reveal_get"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Fan Test Demo
+         * @description Run the next night as a fan test (2 h extract fan); it only helps name an unclear cause.
+         */
+        post: operations["fan_test_demo_api_demo_homes__home_id__fan_test_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -601,9 +649,8 @@ export interface components {
             /**
              * House
              * @default hh09
-             * @constant
              */
-            house: "hh09";
+            house: string;
             fault?: components["schemas"]["DemoFault"] | null;
             /**
              * Random Fault
@@ -614,32 +661,6 @@ export interface components {
             start_date?: string | null;
             /** Seed */
             seed?: number | null;
-        };
-        /** DemoReveal */
-        DemoReveal: {
-            fault_type: components["schemas"]["FaultType"];
-            /** Room Id */
-            room_id: string | null;
-            /** Severity */
-            severity: number;
-            /** App Found It */
-            app_found_it: boolean;
-            /** Nights To Find */
-            nights_to_find: number | null;
-            /** Summary */
-            summary: string;
-            /** Fault Free Twin */
-            fault_free_twin: {
-                [key: string]: components["schemas"]["Series"];
-            };
-            /** Fault Free Night Id */
-            fault_free_night_id: string;
-            /**
-             * Provenance
-             * @default SIMULATED_GROUND_TRUTH
-             * @constant
-             */
-            provenance: "SIMULATED_GROUND_TRUTH";
         };
         /**
          * DemoWeek
@@ -703,11 +724,6 @@ export interface components {
              */
             provenance: "MODEL_ESTIMATE";
         };
-        /**
-         * FaultType
-         * @enum {string}
-         */
-        FaultType: "draft" | "envelope_conduction" | "none";
         /**
          * FixAction
          * @enum {string}
@@ -862,6 +878,7 @@ export interface components {
             };
             /** Nights */
             nights: components["schemas"]["NightInfo"][];
+            insulation?: components["schemas"]["SurfaceInsulation"] | null;
         };
         /**
          * HomeStatus
@@ -887,6 +904,32 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Shape Id */
+            shape_id?: string | null;
+        };
+        /**
+         * HouseShape
+         * @description A single-storey house a demo can be simulated on: the HH09 twin, a preset or a saved plan.
+         */
+        HouseShape: {
+            /** Shape Id */
+            shape_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "twin" | "preset" | "saved";
+            /** Sensed Rooms */
+            sensed_rooms: number;
+            plan: components["schemas"]["HomePlan"];
+        };
+        /** HouseShapeCreate */
+        HouseShapeCreate: {
+            /** Name */
+            name: string;
+            plan: components["schemas"]["HomePlan"];
         };
         /** HypothesisSummary */
         HypothesisSummary: {
@@ -968,6 +1011,12 @@ export interface components {
             mean_outdoor_c: number;
             /** Mean Wind M S */
             mean_wind_m_s: number;
+            /**
+             * Kind
+             * @default passive
+             * @enum {string}
+             */
+            kind: "passive" | "fan_test";
         };
         /** PlanOpening */
         PlanOpening: {
@@ -1063,6 +1112,7 @@ export interface components {
             timestamp_notes: string;
             /** Scientific Disclaimer */
             scientific_disclaimer: string;
+            insulation?: components["schemas"]["SurfaceInsulation"] | null;
         };
         /** RoomHealthView */
         RoomHealthView: {
@@ -1138,6 +1188,11 @@ export interface components {
             fits: components["schemas"]["HypothesisSummary"][];
             /** Annual Cost Gbp */
             annual_cost_gbp: number | null;
+            /**
+             * Fan Test Nights
+             * @default 0
+             */
+            fan_test_nights: number;
         };
         /** RoomReadings */
         RoomReadings: {
@@ -1163,6 +1218,11 @@ export interface components {
             /** Suggested Check */
             suggested_check: string | null;
             fix: components["schemas"]["FixRecord"] | null;
+            /**
+             * Fan Test Available
+             * @default false
+             */
+            fan_test_available: boolean;
         };
         /**
          * RoomStatus
@@ -1220,6 +1280,33 @@ export interface components {
             station_call_sign?: string | null;
             /** Station Name */
             station_name?: string | null;
+        };
+        /**
+         * SurfaceInsulation
+         * @description How well insulated each room's outside surfaces are; the UI's infrared view
+         *     uses it to estimate surface temperatures from measured air temperatures.
+         */
+        SurfaceInsulation: {
+            /** Envelope U W Per M2K */
+            envelope_u_w_per_m2k: {
+                [key: string]: number;
+            };
+            /** Room Heat Loss W Per K */
+            room_heat_loss_w_per_k: {
+                [key: string]: number;
+            };
+            /** Default Envelope U W Per M2K */
+            default_envelope_u_w_per_m2k: number;
+            /** Window U W Per M2K */
+            window_u_w_per_m2k: number;
+            /**
+             * Provenance
+             * @default MODEL_ESTIMATE
+             * @constant
+             */
+            provenance: "MODEL_ESTIMATE";
+            /** Notes */
+            notes: string;
         };
         /** WeatherLookup */
         WeatherLookup: {
@@ -1727,6 +1814,205 @@ export interface operations {
             };
         };
     };
+    house_shapes_api_house_shapes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseShape"][];
+                };
+            };
+            /** @description Unknown home, room or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid for this home now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (assistant, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    save_house_shape_api_house_shapes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HouseShapeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseShape"];
+                };
+            };
+            /** @description Unknown home, room or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid for this home now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (assistant, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    delete_house_shape_api_house_shapes__shape_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shape_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unknown home, room or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid for this home now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (assistant, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     create_demo_home_api_demo_homes_post: {
         parameters: {
             query?: never;
@@ -1815,6 +2101,71 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HomeHealth"];
                 };
+            };
+            /** @description Unknown home, room or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid for this home now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (assistant, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    delete_home_api_homes__home_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Unknown home, room or asset. */
             404: {
@@ -2351,7 +2702,7 @@ export interface operations {
             };
         };
     };
-    reveal_demo_api_demo_homes__home_id__reveal_get: {
+    fan_test_demo_api_demo_homes__home_id__fan_test_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2368,7 +2719,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DemoReveal"];
+                    "application/json": components["schemas"]["HomeHealth"];
                 };
             };
             /** @description Unknown home, room or asset. */

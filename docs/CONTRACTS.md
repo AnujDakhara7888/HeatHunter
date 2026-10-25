@@ -28,9 +28,9 @@ Allowed provenance values are `REAL_MEASUREMENT`, `SIMULATED_MEASUREMENT`,
 No home, room, readings or assistant response contains the planted fault, its
 severity, or private simulator coefficients; they stay inside
 `backend/simulation/demo_home.py`. The flag rule receives only public templates,
-observations and weather. Only `GET /api/demo/homes/{home_id}/reveal` returns
-the hidden answer (`DemoReveal`), and a contract test keeps it off every other
-route. The assistant is told the answer only after that reveal.
+observations and weather. No route returns the planted answer (the reveal
+route was removed on 2026-10-25: in Judge mode the user chose the fault), and a
+contract test keeps hidden truth off every route. The assistant never sees it.
 
 The Real Homes response has no room-level fault label. Its disclaimer must state
 that it demonstrates real measurements and does not validate synthetic
@@ -83,7 +83,6 @@ Implementation notes:
   coordinates and cached in the file. The flag rule's thresholds are
   transferred unchanged from the HH09 tuning; `/technical` discloses this as an
   ASSUMPTION.
-- `DemoReveal` is returned by the reveal route only; a contract test enforces it.
 
 ### Idea in one paragraph
 
@@ -101,9 +100,12 @@ Only four routes are demo-only.
 |---|---|---|---|---|
 | 1 | GET | `/api/homes` | all | House picker: list of homes |
 | 2 | POST | `/api/demo/homes` | demo | Load any scenario: house + fault (or random, or none) |
+| 2c | GET/POST | `/api/house-shapes` | demo | House shapes for demos (HH09 twin, 4 presets, saved plans); POST saves a drawn plan |
+| 2d | DELETE | `/api/house-shapes/{shape_id}` | demo | Delete a saved shape (409 while a demo house uses it) |
 | 2b | GET | `/api/demo/weeks` | demo | Weeks a demo house can start on, with each week's real weather (mean °C, wind, windy/calm nights) |
 | 3 | POST | `/api/homes` | real | Set up a real home: plan, location, heating-off hours |
 | 4 | GET | `/api/homes/{home_id}` | all | Home health: every room's status in plain words |
+| 4b | DELETE | `/api/homes/{home_id}` | all | Forget a home and its nights (a real home's file too); 204 |
 | 5 | GET | `/api/homes/{home_id}/readings` | all | Chart data: room temps, weather, "expected if healthy" line |
 | 6 | GET | `/api/homes/{home_id}/rooms/{room_id}` | all | One room: why, what to do, cost, evidence over nights |
 | 7 | GET | `/api/homes/{home_id}/rooms/{room_id}/technical` | all | Fits, scores, thresholds (only when someone opens "details") |
@@ -111,7 +113,7 @@ Only four routes are demo-only.
 | 8 | POST | `/api/homes/{home_id}/rooms/{room_id}/fix` | all | "I've fixed it": starts verification |
 | 9 | POST | `/api/homes/{home_id}/readings` | real | Sensors upload readings |
 | 10 | POST | `/api/demo/homes/{home_id}/advance` | demo | Move the demo clock on by N nights |
-| 11 | GET | `/api/demo/homes/{home_id}/reveal` | demo | Show the hidden fault and whether the app got it right |
+| 10b | POST | `/api/demo/homes/{home_id}/fan-test` | demo | Run the next night as a fan test (only when a flagged room's cause is unclear; 409 otherwise) |
 | 12 | POST | `/api/homes/{home_id}/assistant` | all | Chat about this home (OpenAI or Claude; server-built context) |
 
 The single-night routes it replaced were removed on 2026-10-24 (see "HTTP
@@ -178,11 +180,23 @@ USD conversion is needed in the UI.
 { "outdoor_temperature": "Series", "wind_speed": "Series",
   "rooms": { "bedroom_1": { "measured": "Series", "expected_if_healthy": "Series" } },
   "nights": [ { "night_id": "hh09-night-2021-01-10", "start": "...", "end": "...",
-                "mean_wind_m_s": 4.1 } ] }
+                "mean_wind_m_s": 4.1 } ],
+  "insulation": { "envelope_u_w_per_m2k": { "bedroom_1": 0.742 },
+                  "room_heat_loss_w_per_k": { "bedroom_1": 50.7 },
+                  "default_envelope_u_w_per_m2k": 0.735, "window_u_w_per_m2k": 2.8,
+                  "provenance": "MODEL_ESTIMATE", "notes": "..." } }
 ```
 `expected_if_healthy` is the engine's prediction for a healthy room under the
 same weather (`MODEL_ESTIMATE`). It never comes from the simulator, so it
 reveals nothing hidden.
+
+`insulation` (`SurfaceInsulation`, also on `GET /api/real/house` keyed by the
+real sensor rooms) holds the engine's nominal figures: each room's envelope
+conductance per m² of exposed wall, roof and floor (an effective U-value), its
+nominal seasonal heat loss (what `extra_heat_loss_percent` is a fraction of),
+and the SAP window U-value. The UI's infrared view uses them to estimate
+surface temperatures from measured air and outdoor temperatures (ISO 6946
+surface resistances). Those colours are estimates, not camera images.
 
 ### 6. `GET /api/homes/{home_id}/rooms/{room_id}` → `RoomReport`
 ```json
@@ -226,17 +240,13 @@ nights are added and every room is re-checked. Returns `HomeHealth`.
 ### 10. `POST /api/demo/homes/{home_id}/advance`
 `{ "nights": 1 }` (1–14). Simulates the next nights and re-checks. Returns `HomeHealth`.
 
-### 11. `GET /api/demo/homes/{home_id}/reveal` → `DemoReveal`
-```json
-{ "fault_type": "draft", "room_id": "bedroom_1", "severity": 1.2,
-  "app_found_it": true, "nights_to_find": 2,
-  "summary": "The hidden fault was an air leak in the Bedroom (2.2x normal). The app named it correctly after 2 nights.",
-  "fault_free_twin": { "bedroom_1": "Series" }, "fault_free_night_id": "hh09-night-2020-11-09",
-  "provenance": "SIMULATED_GROUND_TRUTH" }
-```
-`fault_free_twin` is the simulator re-run without the fault, for comparison.
-It is shown only here, after the reveal. Allowed only once at least one night
-exists. After reveal, the assistant may mention the truth.
+### 10b. `POST /api/demo/homes/{home_id}/fan-test`
+No body. Simulates the next night with a 2-hour extract fan and re-checks;
+returns `HomeHealth`. Offered when `RoomReport.fan_test_available` is true (a
+flagged room's cause is unclear). A fan night only helps name the cause; it
+never flags a room (see `docs/PHYSICS.md`, "Fan test"). `NightInfo.kind` is
+`fan_test` for it, and `RoomNightSnapshot.fan_test_nights` counts the fan nights
+that helped name the cause.
 
 ### 12. `POST /api/homes/{home_id}/assistant`
 `{ "messages": [ { "role": "user", "content": "Why the bedroom?" } ] }` →
@@ -264,8 +274,8 @@ Ranges are explicitly not the current playback-cursor temperature. Page changes
 also reset the conversation to prevent replies about a previous page.
 
 ### Errors
-404 unknown home or room · 409 wrong state (e.g. advance a real home, reveal
-before any night) · 422 invalid input · 501 stale/missing settings ·
+404 unknown home or room · 409 wrong state (e.g. advance a real home) ·
+422 invalid input · 501 stale/missing settings ·
 503 assistant or weather unavailable.
 
 ## OpenAPI and TypeScript

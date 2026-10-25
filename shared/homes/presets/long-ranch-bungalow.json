@@ -1,0 +1,170 @@
+{
+  "plan_id": "long-ranch-bungalow",
+  "name": "Long ranch bungalow",
+  "ceiling_height_m": 2.4,
+  "rooms": [
+    {
+      "room_id": "living_room",
+      "name": "Living room",
+      "x": 0,
+      "z": 0,
+      "width": 5.0,
+      "depth": 4.4
+    },
+    {
+      "room_id": "kitchen",
+      "name": "Kitchen-diner",
+      "x": 5.0,
+      "z": 0,
+      "width": 4.0,
+      "depth": 4.4
+    },
+    {
+      "room_id": "study",
+      "name": "Study",
+      "x": 9.0,
+      "z": 0,
+      "width": 3.0,
+      "depth": 4.4
+    },
+    {
+      "room_id": "main_bedroom",
+      "name": "Main bedroom",
+      "x": 0,
+      "z": 4.4,
+      "width": 4.5,
+      "depth": 3.6
+    },
+    {
+      "room_id": "bathroom",
+      "name": "Bathroom",
+      "x": 4.5,
+      "z": 4.4,
+      "width": 2.5,
+      "depth": 3.6,
+      "has_sensor": false
+    },
+    {
+      "room_id": "second_bedroom",
+      "name": "Second bedroom",
+      "x": 7.0,
+      "z": 4.4,
+      "width": 5.0,
+      "depth": 3.6
+    }
+  ],
+  "openings": [
+    {
+      "kind": "window",
+      "x0": 0.8,
+      "z0": 0,
+      "x1": 4.0,
+      "z1": 0
+    },
+    {
+      "kind": "window",
+      "x0": 5.6,
+      "z0": 0,
+      "x1": 7.4,
+      "z1": 0
+    },
+    {
+      "kind": "door",
+      "x0": 7.8,
+      "z0": 0,
+      "x1": 8.6,
+      "z1": 0
+    },
+    {
+      "kind": "window",
+      "x0": 9.6,
+      "z0": 0,
+      "x1": 11.4,
+      "z1": 0
+    },
+    {
+      "kind": "window",
+      "x0": 0.8,
+      "z0": 8.0,
+      "x1": 3.6,
+      "z1": 8.0
+    },
+    {
+      "kind": "window",
+      "x0": 5.2,
+      "z0": 8.0,
+      "x1": 6.2,
+      "z1": 8.0
+    },
+    {
+      "kind": "window",
+      "x0": 8.0,
+      "z0": 8.0,
+      "x1": 11.0,
+      "z1": 8.0
+    },
+    {
+      "kind": "window",
+      "x0": 0,
+      "z0": 1.2,
+      "x1": 0,
+      "z1": 3.0
+    },
+    {
+      "kind": "window",
+      "x0": 0,
+      "z0": 5.2,
+      "x1": 0,
+      "z1": 6.8
+    },
+    {
+      "kind": "window",
+      "x0": 12.0,
+      "z0": 1.4,
+      "x1": 12.0,
+      "z1": 3.0
+    },
+    {
+      "kind": "window",
+      "x0": 12.0,
+      "z0": 5.0,
+      "x1": 12.0,
+      "z1": 6.6
+    },
+    {
+      "kind": "door",
+      "x0": 5.0,
+      "z0": 1.6,
+      "x1": 5.0,
+      "z1": 2.6
+    },
+    {
+      "kind": "door",
+      "x0": 9.0,
+      "z0": 1.6,
+      "x1": 9.0,
+      "z1": 2.5
+    },
+    {
+      "kind": "door",
+      "x0": 1.8,
+      "z0": 4.4,
+      "x1": 2.6,
+      "z1": 4.4
+    },
+    {
+      "kind": "door",
+      "x0": 5.4,
+      "z0": 4.4,
+      "x1": 6.1,
+      "z1": 4.4
+    },
+    {
+      "kind": "door",
+      "x0": 8.0,
+      "z0": 4.4,
+      "x1": 8.8,
+      "z1": 4.4
+    }
+  ]
+}

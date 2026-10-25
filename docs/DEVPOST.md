@@ -67,7 +67,7 @@ English.
 - **Digital twin and hidden faults.** A simulator of HH09 plants a fault in one
   room and generates realistic, noisy temperatures from real SMETER weather.
   The hidden answer is stored separately. The diagnosis code can't import it
-  (a test enforces this), and only the Reveal button can read it.
+  (a test enforces this), and no API route ever returns it.
 - **The flag rule.** An alarm level of `a + b/√nights` per cause, with
   persistence and a cause gap. It was tuned on 192 simulated houses from winter
   2019-20, with half held back for checking. The live demo uses the held-out
@@ -97,12 +97,12 @@ English.
 ## Accomplishments that we're proud of
 
 - The full loop works live: plant a fault, watch the nights, flag, name the
-  cause, repair, confirm, reveal.
+  cause, run a fan test if the cause is unclear, repair, confirm.
 - On simulated check houses: weak insulation caught (right room and cause) in
   35 of 36, air leaks in 30 of 36, and 1 false alarm in 24 healthy houses.
 - A UI that a homeowner can read in seconds and an engineer can dig into.
-- 254 automated tests, including ones that check the hidden answer never leaks
-  before the reveal.
+- 261 automated tests, including ones that check the hidden answer never leaks
+  to the diagnosis or the API.
 
 ## What we learned
 
@@ -140,7 +140,7 @@ Phase 2 Data.* UK Data Service, SN 856978. Weather for user homes: Open-Meteo.
   causes; a digital twin on real weather; a GLSL infrared shader; a typed API.
 - **Design:** a 3D house you can open and walk into, an infrared view, and
   two-layer Analytics with very little text.
-- **Completion:** the whole loop runs live, with a judge-planted fault and 254
+- **Completion:** the whole loop runs live, with a judge-planted fault and 261
   tests.
 - **Learning:** the single-night dead end (3 of 32) and the redesign, plus the
   new skills above.

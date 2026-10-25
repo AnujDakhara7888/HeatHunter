@@ -15,7 +15,7 @@ from typing import Annotated
 
 from fastapi import FastAPI, File, Query, Request, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .contracts import (
@@ -23,7 +23,6 @@ from .contracts import (
     ApiError,
     ChatReply,
     DemoHomeCreate,
-    DemoReveal,
     DemoWeek,
     EvaluationSummary,
     FixRequest,
@@ -36,6 +35,8 @@ from .contracts import (
     HomePlan,
     HomeReadings,
     HomeSummary,
+    HouseShape,
+    HouseShapeCreate,
     Location,
     ReadingsUpload,
     RealHouse,
@@ -109,8 +110,10 @@ async def health() -> HealthResponse:
 async def get_real_house() -> RealHouse:
     from backend.data_pipeline import load_real_house
 
+    from .homes import hh09_real_insulation
+
     try:
-        return load_real_house()
+        return load_real_house().model_copy(update={"insulation": hh09_real_insulation()})
     except FileNotFoundError as exc:
         raise ServiceNotIntegratedError(f"real-house data is not available: {exc}") from exc
 
@@ -349,6 +352,48 @@ def _demo_weeks() -> list[DemoWeek]:
     return weeks
 
 
+@app.get("/api/house-shapes", response_model=list[HouseShape], responses=V2_ERRORS, tags=["homes-v2"])
+async def house_shapes() -> list[HouseShape]:
+    """House shapes a demo can run on: the HH09 twin, presets and saved plans."""
+
+    from .house_shapes import list_shapes
+
+    return await _v2(list_shapes)
+
+
+@app.post(
+    "/api/house-shapes",
+    response_model=HouseShape,
+    status_code=status.HTTP_201_CREATED,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
+)
+async def save_house_shape(request: HouseShapeCreate) -> HouseShape:
+    """Save a drawn single-storey plan to reuse for simulations."""
+
+    from .house_shapes import save_shape
+
+    return await _v2(save_shape, request)
+
+
+@app.delete(
+    "/api/house-shapes/{shape_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
+)
+async def delete_house_shape(shape_id: str) -> Response:
+    """Delete a saved shape (presets and the HH09 twin stay)."""
+
+    from .house_shapes import delete_shape
+
+    if any(h.shape_id == shape_id for h in await _v2(_homes().list_homes)):
+        raise ApiFailure(409, "INVALID_HOME_STATE", "delete the demo houses built on this shape first")
+    await _v2(delete_shape, shape_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @app.post(
     "/api/demo/homes",
     response_model=HomeSummary,
@@ -357,7 +402,7 @@ def _demo_weeks() -> list[DemoWeek]:
     tags=["homes-v2"],
 )
 async def create_demo_home(request: DemoHomeCreate) -> HomeSummary:
-    """Load any scenario on the simulated HH09 twin: a chosen fault, a random hidden one, or none."""
+    """Load a scenario on a house shape (default the HH09 twin): a chosen fault, a random one, or none."""
 
     return await _v2(_homes().create_demo, request)
 
@@ -450,13 +495,27 @@ async def advance_demo(home_id: str, request: AdvanceRequest) -> HomeHealth:
     return await _v2(_homes().advance, home_id, request.nights)
 
 
-@app.get(
-    "/api/demo/homes/{home_id}/reveal", response_model=DemoReveal, responses=V2_ERRORS, tags=["homes-v2"]
+@app.post(
+    "/api/demo/homes/{home_id}/fan-test", response_model=HomeHealth, responses=V2_ERRORS, tags=["homes-v2"]
 )
-async def reveal_demo(home_id: str) -> DemoReveal:
-    """The hidden fault, whether the app found it, and the same night without the fault."""
+async def fan_test_demo(home_id: str) -> HomeHealth:
+    """Run the next night as a fan test (2 h extract fan); it only helps name an unclear cause."""
 
-    return await _v2(_homes().reveal, home_id)
+    return await _v2(_homes().fan_test, home_id)
+
+
+@app.delete(
+    "/api/homes/{home_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
+)
+async def delete_home(home_id: str) -> Response:
+    """Forget a home and all its nights (a real home's saved file is deleted too)."""
+
+    await _v2(_homes().delete, home_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.post("/api/assistant/help", response_model=ChatReply, responses=_errors(422, 503), tags=["assistant"])

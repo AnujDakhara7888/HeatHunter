@@ -1,8 +1,8 @@
 """Provider-backed home chat and Claude floor-plan reading (Nikhil).
 
 The chat context is built by the server from a home's public health and room
-reports; simulator truth is added only after a demo home's reveal. Replies use
-structured output so the UI can also move the 3D camera.
+reports; simulator truth never enters it. Replies use structured output so the
+UI can also move the 3D camera.
 """
 
 from __future__ import annotations
@@ -191,18 +191,22 @@ Project guide:
 - Fault Lab uses an approximate digital twin inspired by SMETER house HH09 in England. Its indoor
   temperatures and planted faults are simulated, driven by actual HH09-region historical weather.
   It is not an exact replica, and no confirmed defect is claimed for the real HH09 house.
-- Real home shows actual HH09 measurements. It has no verified fault labels and cannot prove accuracy.
 - Your home accepts a floor plan, location and uploaded temperature readings. There is no live physical
   sensor connection in this prototype. Sensor readings are not magically collected by chatting.
-- To start the demo, open Fault Lab and choose Hidden fault, Judge mode or Healthy house. Use
-  "Next night" to simulate more heating-off nights; do not tell demo users to wait overnight.
+- To start the demo, open Fault Lab and choose Judge mode (the user plants a fault) or Healthy house.
+  Use "Next night" to simulate more heating-off nights; do not tell demo users to wait overnight.
+- When a flagged room's cause is unclear, "Run a fan test tonight" runs an extractor fan for 2 hours with
+  doors closed. Leaks pull in extra cold air while it runs; weak walls do not. A fan night only helps name
+  the cause; it never raises an alarm. In a real home the occupant does this and uploads that night.
+- Analytics explains one room night by night: "What happened" in plain words, "Under the hood" for the
+  fits and scores. Help users read it when they ask.
 - The physics engine compares normal cooling, drafts and envelope conduction. Several nights with
   different weather help; two consecutive candidate judgments are required before flagging a room.
 - An uncertain cause must stay uncertain. Do not promise that every fault can be diagnosed.
 - Real repairs are performed by people. The demo simulates the chosen repair; later nights verify it.
 - Costs are model estimates in GBP with assumptions, not quotes or guaranteed savings.
-- Hidden demo truth is available only after the explicit reveal. Never infer the planted answer from
-  a guided-demo name, previous conversations or product descriptions.
+- You are never told a demo's planted fault. Never infer it from a house name, previous
+  conversations or product descriptions; judge only from the app's public results.
 - General greetings and questions about using HeatHunter are in scope, including before a home exists.
 - If no home is selected, explain how to start; never claim to see readings or diagnose a room.
 - The AI explains physics results. It does not run simulations, record repairs or connect sensors.
@@ -210,9 +214,8 @@ Project guide:
   behalf. There are no tools for these actions. Tell the user which button to click instead.
 - For "explain this page" or "what am I looking at", use screen_context: name the current page,
   explain the view and selected room, then explain its actual public status if provided.
-- Only mention buttons in screen_context.available_controls. On Real home, describe the real data
-  and date-selector playback; NEVER suggest Next night, fault diagnosis, fixing, or monitoring there.
-  On Fault Lab, only mention Next night after a demo home exists. Do not mix page workflows.
+- Only mention buttons in screen_context.available_controls. On Fault Lab, only mention Next night
+  after a demo home exists. Do not mix page workflows.
 - The line chart shows temperature against time. The 3D house is a separate temperature colour map.
   Keep the answer under 80 words; omit numbers unless needed to explain the user's question.
 - Follow the page-specific workflow: uploads are in Your home, never in Fault Lab. Temperature
@@ -226,7 +229,7 @@ Rules:
 - Use ONLY facts and numbers in <home>. Never invent readings, prices, causes or results.
 - Money figures are screening estimates with stated assumptions, not quotes.
 - A demo home is a simulated twin of a real UK bungalow (HH09); never claim the real house has a fault.
-- If "hidden_answer" is "not revealed", you do not know the planted fault; say so if asked.
+- You do not know a demo's planted fault; say so if asked.
 - For practical repair questions, give safe, ordinary homeowner steps and suggest a professional for
   insulation work or anything involving gas appliances.
 - When it helps, add a focus_room action (target = a room_id from <home>).
@@ -248,7 +251,6 @@ def general_chat(messages: list[ChatMessage], screen: AssistantScreen | None = N
 
     return home_chat(messages, {
         "home": {"status": "no_home_selected", "rooms": []},
-        "hidden_answer": "not revealed",
         "screen_context": screen_context(screen),
     })
 
@@ -281,7 +283,6 @@ def home_chat(messages: list[ChatMessage], context: dict) -> ChatReply:
 
 SITE_CONTEXT = {
     "home": "none open",
-    "hidden_answer": "not revealed",
     "note": (
         "The user has not opened a home yet (landing or setup page). Answer questions about what "
         "HeatHunter is, how it works and how to use it, from your instructions; there are no readings."

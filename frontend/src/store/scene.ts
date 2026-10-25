@@ -8,6 +8,16 @@ export type Finding = {
   room: string; // plan room id
   cause: "draft" | "envelope_conduction" | null;
   strength: number; // 0..1 visual intensity, from the fitted multiplier
+  /** The engine's extra heat loss as a fraction of the room's nominal loss (0.15 = 15%), when known. */
+  extra?: number | null;
+};
+
+/** The engine's insulation figures, keyed by plan room id; they turn air temperatures into surface temperatures. */
+export type Insulation = {
+  envelope: Record<string, number>; // effective U-value of walls, roof and floor, W/(m2.K)
+  heatLoss: Record<string, number>; // nominal seasonal heat loss, W/K (what `Finding.extra` is a fraction of)
+  fallback: number; // U-value for rooms with no figure of their own
+  window: number; // window U-value, W/(m2.K)
 };
 
 export type SceneState = {
@@ -16,6 +26,9 @@ export type SceneState = {
   temps: Record<string, number | null>;
   tempRange: [number, number];
   outdoor: number | null;
+  /** Coldest and warmest outdoor temperature of the night on screen. */
+  outdoorRange: [number, number] | null;
+  insulation: Insulation | null;
   wind: number | null;
   finding: Finding | null;
   focusRoom: string | null;
@@ -44,6 +57,8 @@ export const useScene = create<SceneState>((set) => ({
   temps: {},
   tempRange: [12, 21],
   outdoor: null,
+  outdoorRange: null,
+  insulation: null,
   wind: null,
   finding: null,
   focusRoom: null,

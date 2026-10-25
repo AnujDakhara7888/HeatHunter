@@ -151,17 +151,22 @@ export function LineChart({ data, height = 220, unit = "°C", cursor, onScrub, b
               transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
             />
           ))}
-          {/* direct labels at line ends (<= 4 series) */}
+          {/* direct labels at line ends (<= 4 series), nudged apart when lines end close together */}
           {!compact && pts.length <= 4 &&
-            pts.map((d) => {
-              const last = [...d.pts].reverse().find((p) => p[1] != null);
-              if (!last) return null;
-              return (
-                <text key={d.id} x={x(last[0]) + 6} y={y(last[1] as number) + 3} fill="#c8ccd6" fontSize="10">
-                  {d.label.length > 11 ? d.label.slice(0, 10) + "…" : d.label}
-                </text>
-              );
-            })}
+            pts
+              .flatMap((d) => {
+                const last = [...d.pts].reverse().find((p) => p[1] != null);
+                return last ? [{ id: d.id, label: d.label, x: x(last[0]) + 6, y: y(last[1] as number) + 3 }] : [];
+              })
+              .sort((a, b) => a.y - b.y)
+              .map((e, i, all) => {
+                if (i > 0 && e.y - all[i - 1].y < 11) e.y = all[i - 1].y + 11;
+                return (
+                  <text key={e.id} x={e.x} y={e.y} fill="#c8ccd6" fontSize="10">
+                    {e.label.length > 11 ? e.label.slice(0, 10) + "…" : e.label}
+                  </text>
+                );
+              })}
           {cursor != null && cursor >= tx[0] && cursor <= tx[1] && (
             <line x1={x(cursor)} x2={x(cursor)} y1={M.top} y2={height - M.bottom} stroke="#ffffff" strokeOpacity="0.55" />
           )}

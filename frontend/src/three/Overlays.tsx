@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { useEffect } from "react";
 import { displayName } from "../lib/rooms";
 import { useScene } from "../store/scene";
+import { useIrScale } from "./thermal";
 
 const FLIR_GRADIENT = "linear-gradient(0deg,#05063f,#0d26bf,#008cf2,#1abf59,#f2e61a,#ff8c0d,#e61a1a,#ffbfcc)";
 
@@ -102,9 +103,9 @@ export function RoomHopper() {
 }
 
 /**
- * FLIR-style heads-up display for the infrared view. Only measured numbers are
- * printed (room air and outdoor temperatures); the colours render those measured
- * temperatures and the engine's finding, which the label says plainly.
+ * FLIR-style heads-up display for the infrared view. Room air and outdoor
+ * temperatures are measured; the colours are ESTIMATED surface temperatures
+ * worked out from them, which the label says plainly. The scale is fixed per night.
  */
 export function ThermalHud() {
   const view = useScene((s) => s.view);
@@ -116,21 +117,18 @@ export function ThermalHud() {
   const names = useScene((s) => s.names);
   const inset = useScene((s) => s.inset);
   const spot = useScene((s) => s.spot);
+  const { side, range } = useIrScale();
   const thermal = view === "thermal" || ir;
-  const inside = view === "inside";
   // What the crosshair is on; before the first ray lands, the room in focus.
   const room = spot ? spot.room : (focus ?? finding?.room ?? null);
   const air = room ? temps[room] : null;
-  const known = Object.values(temps).filter((v): v is number => v != null);
-  const warm = known.length ? Math.max(...known) : null;
-  const coldLabel = inside ? (finding?.room === room && finding?.cause ? (finding.cause === "draft" ? "cold air at openings" : "cold wall") : "glass") : "outside air";
   return (
     <AnimatePresence>
       {thermal && (
         <motion.div key="hud" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-0 z-10 font-mono text-white">
-          <div className="absolute left-4 top-16 rounded-md bg-black/35 px-2.5 py-1.5 text-[11px] leading-snug">
+          <div className="absolute left-4 top-[116px] rounded-md bg-black/35 px-2.5 py-1.5 text-[11px] leading-snug">
             <div className="font-semibold tracking-wider">◈ IR VIEW</div>
-            <div className="text-white/70">rendered from measured room temperatures and the engine's finding, not a camera image</div>
+            <div className="text-white/70">estimated surface temperatures</div>
           </div>
           <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: `calc(50% - ${Math.max(0, inset) / 2}px)` }}>
             <svg width="120" height="120" viewBox="0 0 120 120" className="drop-shadow">
@@ -156,10 +154,11 @@ export function ThermalHud() {
           </div>
           <div className="absolute bottom-[140px] flex items-stretch gap-2 text-[11px]" style={{ right: `${Math.max(0, inset) + 20}px` }}>
             <div className="flex flex-col justify-between py-0.5 text-right drop-shadow-[0_1px_2px_rgba(0,0,0,.8)]">
-              <span>{inside ? "warm wall" : "heat escaping"}{warm != null && inside ? ` · ${warm.toFixed(1)}°` : ""}</span>
+              <span>{range[1].toFixed(1)} °C</span>
+              <span className="text-white/70">{side === "inside" ? "inside surfaces" : "outside surfaces"}</span>
               <span>
-                {coldLabel}
-                {outdoor != null && !inside ? ` · ${outdoor.toFixed(1)}°` : ""}
+                {range[0].toFixed(1)} °C
+                {outdoor != null && <span className="block text-white/70">outside air {outdoor.toFixed(1)}°</span>}
               </span>
             </div>
             <div className="h-44 w-3 rounded-full ring-1 ring-white/40" style={{ background: FLIR_GRADIENT }} />

@@ -23,41 +23,43 @@ OpenAI; otherwise Claude (`claude-sonnet-5-5`, override with
 HeatHunter and the home it is shown; anything else gets a fixed redirect.
 Real homes and weather lookup use Open-Meteo and need internet.
 
-The UI uses API v2 throughout. `/lab` is the demo house: hidden, judge-planted or
-no fault, starting in a chosen week. "Next night" and "Week" advance the clock,
-"Seal leaks / Insulate / Other" reports the repair, "Analytics" shows the analysis
-as of any night, and "Reveal" ends the round. `/home` sets up a real home (plan,
-town, heating-off hours, sensor CSVs), and `/real` replays the real HH09 week
-(heating on, so not monitored).
+The UI uses API v2 throughout. `/lab` is the demo house: pick a house shape and a
+week, then Judge mode (plant a fault) or Healthy house. "Next night" and "Week"
+advance the clock, "Run a fan test tonight" settles an unclear cause,
+"Seal leaks / Insulate / Other" reports the repair, and "Analytics" shows the
+analysis as of any night. `/home` sets up a real home (plan, town, heating-off
+hours, sensor CSVs) and can save it as a house shape.
 
-## Live judging script (3 minutes, tested 2026-10-25)
+## Live judging script (3 minutes, re-tested 2026-10-25 on current main)
 
-Setup that worked reliably: week **10 Jan – 16 Jan**, **Judge mode**, severity
-×1.8. Over 32 random-seed runs (every room, both faults), the planted fault was
-flagged by night 2 and named correctly by night 2–3 in 31 runs; the miss was a
-Hall air leak named as weak insulation. A later Living room air leak was also
-misnamed once. A healthy house stayed clear in 6 of 6. So suggest a Kitchen or
-Bedroom leak, or any insulation fault. Avoid the 15 Nov week: a healthy house was falsely flagged in
-2 of 6 runs.
+Setup: HH09 house, week **10 Jan – 16 Jan**, **Judge mode**, severity slider at
+**×2.8**. With 4 random houses per room and fault (32 runs), the planted room was
+named correctly by night 4 in 30 runs; both misses were Living room air leaks
+named as weak insulation. At the default ×2.2, air leaks were often slower or
+misnamed (insulation faults stayed reliable). Healthy houses in this week:
+0 of 10 flagged. In 1 of 4 test houses the Living room picked up a late
+"cause unclear" flag on night 7, so stop after 2–3 nights instead of running
+the full week. Avoid the 17 Jan and 31 Jan weeks (3 of 10 healthy houses
+falsely flagged).
+
+So suggest a Kitchen or Bedroom air leak, or any insulation fault, at ×2.8.
 
 1. **Landing (10 s).** One sentence: "HeatHunter finds which room is losing
    heat, and why, from cheap temperature sensors."
-2. **Fault Lab → 10 Jan – 16 Jan → Judge mode (20 s).** The judge picks the room
-   and fault in secret and clicks "Hide it & start". "The app never sees this;
-   only Reveal can."
-3. **Week (30 s).** Nights play one by one. "Each night we fit three physics
-   models to every room. A leak gets worse with wind, a wall doesn't, so the
-   windy nights (blue) split them." A room turns orange: flagged after two
-   nights in a row.
-4. **Thermal (10 s).** Drag the house; the crosshair reads each room's measured
-   temperature.
+2. **Fault Lab → HH09 → 10 Jan – 16 Jan → Judge mode (20 s).** The judge picks
+   the room, the fault and ×2.8 in secret and clicks "Hide it & start". "The
+   app never sees this; it never leaves the simulator."
+3. **Next night ×2–3 (30 s).** "Each night we fit three physics models to every
+   room. A leak gets worse with wind, a wall doesn't." A room turns orange:
+   flagged after two nights in a row. If it says "cause unclear", press
+   "Run a fan test tonight".
+4. **Thermal (10 s).** Drag the house; the crosshair reads each room.
 5. **Analytics (40 s).** *What happened*: verdict, "How it unfolded", the
-   suspects and the cost. Then *Under the hood*: "the cause gap jumps on the
-   windy nights: that's how it names the cause."
+   suspects and the cost. Then *Under the hood*: "the cause gap is how it
+   names the cause."
 6. **Repair (20 s).** House → "Seal leaks" (or "Insulate") → Next night twice →
-   "Fixed".
-7. **Reveal (10 s).** Read out the hidden answer and how many nights it took.
-8. **Learning and limits (20 s).** "One night couldn't separate a leak from a
+   "Fixed". Ask the judge: "Was that what you planted?"
+7. **Learning and limits (20 s).** "One night couldn't separate a leak from a
    weak wall (3 of 32), so we redesigned around watching night after night. The
    house is simulated on real weather; real sensors are next."
 
@@ -73,10 +75,9 @@ it should, it tells you which room, the likely cause, what it costs and what to
 do. You fix it yourself, and HeatHunter confirms the fix worked."
 
 The demo house is an approximate digital twin of SMETER house HH09 (a real UK
-bungalow) with a hidden fault planted by the presenter, a judge, or at random.
+bungalow), or another house shape, with a fault planted in secret by a judge.
 Its nights use real weather from the held-out winter 2020-21, which the flag
-rule never saw during tuning. The real HH09 week is shown separately in the
-Real tab; its heating was on, so it is not monitored.
+rule never saw during tuning.
 
 ## Walk the loop through the API
 
@@ -105,13 +106,12 @@ call(f"/homes/{home}/rooms/bedroom_1/fix", {"action": "seal_leaks"})
 for night in range(2):
     health = call(f"/demo/homes/{home}/advance", {"nights": 1})
 print([(r["name"], r["status"]) for r in health["rooms"]])
-print(call(f"/demo/homes/{home}/reveal")["summary"])
 PY
 ```
 
 Expected: the Bedroom is `watching` after night 1 and an `issue` (air leaks)
-from night 2. After the fix it is `verifying`, then `resolved`. The reveal says
-it was found after 2 nights. `backend/app/tests/test_homes_v2.py` checks this
+from night 2. After the fix it is `verifying`, then `resolved`.
+`backend/app/tests/test_homes_v2.py` checks this
 flow, a wrong repair (`still_an_issue`), a healthy house and the error cases.
 
 ## Numbers you can quote
@@ -140,7 +140,8 @@ real-home accuracy:
    after the fix.
 5. Money figures are screening estimates under stated UK assumptions (Ofgem
    price cap, HH09's boiler efficiency), not quotes or audited savings.
-6. Reveal the hidden fault only after the app has concluded.
+6. In Judge mode the audience plants the fault, so they can check the app's
+   answer themselves; the app is never told it.
 
 ## Historical material
 
@@ -153,8 +154,8 @@ results.
 
 - Run the full pytest suite and Ruff.
 - Verify the checked-in OpenAPI matches the app (a test does this).
-- Walk a planted leak, a planted envelope fault, a random fault and a healthy
-  house through the UI.
-- Verify no planted-fault information appears before reveal.
+- Walk a planted leak, a planted envelope fault and a healthy house through
+  the UI.
+- Verify no planted-fault information appears anywhere in the app or chat.
 - Restart the backend and repeat a demo loop without network access.
 - Run the held-out benchmark (winter 2020-21) and record a backup video.

@@ -95,6 +95,10 @@ def save_home(record: RealHomeRecord, directory: Path = HOMES_DIR) -> Path:
     return path
 
 
+def delete_home_file(home_id: str, directory: Path = HOMES_DIR) -> None:
+    (directory / f"{home_id}.json").unlink(missing_ok=True)
+
+
 def load_homes(directory: Path = HOMES_DIR) -> list[RealHomeRecord]:
     if not directory.is_dir():
         return []

@@ -103,7 +103,7 @@ export function ChatDock() {
   const [busy, setBusy] = useState(false);
   const { context, suggestions, homeId: storedHomeId } = useChatContext();
   const { pathname } = useLocation();
-  const page: AssistantScreen["page"] = pathname === "/lab" ? "fault_lab" : pathname === "/real" ? "real_home" : pathname === "/home" ? "your_home" : "overview";
+  const page: AssistantScreen["page"] = pathname === "/lab" ? "fault_lab" : pathname === "/home" ? "your_home" : "overview";
   const homeId = page === "fault_lab" || page === "your_home" ? storedHomeId : null;
   const view = useScene((s) => s.view);
   const infrared = useScene((s) => s.ir);

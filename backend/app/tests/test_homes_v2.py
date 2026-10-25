@@ -42,7 +42,7 @@ def statuses(health: dict) -> dict[str, str]:
     return {room["room_id"]: room["status"] for room in health["rooms"]}
 
 
-def test_planted_leak_is_found_explained_fixed_and_revealed(client) -> None:
+def test_planted_leak_is_found_explained_and_fixed(client) -> None:
     home = demo(client, fault={"type": "draft", "room_id": "bedroom_1", "severity": 1.2}, seed=4242)
     created = ok(client.get(f"/api/homes/{home}"))
     assert created["home"]["status"] == "monitoring"
@@ -70,6 +70,10 @@ def test_planted_leak_is_found_explained_fixed_and_revealed(client) -> None:
 
     readings = ok(client.get(f"/api/homes/{home}/readings", params={"room_id": "bedroom_1"}))
     assert len(readings["nights"]) == 3 and list(readings["rooms"]) == ["bedroom_1"]
+    insulation = readings["insulation"]
+    assert set(insulation["envelope_u_w_per_m2k"]) == {"living_room", "kitchen", "bedroom_1", "bedroom_2"}
+    assert insulation["window_u_w_per_m2k"] == 2.8 and insulation["provenance"] == "MODEL_ESTIMATE"
+    assert set(insulation["room_heat_loss_w_per_k"]) == set(insulation["envelope_u_w_per_m2k"])
     expected = readings["rooms"]["bedroom_1"]["expected_if_healthy"]
     assert expected["provenance"] == "MODEL_ESTIMATE" and len(expected["values"]) > 100
 
@@ -94,12 +98,8 @@ def test_planted_leak_is_found_explained_fixed_and_revealed(client) -> None:
     assert shots[0]["named_cause"] is None and shots[3]["nights_judged"] == 1
     assert {f["fault_type"] for f in shots[2]["fits"]} == {"normal", "draft", "envelope_conduction"}
     assert room["fix_action"] == "seal_leaks" and history["advice"]["draft"]
-
-    truth = ok(client.get(f"/api/demo/homes/{home}/reveal"))
-    assert truth["fault_type"] == "draft" and truth["room_id"] == "bedroom_1"
-    assert truth["app_found_it"] and truth["nights_to_find"] == 2
-    assert set(truth["fault_free_twin"]) == {"living_room", "kitchen", "bedroom_1", "bedroom_2"}
-    assert truth["provenance"] == "SIMULATED_GROUND_TRUTH"
+    # the planted fault never leaves the simulator: there is no reveal route
+    assert client.get(f"/api/demo/homes/{home}/reveal").status_code in {404, 405}
 
 
 def test_the_wrong_repair_changes_nothing(client) -> None:
@@ -112,18 +112,52 @@ def test_the_wrong_repair_changes_nothing(client) -> None:
     assert after["home"]["status"] == "issue"
 
 
-def test_healthy_demo_home_stays_clear_and_reveals_no_fault(client) -> None:
+def test_healthy_demo_home_stays_clear(client) -> None:
     home = demo(client, seed=9)
     health = advance(client, home, 3)
     assert set(statuses(health).values()) == {"healthy"} and health["home"]["status"] == "all_clear"
-    truth = ok(client.get(f"/api/demo/homes/{home}/reveal"))
-    assert truth["fault_type"] == "none" and truth["room_id"] is None and truth["app_found_it"]
+
+
+def test_fan_test_settles_an_unclear_cause_without_new_alarms(client) -> None:
+    home = demo(client, fault={"type": "draft", "room_id": "kitchen", "severity": 1.5}, seed=1)
+    before = advance(client, home, 2)
+    assert statuses(before)["kitchen"] == "issue_cause_unclear"
+    report = ok(client.get(f"/api/homes/{home}/rooms/kitchen"))
+    assert report["fan_test_available"] and "fan test" in report["suggested_check"]
+
+    after = ok(client.post(f"/api/demo/homes/{home}/fan-test"))
+    kitchen = next(r for r in after["rooms"] if r["room_id"] == "kitchen")
+    assert kitchen["status"] == "issue" and kitchen["likely_cause"] == "draft"
+    # the fan night only names causes: no other room changes status because of it
+    assert {r: s for r, s in statuses(after).items() if r != "kitchen"} == {
+        r: s for r, s in statuses(before).items() if r != "kitchen"
+    }
+    history = ok(client.get(f"/api/homes/{home}/history"))
+    assert [n["kind"] for n in history["nights"]] == ["passive", "passive", "fan_test"]
+    shots = next(r for r in history["rooms"] if r["room_id"] == "kitchen")["snapshots"]
+    assert shots[-1]["fan_test_nights"] == 1 and shots[-1]["named_cause"] == "draft"
+    assert all(s["fan_test_nights"] == 0 for s in shots[:-1])
+
+    # named now, so no further fan test is offered, and a house with nothing unclear refuses one
+    assert not ok(client.get(f"/api/homes/{home}/rooms/kitchen"))["fan_test_available"]
+    assert client.post(f"/api/demo/homes/{home}/fan-test").status_code == 409
+    healthy = demo(client, seed=9)
+    advance(client, healthy, 2)
+    assert client.post(f"/api/demo/homes/{healthy}/fan-test").status_code == 409
+
+
+def test_deleting_a_demo_home_forgets_it(client) -> None:
+    home = demo(client, seed=11)
+    advance(client, home)
+    assert client.delete(f"/api/homes/{home}").status_code == 204
+    assert home not in {h["home_id"] for h in ok(client.get("/api/homes"))}
+    assert client.get(f"/api/homes/{home}").status_code == 404
+    assert client.delete(f"/api/homes/{home}").status_code == 404
 
 
 def test_homes_list_and_state_errors(client) -> None:
     home = demo(client, random_fault=True, seed=5)
     assert home in {h["home_id"] for h in ok(client.get("/api/homes"))}
-    assert client.get(f"/api/demo/homes/{home}/reveal").status_code == 409  # no nights yet
     assert client.get("/api/homes/demo-unknown").status_code == 404
     assert client.get(f"/api/homes/{home}/rooms/attic").status_code == 404
     upload = {"room_temperature_series": {"kitchen": {"timestamps": [], "values": []}}}
@@ -195,6 +229,8 @@ def test_real_home_turns_uploads_into_nights_and_persists(tmp_path, monkeypatch)
     assert {room.status for room in health.rooms} <= {"healthy", "watching", "issue", "issue_cause_unclear"}
     with pytest.raises(Exception, match="simulated clock"):
         service.advance(summary.home_id, 1)
+    with pytest.raises(Exception, match="occupant runs the fan test"):
+        service.fan_test(summary.home_id)
 
     reloaded = HomeService(homes_dir=tmp_path)  # restart: home and cached weather come back from disk
     again = reloaded.health(summary.home_id)
@@ -202,6 +238,21 @@ def test_real_home_turns_uploads_into_nights_and_persists(tmp_path, monkeypatch)
     assert [r.status for r in again.rooms] == [r.status for r in health.rooms]
     technical = reloaded.room_technical(summary.home_id, sensed[0])
     assert any("Transferred" in str(a.value) for a in technical.rule)
+    insulation = reloaded.readings(summary.home_id).insulation
+    assert set(insulation.envelope_u_w_per_m2k) == set(sensed)  # transferred per m2, so every room matches
+    default = insulation.default_envelope_u_w_per_m2k
+    assert all(math.isclose(u, default) for u in insulation.envelope_u_w_per_m2k.values())
+
+    reloaded.delete(summary.home_id)  # the saved file goes too, so a restart does not bring it back
+    assert not list(tmp_path.glob("home-*.json"))
+    assert summary.home_id not in {h.home_id for h in HomeService(homes_dir=tmp_path).list_homes()}
+
+
+def test_real_house_carries_insulation_for_its_own_rooms(client) -> None:
+    house = ok(client.get("/api/real/house"))
+    rooms = set(house["insulation"]["envelope_u_w_per_m2k"])
+    assert rooms == {"living_room", "kitchen", "bedroom", "hall"}
+    assert rooms <= set(house["room_temperature_series"])
 
 
 def test_place_search_returns_real_places_and_nothing_for_gibberish(client, monkeypatch) -> None:

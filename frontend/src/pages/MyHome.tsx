@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, BarChart3, FileUp, Home, MapPin, PencilRuler, Play, Sparkles, Square, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, FileUp, FlaskConical, Home, MapPin, PencilRuler, Play, Sparkles, Square, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, api, traced } from "../api/client";
 import { Analytics } from "../components/Analytics";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import type { FixAction, FloorPlanDraft, HomeHealth, HomeHistory, HomePlan, HomeReadings, HomeSummary, Location, RoomHealthView, RoomReport, RoomTechnical, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
 import { LineChart } from "../components/LineChart";
@@ -14,11 +15,12 @@ import { ViewSwitcher } from "../components/ViewSwitcher";
 import { FLAG_STATUSES, ROOM_STATUS, strengthOf } from "../lib/diagnosis";
 import { snapAt } from "../lib/history";
 import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
-import { CAUSE, fmtDate, ms, roomColor, type CauseKey } from "../lib/rooms";
+import { CAUSE, fmtDate, ms, roomColor } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
 import { HouseCanvas } from "../three/Scene";
+import { toInsulation } from "../three/thermal";
 
 type Step = "plan" | "setup" | "data" | "results";
 const SETUP_STEPS: [Step, string][] = [
@@ -115,7 +117,6 @@ export default function MyHome() {
   const [selected, setSelected] = useState<string | null>(null);
   const [report, setReport] = useState<RoomReport | null>(null);
   const [technical, setTechnical] = useState<RoomTechnical | null>(null);
-  const [preview, setPreview] = useState<CauseKey | null>(null);
   const [nightIdx, setNightIdx] = useState<number | null>(null);
   const [history, setHistory] = useState<HomeHistory | null>(null);
   const [analytics, setAnalytics] = useState(false);
@@ -149,6 +150,7 @@ export default function MyHome() {
   const outdoor = useMemo(() => (readings && window_ ? slice(readings.outdoor_temperature, ...window_) : null), [readings, window_?.[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const wind = useMemo(() => (readings && window_ ? slice(readings.wind_speed, ...window_) : null), [readings, window_?.[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const player = useNight(roomsPlayback, outdoor, wind, weekPlay != null ? 6 : 10);
+  useEffect(() => set({ insulation: readings?.insulation ? toInsulation(readings.insulation) : null }), [readings, set]);
   useEffect(() => {
     if (weekPlay == null || player.playing || !player.range || player.t == null || player.t < player.range[1] - 1) return;
     const next = (nightIdx ?? nights.length - 1) + 1;
@@ -179,22 +181,17 @@ export default function MyHome() {
     });
   }, [health, history, asOf, latest]);
 
-  // The room the app is worried about drives the 3D finding (or the user's preview), as in the Fault Lab.
+  // The room the app is worried about drives the 3D finding, as in the Fault Lab.
   const flaggedRoom = rooms.find((r) => FLAG_STATUSES.includes(r.status));
   useEffect(() => {
     const r = selected ? rooms.find((x) => x.room_id === selected) : flaggedRoom;
     const target = r && FLAG_STATUSES.includes(r.status) ? r : flaggedRoom;
-    if (preview && (target || selected)) {
-      const room = (target ?? r)!.room_id;
-      set({ finding: preview === "normal" ? null : { room, cause: preview, strength: strengthOf(target?.extra_heat_loss_percent ?? 25) } });
-      return;
-    }
     if (!target || target.status === "verifying") {
       set({ finding: target ? { room: target.room_id, cause: null, strength: 0.3 } : null });
       return;
     }
-    set({ finding: { room: target.room_id, cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent) } });
-  }, [rooms, selected, preview, flaggedRoom, set]);
+    set({ finding: { room: target.room_id, cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent), extra: (target.extra_heat_loss_percent ?? 0) / 100 } });
+  }, [rooms, selected, flaggedRoom, set]);
 
   useEffect(() => {
     useChatContext.getState().setHome(home?.home_id ?? null);
@@ -259,6 +256,16 @@ export default function MyHome() {
     }
   };
 
+  /** Keep this layout as a house shape the Fault Lab can simulate (single storey, up to 8 sensed rooms). */
+  const saveShape = () => {
+    const name = window.prompt("Name this house shape", plan.name && plan.name !== "My home" ? plan.name : "My house");
+    if (!name?.trim()) return;
+    void run("Saving the house shape…", async () => {
+      const saved = await traced("shape", "POST /house-shapes", () => api.POST("/api/house-shapes", { body: { name: name.trim().slice(0, 80), plan } }), (d) => d.shape_id);
+      setNotes([`Saved "${saved.name}". Pick it under "Which house?" in the Fault Lab to plant faults on it.`]);
+    });
+  };
+
   const useHH09 = () => {
     setPlan(HH09_PLAN);
     setBg(null);
@@ -267,7 +274,6 @@ export default function MyHome() {
 
   const openRoom = async (homeId: string, roomId: string) => {
     setSelected(roomId);
-    setPreview(null);
     set({ focusRoom: roomId });
     const [rep, tech] = await Promise.all([
       traced("room", "GET /rooms/{room}", () => api.GET("/api/homes/{home_id}/rooms/{room_id}", { params: { path: { home_id: homeId, room_id: roomId } } }), (d) => ROOM_STATUS[d.status].label),
@@ -345,11 +351,6 @@ export default function MyHome() {
 
   const sel = rooms.find((r) => r.room_id === selected);
   const canFix = latest && sel && ["issue", "issue_cause_unclear", "still_an_issue"].includes(sel.status);
-  const showIn3D = (c: CauseKey) => {
-    setAnalytics(false);
-    setPreview(c);
-    set({ view: "open" });
-  };
   const order = plan.rooms.map((x) => x.room_id);
 
   return (
@@ -365,21 +366,6 @@ export default function MyHome() {
           </button>
         )}
       </div>
-      <AnimatePresence>
-        {step === "results" && preview && sel && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-x-0 top-[166px] z-20 flex justify-center pr-[460px]">
-            <div className="glass pointer-events-auto flex items-center gap-3 rounded-full py-1.5 pl-4 pr-1.5 text-[12.5px]">
-              <span>
-                Previewing <b style={{ color: CAUSE[preview].color }}>{CAUSE[preview].label.toLowerCase()}</b>
-                <span className="text-mute"> · {preview === sel.likely_cause ? "the app's likely cause" : "an alternative"}</span>
-              </span>
-              <button onClick={() => setPreview(null)} className="rounded-full bg-ink px-3 py-1 font-semibold text-black">
-                Back to the app's view
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {step !== "results" ? (
@@ -445,9 +431,14 @@ export default function MyHome() {
                 <div className="mt-3 min-h-0 flex-1">
                   <PlanEditor plan={plan} onChange={(p) => setPlan(p)} background={bg} />
                 </div>
-                <button className="btn btn-primary mt-4" onClick={() => (setStep("setup"), set({ view: "exterior" }))} disabled={!sensed.length}>
-                  Next: where and when <ArrowRight size={15} />
-                </button>
+                <div className="mt-4 flex gap-2">
+                  <button className="btn btn-ghost" onClick={saveShape} disabled={!sensed.length || !!busy} title="Reuse this layout in the Fault Lab to simulate faults on it">
+                    <FlaskConical size={15} /> Save as a house shape
+                  </button>
+                  <button className="btn btn-primary flex-1" onClick={() => (setStep("setup"), set({ view: "exterior" }))} disabled={!sensed.length}>
+                    Next: where and when <ArrowRight size={15} />
+                  </button>
+                </div>
               </>
             )}
 
@@ -640,14 +631,6 @@ export default function MyHome() {
                       {sel.annual_cost_gbp != null && ` · £${Math.round(sel.annual_cost_gbp)}/yr`}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11.5px]">
-                    <span className="text-dim">Show in 3D:</span>
-                    {(["draft", "envelope_conduction", "normal"] as CauseKey[]).map((c) => (
-                      <button key={c} onClick={() => setPreview((p) => (p === c ? null : c))} className={`rounded-full border px-2 py-0.5 ${preview === c ? "border-white/60 text-ink" : "border-line text-mute hover:text-ink"}`}>
-                        {CAUSE[c].label}
-                      </button>
-                    ))}
-                  </div>
                   {canFix && (
                     <div>
                       <div className="mb-1 text-[11px] text-mute">Do a repair, then upload the next nights:</div>
@@ -690,6 +673,7 @@ export default function MyHome() {
 
       <AnimatePresence>
         {analytics && history && readings && history.nights.length > 0 && (
+          <ErrorBoundary title="Analytics hit a problem showing this night." resetLabel="Back to the house" onReset={() => setAnalytics(false)}>
           <Analytics
             label={home?.name ?? "Your home"}
             history={history}
@@ -701,8 +685,9 @@ export default function MyHome() {
             report={report}
             technical={technical}
             onClose={() => setAnalytics(false)}
-            onShow3D={showIn3D}
+            planRoom={(id) => id}
           />
+          </ErrorBoundary>
         )}
       </AnimatePresence>
 

@@ -72,6 +72,8 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
         "/api/homes",
         "/api/demo/homes",
         "/api/demo/weeks",
+        "/api/house-shapes",
+        "/api/house-shapes/{shape_id}",
         "/api/homes/{home_id}/history",
         "/api/homes/{home_id}",
         "/api/homes/{home_id}/readings",
@@ -79,14 +81,14 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
         "/api/homes/{home_id}/rooms/{room_id}/technical",
         "/api/homes/{home_id}/rooms/{room_id}/fix",
         "/api/demo/homes/{home_id}/advance",
-        "/api/demo/homes/{home_id}/reveal",
+        "/api/demo/homes/{home_id}/fan-test",
         "/api/homes/{home_id}/assistant",
     }
     assert set(schema["paths"]) == expected_paths
+    assert set(schema["paths"]["/api/homes/{home_id}"]) == {"get", "delete"}
     for path in expected_paths:
         assert "GroundTruth" not in json.dumps(schema["paths"][path]), path
-    for path in expected_paths - {"/api/demo/homes/{home_id}/reveal"}:
-        assert "DemoReveal" not in json.dumps(schema["paths"][path]), path
+        assert "Reveal" not in json.dumps(schema["paths"][path]), path
 
 
 def test_checked_in_openapi_matches_application() -> None:
