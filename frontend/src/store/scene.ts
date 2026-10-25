@@ -33,6 +33,8 @@ export type SceneState = {
   /** Walk-in: a floor point the user double-clicked to walk to. */
   walkTo: [number, number] | null;
   rates: Record<string, number | null>;
+  /** Infrared spot meter: what is under the crosshair (a room, or outside the house). */
+  spot: { room: string | null } | null;
   set: (patch: Partial<SceneState>) => void;
 };
 
@@ -55,5 +57,6 @@ export const useScene = create<SceneState>((set) => ({
   zBearing: null,
   walkTo: null,
   rates: {},
+  spot: null,
   set: (patch) => set(patch),
 }));

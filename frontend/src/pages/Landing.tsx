@@ -195,8 +195,7 @@ export default function Landing() {
       {/* hero */}
       <section className="relative flex min-h-screen items-center px-[6vw]">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }} className="max-w-[640px]">
-          <div className="eyebrow">A check-engine light for your home</div>
-          <h1 className="mt-4 text-[clamp(52px,8vw,104px)] font-bold leading-[0.95] tracking-[-0.045em]">
+          <h1 className="text-[clamp(52px,8vw,104px)] font-bold leading-[0.95] tracking-[-0.045em]">
             See where your heat <span className="grad-text">escapes.</span>
           </h1>
           <p className="mt-6 max-w-md text-[20px] leading-snug text-mute">Cheap sensors. One cold night. Physics finds the room that leaks, and why.</p>

@@ -115,9 +115,11 @@ export function ThermalHud() {
   const finding = useScene((s) => s.finding);
   const names = useScene((s) => s.names);
   const inset = useScene((s) => s.inset);
+  const spot = useScene((s) => s.spot);
   const thermal = view === "thermal" || ir;
   const inside = view === "inside";
-  const room = focus ?? finding?.room ?? null;
+  // What the crosshair is on; before the first ray lands, the room in focus.
+  const room = spot ? spot.room : (focus ?? finding?.room ?? null);
   const air = room ? temps[room] : null;
   const known = Object.values(temps).filter((v): v is number => v != null);
   const warm = known.length ? Math.max(...known) : null;
@@ -138,12 +140,19 @@ export function ThermalHud() {
               <line y1="75" y2="120" x1="60" x2="60" stroke="white" strokeWidth="1.5" />
               <rect x="52" y="52" width="16" height="16" transform="rotate(45 60 60)" fill="none" stroke="white" strokeWidth="1.5" />
             </svg>
-            {room && (
-              <div className="absolute left-[78px] top-[70px] whitespace-nowrap text-[13px] drop-shadow-[0_1px_2px_rgba(0,0,0,.8)]">
-                {displayName(room, names)} air {air == null ? "–" : `${air.toFixed(1)} °C`}
-                <div className="text-[10.5px] text-white/75">measured sensor</div>
-              </div>
-            )}
+            <div className="absolute left-[78px] top-[70px] whitespace-nowrap text-[13px] drop-shadow-[0_1px_2px_rgba(0,0,0,.8)]">
+              {room ? (
+                <>
+                  {displayName(room, names)} air {air == null ? "–" : `${air.toFixed(1)} °C`}
+                  <div className="text-[10.5px] text-white/75">{air == null ? "no sensor in this room" : "measured sensor"}</div>
+                </>
+              ) : (
+                <>
+                  Outside air {outdoor == null ? "–" : `${outdoor.toFixed(1)} °C`}
+                  <div className="text-[10.5px] text-white/75">weather station</div>
+                </>
+              )}
+            </div>
           </div>
           <div className="absolute bottom-[140px] flex items-stretch gap-2 text-[11px]" style={{ right: `${Math.max(0, inset) + 20}px` }}>
             <div className="flex flex-col justify-between py-0.5 text-right drop-shadow-[0_1px_2px_rgba(0,0,0,.8)]">
