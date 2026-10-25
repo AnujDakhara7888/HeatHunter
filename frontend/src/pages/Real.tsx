@@ -67,6 +67,7 @@ export default function Real() {
         measured_heat_transfer_coefficient: house?.reference_htc,
         airtightness: house?.airtightness,
         night_on_screen: window_ ? fmtDate(window_[0]) : "whole week",
+        visible_window: window_ ? { start: new Date(window_[0]).toISOString(), end: new Date(window_[1]).toISOString() } : undefined,
         monitoring: "Not monitored: the heating was on during this week, so heating-off nights do not exist.",
       },
       ["Is this real data?", "Which room cools fastest?", "Why no fault labels?"],

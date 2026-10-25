@@ -9,6 +9,7 @@ export type PlanOpening = S["PlanOpening"];
 export type WeatherLookup = S["WeatherLookup"];
 export type ChatReply = S["ChatReply"];
 export type ChatAction = S["ChatAction"];
+export type AssistantScreen = S["AssistantScreen"];
 export type FloorPlanDraft = S["FloorPlanDraft"];
 
 // API v2: homes monitored night after night

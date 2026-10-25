@@ -202,7 +202,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -306,7 +306,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -382,7 +382,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -462,7 +462,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -620,7 +620,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -703,7 +703,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -836,7 +836,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -927,7 +927,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1019,7 +1019,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1111,7 +1111,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1296,7 +1296,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1389,7 +1389,7 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1472,7 +1472,59 @@
             }
           },
           "503": {
-            "description": "An optional online service (Claude, weather) is unavailable.",
+            "description": "An optional online service (assistant, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/help": {
+      "post": {
+        "tags": [
+          "assistant"
+        ],
+        "summary": "Assistant Help",
+        "description": "General HeatHunter help before a home is selected; no client-supplied house data.",
+        "operationId": "assistant_help_api_assistant_help_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatReply"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (assistant, weather) is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1490,7 +1542,7 @@
           "homes-v2"
         ],
         "summary": "Home Assistant",
-        "description": "Chat about this home. The server supplies the home's public data; Claude only.",
+        "description": "Chat about this home using its server-built context and the configured provider.",
         "operationId": "home_assistant_api_homes__home_id__assistant_post",
         "parameters": [
           {
@@ -1512,6 +1564,88 @@
               }
             }
           }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (assistant, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/chat": {
+      "post": {
+        "tags": [
+          "assistant"
+        ],
+        "summary": "Site Assistant",
+        "description": "Chat when no home is on screen: questions about HeatHunter itself; Claude only.",
+        "operationId": "site_assistant_api_assistant_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeChatRequest"
+              }
+            }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -1612,6 +1746,105 @@
           "code"
         ],
         "title": "ApiError"
+      },
+      "AssistantScreen": {
+        "properties": {
+          "page": {
+            "type": "string",
+            "enum": [
+              "overview",
+              "fault_lab",
+              "real_home",
+              "your_home"
+            ],
+            "title": "Page"
+          },
+          "view": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "exterior",
+                  "thermal",
+                  "open",
+                  "inside",
+                  "fan",
+                  "top"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View"
+          },
+          "infrared": {
+            "type": "boolean",
+            "title": "Infrared",
+            "default": false
+          },
+          "selected_room_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Room Id"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "plan",
+                  "setup",
+                  "data",
+                  "results"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "window_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Start"
+          },
+          "window_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page"
+        ],
+        "title": "AssistantScreen",
+        "description": "UI selection metadata only; readings and diagnoses must come from the server."
       },
       "Assumption": {
         "properties": {
@@ -2367,6 +2600,16 @@
             "maxItems": 40,
             "minItems": 1,
             "title": "Messages"
+          },
+          "screen": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssistantScreen"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,

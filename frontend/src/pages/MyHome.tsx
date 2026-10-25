@@ -150,13 +150,15 @@ export default function MyHome() {
       {
         page: "Your home: the user's own plan and sensor readings, monitored night after night",
         step,
+        selected_room_id: report?.room_id,
+        visible_window: night ? { start: night.start, end: night.end } : undefined,
         rooms: health ? health.rooms.map((r) => `${r.name}: ${ROOM_STATUS[r.status].label} — ${r.headline}`) : plan.rooms.map((r) => r.name),
         selected_room: report && { name: report.name, headline: report.headline, why: report.why, what_to_do: report.what_to_do, money: report.money && { annual_cost_gbp: report.money.annual_cost_gbp, repair_cost_gbp: report.money.repair_cost_gbp, payback_years: report.money.payback_years } },
         nights: nights.length,
       },
       step === "plan" ? ["How do I draw my rooms?", "What sensors should I buy?", "Can you read my plan?"] : ["What does this mean?", "Is it worth fixing?", "Why several nights?"],
     );
-  }, [step, plan, home, health, report, nights.length]);
+  }, [step, plan, home, health, report, nights.length, night?.night_id]);
 
   const run = async <T,>(what: string, fn: () => Promise<T>) => {
     setBusy(what);

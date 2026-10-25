@@ -761,8 +761,33 @@ class DemoReveal(ContractModel):
     provenance: Literal[Provenance.SIMULATED_GROUND_TRUTH] = Provenance.SIMULATED_GROUND_TRUTH
 
 
+class AssistantScreen(ContractModel):
+    """UI selection metadata only; readings and diagnoses must come from the server."""
+
+    page: Literal["overview", "fault_lab", "real_home", "your_home"]
+    view: Literal["exterior", "thermal", "open", "inside", "fan", "top"] | None = None
+    infrared: bool = False
+    selected_room_id: str | None = Field(default=None, max_length=80, pattern=r"^[a-zA-Z0-9_-]+$")
+    step: Literal["plan", "setup", "data", "results"] | None = None
+    window_start: datetime | None = None
+    window_end: datetime | None = None
+
+    @model_validator(mode="after")
+    def valid_window(self) -> AssistantScreen:
+        if (self.window_start is None) != (self.window_end is None):
+            raise ValueError("screen time window requires both start and end")
+        if self.window_start is not None:
+            if self.window_start.utcoffset() is None or self.window_end.utcoffset() is None:
+                raise ValueError("screen time window must have timezone-aware timestamps")
+            duration = (self.window_end - self.window_start).total_seconds()
+            if not 0 < duration <= 8 * 86400:
+                raise ValueError("screen time window must span at most eight days")
+        return self
+
+
 class HomeChatRequest(ContractModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+    screen: AssistantScreen | None = None
 
 
 def public_contract_models() -> dict[str, type[BaseModel]]:

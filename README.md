@@ -32,8 +32,17 @@ cp .env.example .env           # optional: put ANTHROPIC_API_KEY in .env for cha
 .venv/bin/uvicorn backend.app.main:app --port 8000   # http://127.0.0.1:8000
 ```
 
-Demo homes work offline. The assistant and plan reading need
-`ANTHROPIC_API_KEY`; real homes and weather lookup need internet (Open-Meteo).
+Demo homes work offline. Chat supports OpenAI or Claude. For OpenAI, set
+`HEATHUNTER_CHAT_PROVIDER=openai` and `OPENAI_API_KEY` in the git-ignored `.env`.
+`HEATHUNTER_OPENAI_MODEL` defaults to `gpt-5-nano` with minimal reasoning. Restart the API after changing
+configuration. OpenAI API billing is separate from a ChatGPT subscription.
+The default Claude chat and floor-plan reading use `ANTHROPIC_API_KEY`.
+Real homes and weather lookup need internet (Open-Meteo).
+General questions use `/api/assistant/help` before a home is selected; once selected,
+chat uses `/api/homes/{home_id}/assistant` with that home's server-built public data.
+Each request includes the project guide and preserves uncertainty and simulated-data disclosures.
+GPT-5 nano is a budget demo choice scheduled for retirement on December 11, 2026;
+configure a supported replacement before then.
 
 Frontend development: run the API, then `cd frontend && npm run dev`
 (port 5173, proxied to the API). See `docs/DEMO.md` for the demo script and `docs/CONTRACTS.md`
