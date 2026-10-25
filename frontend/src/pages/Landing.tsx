@@ -10,6 +10,7 @@ import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
 import { coolingRate, fmtTime, ms, valueAt } from "../lib/rooms";
 import { useScene, type View } from "../store/scene";
 import { HouseCanvas } from "../three/Scene";
+import { toInsulation } from "../three/thermal";
 
 const NIGHT: [string, string] = ["2021-02-18T22:00:00Z", "2021-02-19T06:00:00Z"];
 
@@ -127,11 +128,14 @@ export default function Landing() {
   useEffect(() => {
     if (!night) return;
     const values = Object.values(night.rooms).flatMap((s) => s.values).filter((v): v is number => v != null);
+    const out = night.outdoor.values.filter((v): v is number => v != null);
     set({
       tempRange: [Math.min(...values) - 0.5, Math.max(...values) + 0.5],
+      outdoorRange: out.length ? [Math.min(...out), Math.max(...out)] : null,
+      insulation: house?.insulation ? toInsulation(house.insulation) : null,
       rates: Object.fromEntries(Object.entries(night.rooms).map(([k, s]) => [k, coolingRate(s)])),
     });
-  }, [night, set]);
+  }, [night, house, set]);
 
   // Scroll drives the camera chapter and, in chapter 1, the clock.
   useEffect(() => {
@@ -180,7 +184,7 @@ export default function Landing() {
       autoRotate: false,
       fanOn: !!c.fan,
       focusRoom: c.view === "inside" ? "hall" : null,
-      finding: c.finding ? { room: "hall", cause: "envelope_conduction", strength: 0.8 } : null,
+      finding: c.finding ? { room: "hall", cause: "envelope_conduction", strength: 0.8, extra: 0.32 } : null, // illustrative
     });
   }, [chapter, set]);
 

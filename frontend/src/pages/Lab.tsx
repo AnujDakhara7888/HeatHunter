@@ -17,6 +17,7 @@ import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
 import { HouseCanvas } from "../three/Scene";
+import { toInsulation } from "../three/thermal";
 
 const roomName = (id: string | null | undefined) => (id ? ROOM_NAMES[id] ?? id : "–");
 
@@ -137,6 +138,7 @@ export default function Lab() {
       .catch(() => setWindDirs((c) => ({ ...c, [id]: null })));
   }, [night?.night_id, windDirs]);
   const player = useNight(roomsPlan, outdoor, wind, 10, night ? windDirs[night.night_id] : null);
+  useEffect(() => set({ insulation: readings?.insulation ? toInsulation(readings.insulation, SIM_TO_PLAN) : null }), [readings, set]);
 
   // The room the app is worried about drives the 3D finding (or the user's preview).
   const flaggedRoom = health?.rooms.find((r) => FLAG_STATUSES.includes(r.status));
@@ -145,14 +147,15 @@ export default function Lab() {
     const target = r && FLAG_STATUSES.includes(r.status) ? r : flaggedRoom;
     if (preview && (target || selected)) {
       const room = (target ?? r)!.room_id;
-      set({ finding: preview === "normal" ? null : { room: SIM_TO_PLAN[room], cause: preview, strength: strengthOf(target?.extra_heat_loss_percent ?? 25) } });
+      const extra = target?.extra_heat_loss_percent ?? 25;
+      set({ finding: preview === "normal" ? null : { room: SIM_TO_PLAN[room], cause: preview, strength: strengthOf(extra), extra: extra / 100 } });
       return;
     }
     if (!target || target.status === "verifying") {
       set({ finding: target ? { room: SIM_TO_PLAN[target.room_id], cause: null, strength: 0.3 } : null });
       return;
     }
-    set({ finding: { room: SIM_TO_PLAN[target.room_id], cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent) } });
+    set({ finding: { room: SIM_TO_PLAN[target.room_id], cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent), extra: (target.extra_heat_loss_percent ?? 0) / 100 } });
   }, [health, selected, preview, flaggedRoom, set]);
 
   // The server builds the assistant's context itself; we only tell the dock which home is on screen.

@@ -41,12 +41,14 @@ export function useNight(
     const lo = Math.min(...values);
     const hi = Math.max(...values);
     const pad = Math.max(0.5, (hi - lo) * 0.08);
+    const out = (outdoor?.values ?? []).filter((v): v is number => v != null);
     set({
       tempRange: [lo - pad, hi + pad],
+      outdoorRange: out.length ? [Math.min(...out), Math.max(...out)] : null,
       rates: Object.fromEntries(Object.entries(rooms).map(([k, s]) => [k, coolingRate(s)])),
     });
     setT(range[0]);
-  }, [rooms, range, set]);
+  }, [rooms, outdoor, range, set]);
 
   useEffect(() => {
     if (!rooms || t == null) return;

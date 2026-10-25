@@ -7,7 +7,18 @@ import { planBounds, roomCenter } from "../lib/plan";
 import { displayName, tempRGB } from "../lib/rooms";
 import { useScene } from "../store/scene";
 import { WALL_H, WALL_T, outwardNormal, roofLayout, wallPieces } from "./geometry";
-import { createThermalMaterial } from "./thermal";
+import {
+  ENVELOPE,
+  GLASS,
+  INTERIOR,
+  MAX_LEAKS,
+  MAX_ROOMS,
+  UNTIL_LOADED,
+  createThermalMaterial,
+  createThermalUniforms,
+  leakStrength,
+  useIrScale,
+} from "./thermal";
 
 const LOWERED = 0.46;
 
@@ -141,7 +152,12 @@ export function House() {
   const roof = useMemo(() => roofLayout(plan), [plan]);
   const bounds = useMemo(() => planBounds(plan), [plan]);
   const heat = useHeatTexture(plan);
+  const outdoor = useScene((s) => s.outdoor);
+  const wind = useScene((s) => s.wind);
+  const insulation = useScene((s) => s.insulation) ?? UNTIL_LOADED;
+  const scale = useIrScale();
 
+  const thermalU = useMemo(createThermalUniforms, []);
   const mats = useMemo(
     () => ({
       ext: new THREE.MeshStandardMaterial({ color: "#e6d3bd", roughness: 0.85, side: THREE.DoubleSide }),
@@ -158,51 +174,69 @@ export function House() {
         opacity: 0.9,
         side: THREE.DoubleSide,
       }),
-      tExt: createThermalMaterial(0.3),
-      tInt: createThermalMaterial(0.36),
-      tRoof: createThermalMaterial(0.15),
-      tGlass: createThermalMaterial(0.62),
+      tEnv: createThermalMaterial(ENVELOPE, thermalU),
+      tInt: createThermalMaterial(INTERIOR, thermalU),
+      tGlass: createThermalMaterial(GLASS, thermalU),
     }),
-    [],
+    [thermalU],
   );
 
-  // Feed the engine's finding into the thermal shader.
+  // Feed measured air temperatures, the engine's insulation figures and its finding into the IR shader.
   useEffect(() => {
-    const segs = finding
-      ? geo.segments.filter((s) => s.exterior && s.rooms.includes(finding.room)).slice(0, 6)
-      : [];
-    const spots: THREE.Vector3[] = [];
-    if (finding?.cause === "draft") {
-      for (const s of segs)
-        for (const o of s.openings) {
-          const len = Math.hypot(s.x1 - s.x0, s.z1 - s.z0);
-          const t = (o.a + o.b) / 2 / len;
-          spots.push(new THREE.Vector3(s.x0 + (s.x1 - s.x0) * t, o.kind === "window" ? 1.5 : 1.0, s.z0 + (s.z1 - s.z0) * t));
-        }
-      if (!spots.length) for (const s of segs) spots.push(new THREE.Vector3((s.x0 + s.x1) / 2, 0.3, (s.z0 + s.z1) / 2));
+    const u = thermalU;
+    const rooms = plan.rooms.slice(0, MAX_ROOMS);
+    const known = rooms.map((r) => temps[r.room_id]).filter((t): t is number => t != null);
+    const tAvg = known.length ? known.reduce((a, b) => a + b, 0) / known.length : (scale.range[0] + scale.range[1]) / 2;
+    const uOf = (id: string) => insulation.envelope[id] ?? insulation.fallback;
+    u.uRoomCount.value = rooms.length;
+    rooms.forEach((r, i) => {
+      u.uRooms.value[i].set(r.x, r.z, r.x + r.width, r.z + r.depth);
+      u.uTin.value[i] = temps[r.room_id] ?? tAvg; // unsensed rooms sit near the house average
+      u.uU.value[i] = u.uWallU.value[i] = uOf(r.room_id);
+    });
+    u.uTavg.value = tAvg;
+    u.uUavg.value = insulation.fallback;
+    u.uWinU.value = insulation.window;
+    u.uTout.value = outdoor ?? scale.range[0];
+    u.uRange.value.set(...scale.range);
+
+    const segs = finding ? geo.segments.filter((s) => s.exterior && s.rooms.includes(finding.room)) : [];
+    const extra = finding?.extra ?? 0;
+    const index = rooms.findIndex((r) => r.room_id === finding?.room);
+    // Weak insulation: the engine's extra heat loss (W/K) leaves through the room's outside walls.
+    if (finding?.cause === "envelope_conduction" && extra > 0 && index >= 0) {
+      let wall = 0;
+      for (const s of segs) {
+        wall += Math.hypot(s.x1 - s.x0, s.z1 - s.z0) * WALL_H;
+        for (const o of s.openings) wall -= (o.b - o.a) * (o.kind === "window" ? 1.2 : 2.05);
+      }
+      const lost = extra * (insulation.heatLoss[finding.room] ?? 0);
+      u.uWallU.value[index] += lost / Math.max(wall, 1);
     }
-    for (const m of [mats.tExt, mats.tInt, mats.tRoof]) {
-      m.uniforms.uInside.value = inside ? 1 : 0;
-      const conduction = finding?.cause === "envelope_conduction";
-      m.uniforms.uSegCount.value = conduction ? segs.length : 0;
-      segs.forEach((s, i) => (m.uniforms.uSegs.value[i] as THREE.Vector4).set(s.x0, s.z0, s.x1, s.z1));
-      m.uniforms.uSpotCount.value = Math.min(spots.length, 8);
-      spots.slice(0, 8).forEach((p, i) => (m.uniforms.uSpots.value[i] as THREE.Vector3).copy(p));
-      m.uniforms.uStrength.value = finding ? 0.5 + 0.5 * finding.strength : 0;
+    // Draught: air moving through the frames of the room's windows and doors (or the skirting, if it has none).
+    const leaks: [number, number, number, number, number, number][] = [];
+    if (finding?.cause === "draft" && extra > 0) {
+      for (const s of segs) {
+        const len = Math.hypot(s.x1 - s.x0, s.z1 - s.z0);
+        const at = (d: number) => [s.x0 + ((s.x1 - s.x0) * d) / len, s.z0 + ((s.z1 - s.z0) * d) / len] as const;
+        for (const o of s.openings) leaks.push([...at(o.a), ...at(o.b), ...(o.kind === "window" ? [0.9, 2.1] : [0, 2.05]) as [number, number]]);
+      }
+      if (!leaks.length) for (const s of segs) leaks.push([s.x0, s.z0, s.x1, s.z1, 0, 0.05]);
     }
-    // Seen from inside, walls are warm and glass is cold; from outside the reverse.
-    mats.tExt.uniforms.uBase.value = inside ? 0.7 : 0.3;
-    mats.tInt.uniforms.uBase.value = inside ? 0.74 : 0.4;
-    mats.tRoof.uniforms.uBase.value = inside ? 0.66 : 0.2;
-    mats.tGlass.uniforms.uBase.value = inside ? 0.12 : 0.62;
-  }, [finding, geo, mats, inside]);
+    u.uLeakCount.value = Math.min(leaks.length, MAX_LEAKS);
+    leaks.slice(0, MAX_LEAKS).forEach(([x0, z0, x1, z1, y0, y1], i) => {
+      u.uLeaks.value[i].set(x0, z0, x1, z1);
+      u.uLeakY.value[i].set(y0, y1);
+    });
+    u.uLeakK.value = leaks.length ? leakStrength(extra, wind) : 0;
+    u.uLeakT.value = finding ? temps[finding.room] ?? tAvg : tAvg;
+  }, [thermalU, plan, geo, temps, outdoor, wind, insulation, finding, scale.range]);
 
   const walls = useRef<THREE.Group>(null);
   const roofGroup = useRef<THREE.Group>(null);
   const floor = useRef<THREE.MeshBasicMaterial>(null);
-  useFrame((state, dt) => {
+  useFrame((_, dt) => {
     const k = Math.min(dt, 0.5);
-    for (const m of [mats.tExt, mats.tInt, mats.tRoof, mats.tGlass]) m.uniforms.uTime.value = state.clock.elapsedTime;
     if (walls.current) walls.current.scale.y = damp(walls.current.scale.y, lowered ? LOWERED : 1, 4, k);
     if (roofGroup.current) {
       const hide = lowered;
@@ -214,7 +248,7 @@ export function House() {
     if (floor.current) floor.current.opacity = damp(floor.current.opacity, thermal || view === "exterior" ? 0 : 1, 3, k);
   });
 
-  const wallMat = (exterior: boolean) => (thermal ? (exterior ? mats.tExt : mats.tInt) : exterior ? mats.ext : mats.int);
+  const wallMat = (exterior: boolean) => (thermal ? (exterior ? mats.tEnv : mats.tInt) : exterior ? mats.ext : mats.int);
   const ridgeAlongX = roof.main.w >= roof.main.d;
   const roofGeo = useMemo(() => {
     const { x, z, w, d } = roof.main;
@@ -261,12 +295,12 @@ export function House() {
           onPointerOut={() => (document.body.style.cursor = "")}
         >
           <planeGeometry args={[r.width, r.depth]} />
-          <meshStandardMaterial color={thermal ? (inside ? "#e0661a" : "#120a40") : "#4a4038"} roughness={0.9} />
+          {thermal ? <primitive object={mats.tEnv} attach="material" /> : <meshStandardMaterial color="#4a4038" roughness={0.9} />}
         </mesh>
       ))}
       {inside &&
         plan.rooms.map((r) => (
-          <mesh key={`c-${r.room_id}`} position={[r.x + r.width / 2, WALL_H - 0.002, r.z + r.depth / 2]} rotation-x={Math.PI / 2} material={thermal ? mats.tRoof : mats.ceil}>
+          <mesh key={`c-${r.room_id}`} position={[r.x + r.width / 2, WALL_H - 0.002, r.z + r.depth / 2]} rotation-x={Math.PI / 2} material={thermal ? mats.tEnv : mats.ceil}>
             <planeGeometry args={[r.width, r.depth]} />
           </mesh>
         ))}
@@ -296,10 +330,10 @@ export function House() {
       </group>
 
       <group ref={roofGroup}>
-        <mesh geometry={roofGeo.roof} material={thermal ? mats.tRoof : mats.roof} castShadow />
-        <mesh geometry={roofGeo.gable} material={thermal ? mats.tExt : mats.ext} />
+        <mesh geometry={roofGeo.roof} material={thermal ? mats.tEnv : mats.roof} castShadow />
+        <mesh geometry={roofGeo.gable} material={thermal ? mats.tEnv : mats.ext} />
         {roof.flats.map((f, i) => (
-          <mesh key={i} position={[f.x + f.w / 2, WALL_H + 0.08, f.z + f.d / 2]} material={thermal ? mats.tRoof : mats.roof} castShadow>
+          <mesh key={i} position={[f.x + f.w / 2, WALL_H + 0.08, f.z + f.d / 2]} material={thermal ? mats.tEnv : mats.roof} castShadow>
             <boxGeometry args={[f.w + 0.3, 0.16, f.d + 0.3]} />
           </mesh>
         ))}
@@ -309,7 +343,7 @@ export function House() {
 
       {/* exterior doors are shut for the heating-off night */}
       {geo.doors.map((d, i) => (
-        <mesh key={`door-${i}`} position={[d.cx, 1.025, d.cz]} rotation-y={d.rot} material={thermal ? mats.tExt : mats.door} castShadow>
+        <mesh key={`door-${i}`} position={[d.cx, 1.025, d.cz]} rotation-y={d.rot} material={thermal ? mats.tEnv : mats.door} castShadow>
           <boxGeometry args={[d.len, 2.05, 0.05]} />
         </mesh>
       ))}
