@@ -7,31 +7,45 @@ fabricated success.
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
-from typing import NoReturn
+from typing import Annotated, NoReturn
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, File, Query, Request, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .contracts import (
     ApiError,
+    ChatReply,
+    ChatRequest,
     DiagnoseRequest,
     Diagnosis,
     DiagnosisStatus,
     EvaluationSummary,
     ExperimentRequest,
     ExperimentResponse,
+    FloorPlanDraft,
     GroundTruth,
     HealthResponse,
+    HomeAnalysis,
+    HomeAnalyzeRequest,
+    HomePlan,
+    HomeTemplate,
+    InsightRequest,
+    InsightResponse,
     MoneyRequest,
     MoneyResponse,
     ObservationResponse,
+    PredictionRequest,
+    PredictionResponse,
     RealHouse,
     RepairRequest,
     RepairResult,
     ScenarioCreated,
     ScenarioCreateRequest,
+    WeatherLookup,
 )
 from .runtime import (
     REPOSITORY_ROOT,
@@ -56,6 +70,7 @@ def _errors(*codes: int) -> dict[int | str, dict]:
         status.HTTP_409_CONFLICT: "The action is not valid in the scenario's current state.",
         status.HTTP_422_UNPROCESSABLE_CONTENT: "The request is invalid for this scenario.",
         status.HTTP_501_NOT_IMPLEMENTED: "The owning scientific or data service is not available.",
+        status.HTTP_503_SERVICE_UNAVAILABLE: "An optional online service (Claude, weather) is unavailable.",
     }
     return {code: {"model": ApiError, "description": descriptions[code]} for code in codes}
 
@@ -283,7 +298,158 @@ async def get_evaluation_summary() -> EvaluationSummary:
     return summary
 
 
+@app.post("/api/insight/fits", response_model=InsightResponse, responses=_errors(422, 501), tags=["insight"])
+async def insight_fits(request: InsightRequest) -> InsightResponse:
+    """Fit normal / draft / insulation per room and return each hypothesis's predicted curve."""
+
+    from backend.engine import PublicModelError
+
+    from .insight import room_insights
+
+    template = request.template or _runtime().template
+    try:
+        rooms, evaluations, elapsed = await run_in_threadpool(
+            room_insights, request.nights, template, request.room_ids
+        )
+    except (PublicModelError, ValueError) as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+    return InsightResponse(
+        template_id=template.template_id, rooms=rooms, model_evaluations=evaluations, elapsed_ms=elapsed
+    )
+
+
+@app.post(
+    "/api/insight/predict", response_model=PredictionResponse, responses=_errors(422, 501), tags=["insight"]
+)
+async def insight_predict(request: PredictionRequest) -> PredictionResponse:
+    """Forward-predict a night under competing fitted hypotheses (out-of-sample check)."""
+
+    import time
+
+    from backend.engine import PublicModelError
+
+    from .insight import predict_night
+
+    template = request.template or _runtime().template
+    started = time.perf_counter()
+    try:
+        predictions = await run_in_threadpool(
+            predict_night, template, request.room_id, request.causes, request.night
+        )
+    except (PublicModelError, ValueError) as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+    return PredictionResponse(
+        room_id=request.room_id,
+        night_id=request.night.night_id,
+        predictions=predictions,
+        elapsed_ms=(time.perf_counter() - started) * 1000,
+    )
+
+
+@app.get("/api/homes/sample-plan", response_model=HomePlan, tags=["homes"])
+async def sample_plan() -> HomePlan:
+    """The documented HH09 plan, in the same format a user's plan uses."""
+
+    return HomePlan.model_validate_json((REPOSITORY_ROOT / "shared" / "homes" / "hh09_plan.json").read_text())
+
+
+@app.post("/api/homes/template", response_model=HomeTemplate, responses=_errors(422), tags=["homes"])
+async def home_template(plan: HomePlan) -> HomeTemplate:
+    from .homes import HomeError, build_home
+
+    try:
+        return build_home(plan)[0]
+    except HomeError as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+
+
+@app.post("/api/homes/analyze", response_model=HomeAnalysis, responses=_errors(422, 501), tags=["homes"])
+async def home_analyze(request: HomeAnalyzeRequest) -> HomeAnalysis:
+    """Screen a user's own readings with the public engine (no fault labels exist for real homes)."""
+
+    from backend.engine import PublicModelError
+
+    from .homes import HomeError, analyze_home
+
+    passive = _runtime().thresholds.passive
+    try:
+        return await run_in_threadpool(
+            lambda: analyze_home(
+                request,
+                detection_bic=passive.detection_bic,
+                ambiguity_bic=passive.ambiguity_bic,
+                adequacy_rmse=passive.adequacy_rmse,
+            )
+        )
+    except (HomeError, PublicModelError, ValueError) as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+
+
+@app.get("/api/weather/lookup", response_model=WeatherLookup, responses=_errors(422, 503), tags=["homes"])
+async def weather_lookup(
+    query: Annotated[str, Query(min_length=2, max_length=80)],
+    start: Annotated[datetime, Query()],
+    end: Annotated[datetime, Query()],
+) -> WeatherLookup:
+    """Hourly gridded weather for a place and time window (needs internet)."""
+
+    from .homes import HomeError, lookup_weather
+
+    try:
+        return await run_in_threadpool(lookup_weather, query, start, end)
+    except HomeError as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+    except OSError as exc:
+        raise ApiFailure(503, "WEATHER_UNAVAILABLE", f"weather service unreachable: {exc}") from exc
+
+
+@app.post("/api/assistant/chat", response_model=ChatReply, responses=_errors(422, 503), tags=["assistant"])
+async def assistant_chat(request: ChatRequest) -> ChatReply:
+    from .assistant import AssistantUnavailable, chat
+
+    try:
+        return await run_in_threadpool(chat, request)
+    except AssistantUnavailable as exc:
+        raise ApiFailure(503, "ASSISTANT_UNAVAILABLE", str(exc)) from exc
+
+
+@app.post(
+    "/api/assistant/floor-plan",
+    response_model=FloorPlanDraft,
+    responses=_errors(422, 503),
+    tags=["assistant"],
+)
+async def assistant_floor_plan(file: Annotated[UploadFile, File()]) -> FloorPlanDraft:
+    from .assistant import AssistantUnavailable, read_floor_plan
+
+    content = await file.read()
+    if len(content) > 15 * 1024 * 1024:
+        raise ApiFailure(422, "INVALID_REQUEST", "floor plan must be under 15 MB")
+    try:
+        return await run_in_threadpool(read_floor_plan, content, file.content_type or "")
+    except AssistantUnavailable as exc:
+        raise ApiFailure(503, "ASSISTANT_UNAVAILABLE", str(exc)) from exc
+    except ValueError as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+
+
 # Serve the built frontend for the offline single-process demo, if present.
 _DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
+
+class _SinglePageApp(StaticFiles):
+    """Serve index.html for client-side routes (/lab, /real, /home) but never for /api."""
+
+    async def get_response(self, path: str, scope):  # type: ignore[override]
+        from starlette.exceptions import HTTPException as StarletteHTTPException
+
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code != 404 or path.startswith("api"):
+                raise
+            return await super().get_response("index.html", scope)
+
+
 if _DIST.is_dir():
-    app.mount("/", StaticFiles(directory=_DIST, html=True), name="frontend")
+    app.mount("/", _SinglePageApp(directory=_DIST, html=True), name="frontend")

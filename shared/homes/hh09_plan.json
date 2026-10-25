@@ -1,0 +1,26 @@
+{
+  "plan_id": "smeter-hh09",
+  "name": "HH09 (SMETER)",
+  "ceiling_height_m": 2.4,
+  "rooms": [
+    {"room_id": "bedroom", "name": "Bedroom", "x": 0, "z": 0, "width": 3.11, "depth": 3.8},
+    {"room_id": "kitchen", "name": "Kitchen", "x": 3.11, "z": 0, "width": 3.14, "depth": 1.83},
+    {"room_id": "living_room", "name": "Living Room", "x": 3.11, "z": 1.83, "width": 3.14, "depth": 4.36},
+    {"room_id": "closet", "name": "Closets", "x": 0, "z": 3.8, "width": 1.8, "depth": 0.87, "has_sensor": false},
+    {"room_id": "hall", "name": "Hall", "x": 1.8, "z": 3.8, "width": 1.31, "depth": 2.39},
+    {"room_id": "bathroom", "name": "Bathroom", "x": 0, "z": 4.67, "width": 1.8, "depth": 2.73}
+  ],
+  "openings": [
+    {"kind": "window", "x0": 0.45, "z0": 0, "x1": 2.81, "z1": 0},
+    {"kind": "window", "x0": 4.92, "z0": 0, "x1": 6.13, "z1": 0},
+    {"kind": "window", "x0": 3.5, "z0": 6.19, "x1": 5.86, "z1": 6.19},
+    {"kind": "window", "x0": 1.8, "z0": 6.6, "x1": 1.8, "z1": 7.15},
+    {"kind": "door", "x0": 4.07, "z0": 0, "x1": 4.92, "z1": 0},
+    {"kind": "door", "x0": 1.95, "z0": 6.19, "x1": 2.85, "z1": 6.19},
+    {"kind": "door", "x0": 3.96, "z0": 1.83, "x1": 4.71, "z1": 1.83},
+    {"kind": "door", "x0": 3.11, "z0": 5.25, "x1": 3.11, "z1": 5.95},
+    {"kind": "door", "x0": 2.2, "z0": 3.8, "x1": 2.9, "z1": 3.8},
+    {"kind": "door", "x0": 1.8, "z0": 5.3, "x1": 1.8, "z1": 6.0},
+    {"kind": "door", "x0": 0.25, "z0": 3.8, "x1": 0.85, "z1": 3.8}
+  ]
+}

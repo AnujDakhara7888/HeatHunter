@@ -69,8 +69,18 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
         "/api/real/house",
         "/api/real/house/floor-plan",
         "/api/evaluation/summary",
+        "/api/insight/fits",
+        "/api/insight/predict",
+        "/api/homes/sample-plan",
+        "/api/homes/template",
+        "/api/homes/analyze",
+        "/api/weather/lookup",
+        "/api/assistant/chat",
+        "/api/assistant/floor-plan",
     }
     assert set(schema["paths"]) == expected_paths
+    for path in expected_paths - {"/api/scenarios/{id}/reveal"}:
+        assert "GroundTruth" not in json.dumps(schema["paths"][path]), path
     observation_schema = json.dumps(schema["components"]["schemas"]["ObservationResponse"])
     scenario_schema = json.dumps(schema["components"]["schemas"]["ScenarioCreated"])
     assert "GroundTruth" not in observation_schema

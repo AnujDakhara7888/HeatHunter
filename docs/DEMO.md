@@ -88,6 +88,52 @@ full flow, the unresolved draft example, phase disclosures, seed preservation,
 stale repair rejection, safe retries, and malformed configuration rejection.
 No fit scores or success statuses are hardcoded into the diagnosis.
 
+## The 3D experience (rebuilt UI, 2026-10-25)
+
+The frontend was rebuilt from scratch around a real-time 3D model of HH09
+(react-three-fiber). Walls, windows and doors are generated from
+`shared/homes/hh09_plan.json`, the same plan format users upload, so any home
+gets the same treatment. Routes:
+
+| Route | What it is |
+|---|---|
+| `/` | Scroll story. Scrolling scrubs the real HH09 night of 18 Feb 2021 through the floor heat map and flies the camera: outside → open house → thermal → fan test → walk-in. |
+| `/lab` | Fault Lab. Guided night, Surprise me (random seed) or Judge mode (a judge plants the fault). Night → Diagnose → Fan test → Fix → Reveal, all live API calls. |
+| `/real` | A week of real HH09 readings in 3D, plus "screen a real night" using the same engine. |
+| `/home` | Bring your own home: upload a plan (Claude reads it) or draw/trace rooms, add CSV or hand-typed readings, fetch weather, then screen it. |
+
+Trust features judges can check:
+
+- **Engine trace** (bottom left) lists every API call with its timing and result.
+- **Suspect cards** draw each hypothesis's fitted curve against the measured one.
+  The curves come from `POST /api/insight/fits`, which re-runs the engine's own
+  fit; its BIC matches `/diagnose` exactly (tested).
+- **Surprise me / Judge mode** give a different answer on every run.
+- The assistant (`Ask HeatHunter`) sees only what is on screen; truth reaches it
+  only after the reveal.
+
+Optional online features: set `ANTHROPIC_API_KEY` before starting uvicorn to
+enable chat and floor-plan reading (model `claude-opus-5-5`, override with
+`HEATHUNTER_ASSISTANT_MODEL`). Without it, chat answers offline from the engine
+output on screen and plans are traced by hand. Weather lookup uses Open-Meteo
+and needs internet; readings can always be typed by hand. The judge demo
+(`/`, `/lab`, `/real`) needs no network.
+
+### 3-minute pitch script
+
+1. **0:00 `/` hero.** "A check-engine light for your home." Scroll once: the
+   real HH09 bungalow cools room by room through the night.
+2. **0:30 `/lab` → Judge mode.** Ask a judge to pick a room and a fault. Start.
+   The night plays; point at the engine trace: this is computed now.
+3. **1:00 Analyze.** One room's bar crosses the alarm tick. Three suspects are
+   fitted; if leak and insulation tie, the gauge says *Ambiguous*.
+4. **1:30 Fan test.** Air streams through the house. The suspect that can't
+   follow the fan night drops out, or the engine honestly says it still can't tell.
+5. **2:00 Fix.** Price sliders, payback, then re-run the same night after the
+   fix. Before/after toggle.
+6. **2:30 Reveal.** The judge's own choice is shown with ✓/✕. Close on `/home`:
+   upload any floor plan and it becomes this 3D house.
+
 ## What to explain during a presentation
 
 1. This is an approximate model informed by a real home, not an exact replica.
@@ -110,11 +156,9 @@ old provisional rules. Its 3/120 matching count and seed-68 success story do not
 describe the current conservative configuration. Preserve the file as historical
 research; do not present it as current or held-out accuracy.
 
-The frontend's selection/copy remains a separate workstream. Its current default
-`hh09-guided-v1` is the uncertainty example; the full-loop insulation example is
-available through the API above. Historical provisional labels and old seed-scan
-copy in technical UI panels need integration-owner refresh before presentation.
-No frontend files are changed by this backend integration step.
+The rebuilt frontend's "Guided night" uses `hh09-guided-insulation-v1`. The
+uncertainty example `hh09-guided-v1` is reachable through the API; judge mode
+shows the same honesty live when the engine cannot separate the causes.
 
 Anuj's independent >=60-case held-out benchmark and final report are still
 pending. `/api/evaluation/summary` returns 501 until that report exists. Report
