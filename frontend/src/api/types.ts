@@ -7,6 +7,7 @@ export type HomePlan = S["HomePlan"];
 export type PlanRoom = S["PlanRoom"];
 export type PlanOpening = S["PlanOpening"];
 export type WeatherLookup = S["WeatherLookup"];
+export type Location = S["Location"];
 export type ChatReply = S["ChatReply"];
 export type ChatAction = S["ChatAction"];
 export type AssistantScreen = S["AssistantScreen"];

@@ -2,10 +2,13 @@ import * as THREE from "three";
 
 /**
  * FLIR-style infrared material. Values are a 0..1 "relative surface warmth"
- * driven by the engine's finding (never by truth):
+ * driven by the measured room air temperatures and the engine's finding (never by truth):
+ *  - each surface warms or cools with the measured temperature of the room(s) it bounds;
  *  - outside, heat escaping through a leaking wall glows warm;
  *  - inside, the same wall (and windows) read cold, like a real IR photo.
  */
+export const MAX_ROOMS = 16;
+
 export function createThermalMaterial(base: number) {
   return new THREE.ShaderMaterial({
     side: THREE.DoubleSide,
@@ -18,6 +21,9 @@ export function createThermalMaterial(base: number) {
       uStrength: { value: 0 },
       uTime: { value: 0 },
       uInside: { value: 0 },
+      uRooms: { value: Array.from({ length: MAX_ROOMS }, () => new THREE.Vector4()) },
+      uWarm: { value: new Array(MAX_ROOMS).fill(0.5) },
+      uRoomCount: { value: 0 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vWorld; varying vec3 vNormal;
@@ -26,6 +32,7 @@ export function createThermalMaterial(base: number) {
     fragmentShader: /* glsl */ `
       uniform float uBase; uniform vec4 uSegs[6]; uniform int uSegCount; uniform vec3 uSpots[8]; uniform int uSpotCount;
       uniform float uStrength; uniform float uTime; uniform float uInside;
+      uniform vec4 uRooms[${MAX_ROOMS}]; uniform float uWarm[${MAX_ROOMS}]; uniform int uRoomCount;
       varying vec3 vWorld; varying vec3 vNormal;
       // FLIR "rainbow HC" style: deep blue → blue → cyan → green → yellow → orange → red → pink-white
       vec3 flir(float v){ v=clamp(v,0.,1.);
@@ -48,6 +55,15 @@ export function createThermalMaterial(base: number) {
         // corners and the floor junction lose a little more heat (thermal bridging)
         float edge = smoothstep(.45,0.,vWorld.y) + smoothstep(2.0,2.4,vWorld.y);
         v += mix(.06, -.08, uInside)*edge;
+        // measured room air: surfaces of warmer rooms read warmer (walls shared by two rooms blend)
+        float wsum = 0., wv = 0.;
+        for(int i=0;i<${MAX_ROOMS};i++){ if(i>=uRoomCount) break;
+          vec2 c = (uRooms[i].xy+uRooms[i].zw)*.5; vec2 h = abs(uRooms[i].zw-uRooms[i].xy)*.5;
+          vec2 q = max(abs(vWorld.xz-c)-h, 0.);
+          float w = exp(-dot(q,q)/.08);
+          wsum += w; wv += w*uWarm[i];
+        }
+        if(wsum > .02) v += (wv/wsum - .5)*mix(.5, .45, uInside)*smoothstep(0.,.3,wsum);
         float heat = 0.;
         for(int i=0;i<6;i++){ if(i>=uSegCount) break;
           float d = segDist(vWorld.xz, uSegs[i].xy, uSegs[i].zw);

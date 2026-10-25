@@ -63,6 +63,7 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
         "/api/real/house/floor-plan",
         "/api/evaluation/summary",
         "/api/homes/sample-plan",
+        "/api/places",
         "/api/weather/lookup",
         "/api/weather/{night_id}/wind-direction",
         "/api/assistant/floor-plan",

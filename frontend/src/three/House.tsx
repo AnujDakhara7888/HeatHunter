@@ -7,7 +7,7 @@ import { planBounds, roomCenter } from "../lib/plan";
 import { displayName, tempRGB } from "../lib/rooms";
 import { useScene } from "../store/scene";
 import { WALL_H, WALL_T, outwardNormal, roofLayout, wallPieces } from "./geometry";
-import { createThermalMaterial } from "./thermal";
+import { MAX_ROOMS, createThermalMaterial } from "./thermal";
 
 const LOWERED = 0.46;
 
@@ -197,6 +197,19 @@ export function House() {
     mats.tGlass.uniforms.uBase.value = inside ? 0.12 : 0.62;
   }, [finding, geo, mats, inside]);
 
+  // Measured room temperatures drive the IR surfaces, scaled to the night's range.
+  const range = useScene((s) => s.tempRange);
+  useEffect(() => {
+    const sensed = plan.rooms.filter((r) => temps[r.room_id] != null).slice(0, MAX_ROOMS);
+    for (const m of [mats.tExt, mats.tInt, mats.tRoof]) {
+      m.uniforms.uRoomCount.value = sensed.length;
+      sensed.forEach((r, i) => {
+        (m.uniforms.uRooms.value[i] as THREE.Vector4).set(r.x, r.z, r.x + r.width, r.z + r.depth);
+        m.uniforms.uWarm.value[i] = THREE.MathUtils.clamp((temps[r.room_id]! - range[0]) / Math.max(range[1] - range[0], 0.1), 0, 1);
+      });
+    }
+  }, [plan, temps, range, mats]);
+
   const walls = useRef<THREE.Group>(null);
   const roofGroup = useRef<THREE.Group>(null);
   const floor = useRef<THREE.MeshBasicMaterial>(null);
@@ -215,30 +228,35 @@ export function House() {
   });
 
   const wallMat = (exterior: boolean) => (thermal ? (exterior ? mats.tExt : mats.tInt) : exterior ? mats.ext : mats.int);
-  const ridgeAlongX = roof.main.w >= roof.main.d;
-  const roofGeo = useMemo(() => {
-    const { x, z, w, d } = roof.main;
-    const o = 0.3;
-    const x0 = x - o, x1 = x + w + o, z0 = z - o, z1 = z + d + o;
-    const rise = Math.min(w, d) * 0.32;
-    const H = WALL_H;
-    const pos = ridgeAlongX
-      ? [x0, H, z0, x1, H, z0, x1, H + rise, (z0 + z1) / 2, x0, H, z0, x1, H + rise, (z0 + z1) / 2, x0, H + rise, (z0 + z1) / 2,
-         x0, H, z1, x0, H + rise, (z0 + z1) / 2, x1, H + rise, (z0 + z1) / 2, x0, H, z1, x1, H + rise, (z0 + z1) / 2, x1, H, z1]
-      : [x0, H, z0, (x0 + x1) / 2, H + rise, z0, (x0 + x1) / 2, H + rise, z1, x0, H, z0, (x0 + x1) / 2, H + rise, z1, x0, H, z1,
-         x1, H, z0, x1, H, z1, (x0 + x1) / 2, H + rise, z1, x1, H, z0, (x0 + x1) / 2, H + rise, z1, (x0 + x1) / 2, H + rise, z0];
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    g.computeVertexNormals();
-    const gx0 = x, gx1 = x + w, gz0 = z, gz1 = z + d;
-    const gable = ridgeAlongX
-      ? [gx0, H, gz0, gx0, H, gz1, gx0, H + rise * 0.95, (gz0 + gz1) / 2, gx1, H, gz0, gx1, H + rise * 0.95, (gz0 + gz1) / 2, gx1, H, gz1]
-      : [gx0, H, gz0, (gx0 + gx1) / 2, H + rise * 0.95, gz0, gx1, H, gz0, gx0, H, gz1, gx1, H, gz1, (gx0 + gx1) / 2, H + rise * 0.95, gz1];
-    const gg = new THREE.BufferGeometry();
-    gg.setAttribute("position", new THREE.Float32BufferAttribute(gable, 3));
-    gg.computeVertexNormals();
-    return { roof: g, gable: gg };
-  }, [roof, ridgeAlongX]);
+  // One gable per roofed block; rebuilt whenever rooms move, so the roof always fits the plan.
+  const roofGeos = useMemo(
+    () =>
+      roof.gables.map(({ x, z, w, d }) => {
+        const ridgeAlongX = w >= d;
+        const o = 0.3;
+        const x0 = x - o, x1 = x + w + o, z0 = z - o, z1 = z + d + o;
+        const rise = Math.min(w, d) * 0.32;
+        const H = WALL_H;
+        const pos = ridgeAlongX
+          ? [x0, H, z0, x1, H, z0, x1, H + rise, (z0 + z1) / 2, x0, H, z0, x1, H + rise, (z0 + z1) / 2, x0, H + rise, (z0 + z1) / 2,
+             x0, H, z1, x0, H + rise, (z0 + z1) / 2, x1, H + rise, (z0 + z1) / 2, x0, H, z1, x1, H + rise, (z0 + z1) / 2, x1, H, z1]
+          : [x0, H, z0, (x0 + x1) / 2, H + rise, z0, (x0 + x1) / 2, H + rise, z1, x0, H, z0, (x0 + x1) / 2, H + rise, z1, x0, H, z1,
+             x1, H, z0, x1, H, z1, (x0 + x1) / 2, H + rise, z1, x1, H, z0, (x0 + x1) / 2, H + rise, z1, (x0 + x1) / 2, H + rise, z0];
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        g.computeVertexNormals();
+        const gx0 = x, gx1 = x + w, gz0 = z, gz1 = z + d;
+        const gable = ridgeAlongX
+          ? [gx0, H, gz0, gx0, H, gz1, gx0, H + rise * 0.95, (gz0 + gz1) / 2, gx1, H, gz0, gx1, H + rise * 0.95, (gz0 + gz1) / 2, gx1, H, gz1]
+          : [gx0, H, gz0, (gx0 + gx1) / 2, H + rise * 0.95, gz0, gx1, H, gz0, gx0, H, gz1, gx1, H, gz1, (gx0 + gx1) / 2, H + rise * 0.95, gz1];
+        const gg = new THREE.BufferGeometry();
+        gg.setAttribute("position", new THREE.Float32BufferAttribute(gable, 3));
+        gg.computeVertexNormals();
+        return { roof: g, gable: gg };
+      }),
+    [roof],
+  );
+  useEffect(() => () => roofGeos.forEach((r) => (r.roof.dispose(), r.gable.dispose())), [roofGeos]);
 
   return (
     <group>
@@ -302,8 +320,12 @@ export function House() {
       </group>
 
       <group ref={roofGroup}>
-        <mesh geometry={roofGeo.roof} material={thermal ? mats.tRoof : mats.roof} castShadow />
-        <mesh geometry={roofGeo.gable} material={thermal ? mats.tExt : mats.ext} />
+        {roofGeos.map((r, i) => (
+          <group key={`gable-${i}`}>
+            <mesh geometry={r.roof} material={thermal ? mats.tRoof : mats.roof} castShadow />
+            <mesh geometry={r.gable} material={thermal ? mats.tExt : mats.ext} />
+          </group>
+        ))}
         {roof.flats.map((f, i) => (
           <mesh key={i} position={[f.x + f.w / 2, WALL_H + 0.08, f.z + f.d / 2]} material={thermal ? mats.tRoof : mats.roof} castShadow>
             <boxGeometry args={[f.w + 0.3, 0.16, f.d + 0.3]} />
