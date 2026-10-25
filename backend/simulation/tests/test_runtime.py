@@ -45,14 +45,18 @@ def test_existing_draft_example_does_not_get_a_forced_confident_answer():
         )
         before = await service.diagnose(item.scenario_id, DiagnoseRequest())
         assert before.status == "ambiguous"
-        result = await service.run_experiment(
-            item.scenario_id,
-            ExperimentRequest(
-                diagnosis_id=before.diagnosis_id, experiment_type="exhaust_fan_depressurization"
-            ),
-        )
-        assert result.updated_diagnosis.status in {"ambiguous", "unexplained"}
-        assert result.updated_diagnosis.money_estimate is None
+        after = before
+        if before.test_decision.recommended:
+            result = await service.run_experiment(
+                item.scenario_id,
+                ExperimentRequest(
+                    diagnosis_id=before.diagnosis_id, experiment_type="exhaust_fan_depressurization"
+                ),
+            )
+            after = result.updated_diagnosis
+        # Unresolved either way: no test offered, or the test ran and still could not separate.
+        assert after.status in {"ambiguous", "unexplained"}
+        assert after.money_estimate is None
 
     asyncio.run(exercise())
 

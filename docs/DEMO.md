@@ -33,7 +33,7 @@ settings document. Historical flat threshold files are no longer accepted.
 | ID | What it demonstrates |
 |---|---|
 | `hh09-guided-insulation-v1` | Curated TRAINING example: Hall, wall heat loss, seed 961029. Ambiguous → recommended calm fan → correct conduction diagnosis → repair → no-fault recheck. |
-| `hh09-guided-v1` | Original Bedroom draft example, seed 20261024. The cause stays uncertain after the test; no repair or money estimate is forced. |
+| `hh09-guided-v1` | Original Bedroom draft example, seed 20261024. The cause stays uncertain: since the 2026-10-24 engine update the fan is predicted not to separate the causes, so no test is offered; no repair or money estimate is forced. |
 
 The API preserves each example's default seed and any explicit caller override.
 Overrides can change the outcome. Both examples use real historical HH09-region

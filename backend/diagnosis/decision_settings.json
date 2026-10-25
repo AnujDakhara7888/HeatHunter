@@ -3,18 +3,18 @@
   "template_id": "hh09-public-template-v1",
   "profiles": {
     "passive": {
-      "detection_bic": 151.07416050381255,
-      "ambiguity_bic": 153.05635708291524,
-      "adequacy_rmse": 0.2960058811515648,
+      "detection_bic": 123.57342771154148,
+      "ambiguity_bic": 143.8121794916202,
+      "adequacy_rmse": 0.26524948046210745,
       "separation": 2,
       "measurement_noise": 0.15,
       "calibration_note": "Conservative passive; TRAINING-only joint room/cause cutoff search; detection floor = healthy house-max BIC p99 times {1.1,1.25,1.5,2}; prefer highest supported precision then coverage; minimum 12 confident cases.",
       "confidence_enabled": true
     },
     "post_fan": {
-      "detection_bic": 369.8965973939332,
-      "ambiguity_bic": 229.26490573283746,
-      "adequacy_rmse": 0.32046735439004875,
+      "detection_bic": 345.0239310204488,
+      "ambiguity_bic": 191.25200027868073,
+      "adequacy_rmse": 0.28471555426742595,
       "separation": 2,
       "measurement_noise": 0.15,
       "calibration_note": "Conservative post_fan; TRAINING-only joint room/cause cutoff search; detection floor = healthy house-max BIC p99 times {1.1,1.25,1.5,2}; prefer highest supported precision then coverage; minimum 12 confident cases.",
@@ -26,11 +26,11 @@
   },
   "public_assets": {
     "backend/engine/adapter.py": "ff5bafacec94f25a74cc91bec4b6bd5aa71763524c8f0508063c11b5b9df1834",
-    "backend/engine/model.py": "aea0920006d2f92eff7bcac0d25d6e5677862cf911f61d919f93e091abb77b82",
-    "backend/engine/fitting.py": "19ad7e173e8951ec64bda8b19045e29ff45cdba17b197d49460762569bc89a63",
+    "backend/engine/model.py": "76a9e959fb5984393650876d84e20196282dd811705983190fd2e8fb7240a4d0",
+    "backend/engine/fitting.py": "12126d6cfb1e8427fecadd7e778f92592c789f41e64904a257cea74f735494ac",
     "backend/engine/prediction.py": "4d7fdf9c3609780c3f9dd746aa041eaa4532f97e6974acbec822503d8cde588f",
-    "backend/engine/templates/hh09_public_template.json": "116e5ea17fbd6cf131290f1371d49e283d06d134942e07f814fd3acb895e4f7c",
-    "backend/engine/templates/hh09_model_extension.json": "5269903449da045247c30303b3ef284c11adbcf1167dec1982915c9a80344696",
+    "backend/engine/templates/hh09_public_template.json": "af52a792bf00e4da5eac8a8047720d4dec4f7ba01ed56faf52b4f207e9c6d884",
+    "backend/engine/templates/hh09_model_extension.json": "540036d846a407e3513d4cebb68dda332256503a9ad71cf7600c668ded92a760",
     "backend/diagnosis/controller.py": "151d51a8518727e7052326975aeb72510da55a2f3e49dd6434812cdffc989644"
   },
   "simulator_assets": {
@@ -70,14 +70,13 @@
             "cases": 156,
             "statuses": {
               "no_fault": 94,
-              "ambiguous": 30,
-              "confident": 32
+              "ambiguous": 62
             },
-            "confident_count": 32,
-            "confident_precision": 1.0,
+            "confident_count": 0,
+            "confident_precision": null,
             "healthy_count": 60,
             "healthy_false_alarm_rate": 0.0,
-            "supported_correct_count": 92,
+            "supported_correct_count": 60,
             "by_truth": {
               "none": {
                 "cases": 60,
@@ -89,7 +88,7 @@
               },
               "envelope_conduction": {
                 "cases": 48,
-                "supported_correct": 32
+                "supported_correct": 0
               }
             }
           },
@@ -97,14 +96,14 @@
             "cases": 94,
             "statuses": {
               "no_fault": 49,
-              "ambiguous": 24,
-              "confident": 21
+              "ambiguous": 19,
+              "confident": 26
             },
-            "confident_count": 21,
-            "confident_precision": 1.0,
+            "confident_count": 26,
+            "confident_precision": 0.9230769230769231,
             "healthy_count": 30,
             "healthy_false_alarm_rate": 0.0,
-            "supported_correct_count": 51,
+            "supported_correct_count": 54,
             "by_truth": {
               "none": {
                 "cases": 30,
@@ -116,23 +115,22 @@
               },
               "envelope_conduction": {
                 "cases": 32,
-                "supported_correct": 21
+                "supported_correct": 24
               }
             }
           },
-          "confidence_safety_gate_passed": true,
+          "confidence_safety_gate_passed": false,
           "separate_training_check": {
             "cases": 94,
             "statuses": {
               "no_fault": 49,
-              "ambiguous": 24,
-              "confident": 21
+              "ambiguous": 45
             },
-            "confident_count": 21,
-            "confident_precision": 1.0,
+            "confident_count": 0,
+            "confident_precision": null,
             "healthy_count": 30,
             "healthy_false_alarm_rate": 0.0,
-            "supported_correct_count": 51,
+            "supported_correct_count": 30,
             "by_truth": {
               "none": {
                 "cases": 30,
@@ -144,7 +142,7 @@
               },
               "envelope_conduction": {
                 "cases": 32,
-                "supported_correct": 21
+                "supported_correct": 0
               }
             }
           }
@@ -154,16 +152,16 @@
           "tuning": {
             "cases": 156,
             "statuses": {
-              "no_fault": 93,
-              "ambiguous": 2,
-              "unexplained": 19,
-              "confident": 42
+              "no_fault": 92,
+              "ambiguous": 11,
+              "unexplained": 14,
+              "confident": 39
             },
-            "confident_count": 42,
+            "confident_count": 39,
             "confident_precision": 1.0,
             "healthy_count": 60,
             "healthy_false_alarm_rate": 0.0,
-            "supported_correct_count": 102,
+            "supported_correct_count": 99,
             "by_truth": {
               "none": {
                 "cases": 60,
@@ -175,7 +173,7 @@
               },
               "envelope_conduction": {
                 "cases": 48,
-                "supported_correct": 42
+                "supported_correct": 39
               }
             }
           },
@@ -183,15 +181,15 @@
             "cases": 94,
             "statuses": {
               "no_fault": 49,
-              "unexplained": 15,
-              "confident": 27,
-              "ambiguous": 3
+              "unexplained": 13,
+              "confident": 25,
+              "ambiguous": 7
             },
-            "confident_count": 27,
-            "confident_precision": 0.9629629629629629,
+            "confident_count": 25,
+            "confident_precision": 1.0,
             "healthy_count": 30,
             "healthy_false_alarm_rate": 0.0,
-            "supported_correct_count": 56,
+            "supported_correct_count": 55,
             "by_truth": {
               "none": {
                 "cases": 30,
@@ -203,7 +201,7 @@
               },
               "envelope_conduction": {
                 "cases": 32,
-                "supported_correct": 26
+                "supported_correct": 25
               }
             }
           },
@@ -212,15 +210,15 @@
             "cases": 94,
             "statuses": {
               "no_fault": 49,
-              "unexplained": 15,
-              "confident": 27,
-              "ambiguous": 3
+              "unexplained": 13,
+              "confident": 25,
+              "ambiguous": 7
             },
-            "confident_count": 27,
-            "confident_precision": 0.9629629629629629,
+            "confident_count": 25,
+            "confident_precision": 1.0,
             "healthy_count": 30,
             "healthy_false_alarm_rate": 0.0,
-            "supported_correct_count": 56,
+            "supported_correct_count": 55,
             "by_truth": {
               "none": {
                 "cases": 30,
@@ -232,7 +230,7 @@
               },
               "envelope_conduction": {
                 "cases": 32,
-                "supported_correct": 26
+                "supported_correct": 25
               }
             }
           }
@@ -255,14 +253,14 @@
               "cases": 250,
               "statuses": {
                 "no_fault": 143,
-                "ambiguous": 54,
-                "confident": 53
+                "ambiguous": 49,
+                "confident": 58
               },
-              "confident_count": 53,
+              "confident_count": 58,
               "confident_precision": 1.0,
               "healthy_count": 90,
               "healthy_false_alarm_rate": 0.0,
-              "supported_correct_count": 143,
+              "supported_correct_count": 148,
               "by_truth": {
                 "none": {
                   "cases": 90,
@@ -274,22 +272,22 @@
                 },
                 "envelope_conduction": {
                   "cases": 80,
-                  "supported_correct": 53
+                  "supported_correct": 58
                 }
               }
             },
             "separate_training_check_before_safety_gate": {
               "cases": 94,
               "statuses": {
-                "no_fault": 48,
-                "ambiguous": 29,
-                "confident": 17
+                "no_fault": 49,
+                "ambiguous": 24,
+                "confident": 21
               },
-              "confident_count": 17,
+              "confident_count": 21,
               "confident_precision": 1.0,
               "healthy_count": 30,
               "healthy_false_alarm_rate": 0.0,
-              "supported_correct_count": 47,
+              "supported_correct_count": 51,
               "by_truth": {
                 "none": {
                   "cases": 30,
@@ -301,7 +299,7 @@
                 },
                 "envelope_conduction": {
                   "cases": 32,
-                  "supported_correct": 17
+                  "supported_correct": 21
                 }
               }
             },
@@ -309,15 +307,15 @@
             "separate_training_check": {
               "cases": 94,
               "statuses": {
-                "no_fault": 48,
-                "ambiguous": 29,
-                "confident": 17
+                "no_fault": 49,
+                "ambiguous": 24,
+                "confident": 21
               },
-              "confident_count": 17,
+              "confident_count": 21,
               "confident_precision": 1.0,
               "healthy_count": 30,
               "healthy_false_alarm_rate": 0.0,
-              "supported_correct_count": 47,
+              "supported_correct_count": 51,
               "by_truth": {
                 "none": {
                   "cases": 30,
@@ -329,7 +327,7 @@
                 },
                 "envelope_conduction": {
                   "cases": 32,
-                  "supported_correct": 17
+                  "supported_correct": 21
                 }
               }
             }
@@ -339,16 +337,15 @@
             "tuning": {
               "cases": 250,
               "statuses": {
-                "no_fault": 140,
-                "ambiguous": 15,
-                "unexplained": 29,
-                "confident": 66
+                "no_fault": 143,
+                "unexplained": 40,
+                "confident": 67
               },
-              "confident_count": 66,
+              "confident_count": 67,
               "confident_precision": 1.0,
               "healthy_count": 90,
               "healthy_false_alarm_rate": 0.0,
-              "supported_correct_count": 156,
+              "supported_correct_count": 157,
               "by_truth": {
                 "none": {
                   "cases": 90,
@@ -360,23 +357,22 @@
                 },
                 "envelope_conduction": {
                   "cases": 80,
-                  "supported_correct": 66
+                  "supported_correct": 67
                 }
               }
             },
             "separate_training_check_before_safety_gate": {
               "cases": 94,
               "statuses": {
-                "no_fault": 44,
-                "unexplained": 12,
-                "ambiguous": 10,
-                "confident": 28
+                "no_fault": 49,
+                "unexplained": 16,
+                "confident": 29
               },
-              "confident_count": 28,
+              "confident_count": 29,
               "confident_precision": 1.0,
               "healthy_count": 30,
               "healthy_false_alarm_rate": 0.0,
-              "supported_correct_count": 58,
+              "supported_correct_count": 59,
               "by_truth": {
                 "none": {
                   "cases": 30,
@@ -388,7 +384,7 @@
                 },
                 "envelope_conduction": {
                   "cases": 32,
-                  "supported_correct": 28
+                  "supported_correct": 29
                 }
               }
             },
@@ -396,16 +392,15 @@
             "separate_training_check": {
               "cases": 94,
               "statuses": {
-                "no_fault": 44,
-                "unexplained": 12,
-                "ambiguous": 10,
-                "confident": 28
+                "no_fault": 49,
+                "unexplained": 16,
+                "confident": 29
               },
-              "confident_count": 28,
+              "confident_count": 29,
               "confident_precision": 1.0,
               "healthy_count": 30,
               "healthy_false_alarm_rate": 0.0,
-              "supported_correct_count": 58,
+              "supported_correct_count": 59,
               "by_truth": {
                 "none": {
                   "cases": 30,
@@ -417,7 +412,7 @@
                 },
                 "envelope_conduction": {
                   "cases": 32,
-                  "supported_correct": 28
+                  "supported_correct": 29
                 }
               }
             }
@@ -450,19 +445,19 @@
       "tuning": {
         "cases": 344,
         "statuses": {
-          "no_fault": 176,
-          "ambiguous": 97,
-          "confident": 71
+          "no_fault": 185,
+          "ambiguous": 80,
+          "confident": 79
         },
-        "confident_count": 71,
+        "confident_count": 79,
         "confident_precision": 1.0,
         "healthy_count": 120,
-        "healthy_false_alarm_rate": 0.008333333333333333,
-        "supported_correct_count": 190,
+        "healthy_false_alarm_rate": 0.0,
+        "supported_correct_count": 199,
         "by_truth": {
           "none": {
             "cases": 120,
-            "supported_correct": 119
+            "supported_correct": 120
           },
           "draft": {
             "cases": 112,
@@ -470,22 +465,22 @@
           },
           "envelope_conduction": {
             "cases": 112,
-            "supported_correct": 71
+            "supported_correct": 79
           }
         }
       },
       "separate_training_check_before_safety_gate": {
         "cases": 94,
         "statuses": {
-          "no_fault": 48,
-          "ambiguous": 27,
-          "confident": 19
+          "no_fault": 53,
+          "ambiguous": 20,
+          "confident": 21
         },
-        "confident_count": 19,
+        "confident_count": 21,
         "confident_precision": 1.0,
         "healthy_count": 30,
         "healthy_false_alarm_rate": 0.0,
-        "supported_correct_count": 49,
+        "supported_correct_count": 51,
         "by_truth": {
           "none": {
             "cases": 30,
@@ -497,7 +492,7 @@
           },
           "envelope_conduction": {
             "cases": 32,
-            "supported_correct": 19
+            "supported_correct": 21
           }
         }
       },
@@ -505,15 +500,15 @@
       "separate_training_check": {
         "cases": 94,
         "statuses": {
-          "no_fault": 48,
-          "ambiguous": 27,
-          "confident": 19
+          "no_fault": 53,
+          "ambiguous": 20,
+          "confident": 21
         },
-        "confident_count": 19,
+        "confident_count": 21,
         "confident_precision": 1.0,
         "healthy_count": 30,
         "healthy_false_alarm_rate": 0.0,
-        "supported_correct_count": 49,
+        "supported_correct_count": 51,
         "by_truth": {
           "none": {
             "cases": 30,
@@ -525,7 +520,7 @@
           },
           "envelope_conduction": {
             "cases": 32,
-            "supported_correct": 19
+            "supported_correct": 21
           }
         }
       }
@@ -535,20 +530,19 @@
       "tuning": {
         "cases": 344,
         "statuses": {
-          "no_fault": 176,
-          "unexplained": 67,
-          "confident": 95,
-          "ambiguous": 6
+          "no_fault": 185,
+          "unexplained": 64,
+          "confident": 95
         },
         "confident_count": 95,
         "confident_precision": 1.0,
         "healthy_count": 120,
         "healthy_false_alarm_rate": 0.0,
-        "supported_correct_count": 214,
+        "supported_correct_count": 215,
         "by_truth": {
           "none": {
             "cases": 120,
-            "supported_correct": 119
+            "supported_correct": 120
           },
           "draft": {
             "cases": 112,
@@ -563,9 +557,8 @@
       "separate_training_check_before_safety_gate": {
         "cases": 94,
         "statuses": {
-          "no_fault": 48,
-          "unexplained": 16,
-          "ambiguous": 2,
+          "no_fault": 53,
+          "unexplained": 13,
           "confident": 28
         },
         "confident_count": 28,
@@ -592,9 +585,8 @@
       "separate_training_check": {
         "cases": 94,
         "statuses": {
-          "no_fault": 48,
-          "unexplained": 16,
-          "ambiguous": 2,
+          "no_fault": 53,
+          "unexplained": 13,
           "confident": 28
         },
         "confident_count": 28,
