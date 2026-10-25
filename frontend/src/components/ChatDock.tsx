@@ -90,14 +90,13 @@ export function ChatDock() {
     setInput("");
     setBusy(true);
     try {
-      if (!homeId) throw new ApiError("no home on screen", 503);
-      const reply = await traced("chat", "POST /homes/{id}/assistant", () =>
-        api.POST("/api/homes/{home_id}/assistant", {
-          params: { path: { home_id: homeId } },
-          body: { messages: history.slice(-12).map(({ role, content }) => ({ role, content })) },
-        }),
-        (r) => r.model,
-      );
+      const messages = history.slice(-12).map(({ role, content }) => ({ role, content }));
+      const reply = homeId
+        ? await traced("chat", "POST /homes/{id}/assistant", () =>
+            api.POST("/api/homes/{home_id}/assistant", { params: { path: { home_id: homeId } }, body: { messages } }),
+            (r) => r.model,
+          )
+        : await traced("chat", "POST /assistant/chat", () => api.POST("/api/assistant/chat", { body: { messages } }), (r) => r.model);
       setMsgs((m) => [...m, { role: "assistant", content: reply.reply }]);
       applyActions(reply.actions ?? []);
     } catch (err) {

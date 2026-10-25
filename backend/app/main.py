@@ -411,6 +411,18 @@ async def home_assistant(home_id: str, request: HomeChatRequest) -> ChatReply:
         raise ApiFailure(503, "ASSISTANT_UNAVAILABLE", str(exc)) from exc
 
 
+@app.post("/api/assistant/chat", response_model=ChatReply, responses=V2_ERRORS, tags=["assistant"])
+async def site_assistant(request: HomeChatRequest) -> ChatReply:
+    """Chat when no home is on screen: questions about HeatHunter itself; Claude only."""
+
+    from .assistant import AssistantUnavailable, site_chat
+
+    try:
+        return await run_in_threadpool(site_chat, request.messages)
+    except AssistantUnavailable as exc:
+        raise ApiFailure(503, "ASSISTANT_UNAVAILABLE", str(exc)) from exc
+
+
 # Serve the built frontend for the offline single-process demo, if present.
 _DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
