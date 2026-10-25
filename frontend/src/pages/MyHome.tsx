@@ -12,7 +12,7 @@ import { Screening } from "../components/Screening";
 import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
 import { strengthOf } from "../lib/diagnosis";
-import { HH09_PLAN } from "../lib/plan";
+import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
 import { ms, roomColor } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
@@ -100,10 +100,10 @@ export default function MyHome() {
   const sensed = plan.rooms.filter((r) => r.has_sensor !== false);
 
   useEffect(() => {
-    set({ view: "open", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: false, inset: 0, temps: {}, rates: {} });
+    set({ view: "open", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: false, inset: 0, temps: {}, rates: {}, ir: false });
     useTrace.getState().clear();
   }, [set]);
-  useEffect(() => set({ plan, names }), [plan, names, set]);
+  useEffect(() => set({ plan, names, zBearing: plan.plan_id === "smeter-hh09" ? HH09_Z_BEARING : null, windFrom: null }), [plan, names, set]);
   useEffect(() => set({ inset: step === "results" ? 460 : 0 }), [step, set]);
 
   const night_ = result?.nights[0];

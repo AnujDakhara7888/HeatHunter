@@ -16,6 +16,13 @@ work, run `npm --prefix frontend run dev`; Vite proxies `/api` to port 8000.
 Demo homes need no network. Restarting the backend clears demo homes; real
 homes reload from `var/homes`.
 
+The assistant and floor-plan reading need `ANTHROPIC_API_KEY`, set in the
+environment or in the git-ignored repo-root `.env` (see `.env.example`). The
+default model is `claude-sonnet-5-5`; override it with
+`HEATHUNTER_ASSISTANT_MODEL`. The assistant answers only questions about
+HeatHunter and the home it is shown; anything else gets a fixed redirect.
+Real homes and weather lookup use Open-Meteo and need internet.
+
 > The frontend still calls the single-night routes removed on 2026-10-24. It
 > must move to API v2 (`docs/CONTRACTS.md`) before the UI demo works.
 

@@ -1,13 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Series } from "../api/types";
-import { coolingRate, timeRange, valueAt } from "./rooms";
+import { coolingRate, ms, timeRange, valueAt } from "./rooms";
+
+/** Angles must not be interpolated across north, so use the nearest reading. */
+function nearestAt(series: Series | undefined, t: number): number | null {
+  if (!series?.timestamps.length) return null;
+  let best = 0;
+  for (let i = 1; i < series.timestamps.length; i++)
+    if (Math.abs(ms(series.timestamps[i]) - t) < Math.abs(ms(series.timestamps[best]) - t)) best = i;
+  return series.values[best] ?? null;
+}
 import { useScene } from "../store/scene";
 
 /**
  * Plays a night of measurements through the 3D heat map. Every frame the
  * scene's room temperatures are interpolated from the real series.
  */
-export function useNight(rooms: Record<string, Series> | null, outdoor?: Series | null, wind?: Series | null, seconds = 14) {
+export function useNight(
+  rooms: Record<string, Series> | null,
+  outdoor?: Series | null,
+  wind?: Series | null,
+  seconds = 14,
+  windDir?: Series | null,
+) {
   const set = useScene((s) => s.set);
   const range = useMemo<[number, number] | null>(() => {
     const any = rooms && Object.values(rooms)[0];
@@ -36,8 +51,9 @@ export function useNight(rooms: Record<string, Series> | null, outdoor?: Series 
       temps: Object.fromEntries(Object.entries(rooms).map(([k, s]) => [k, valueAt(s, t)])),
       outdoor: valueAt(outdoor ?? undefined, t),
       wind: valueAt(wind ?? undefined, t),
+      windFrom: nearestAt(windDir ?? undefined, t),
     });
-  }, [t, rooms, outdoor, wind, set]);
+  }, [t, rooms, outdoor, wind, windDir, set]);
 
   useEffect(() => {
     if (!playing || !range) return;

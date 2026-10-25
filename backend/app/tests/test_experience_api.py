@@ -39,7 +39,10 @@ def test_overlapping_rooms_are_rejected(client: TestClient) -> None:
     assert response.status_code == 422 and "overlap" in response.json()["detail"]
 
 
-def test_assistant_reports_unavailable_without_credentials(client: TestClient, monkeypatch) -> None:
+def test_assistant_reports_unavailable_without_credentials(client: TestClient, monkeypatch, tmp_path) -> None:
+    from backend.app import assistant
+
+    monkeypatch.setattr(assistant, "ENV_FILE", tmp_path / "missing.env")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
     home = client.post("/api/demo/homes", json={"seed": 3}).json()["home_id"]
@@ -48,3 +51,63 @@ def test_assistant_reports_unavailable_without_credentials(client: TestClient, m
     )
     assert response.status_code == 503
     assert response.json()["code"] == "ASSISTANT_UNAVAILABLE"
+
+
+def _ask(client: TestClient, question: str) -> dict:
+    home = client.post("/api/demo/homes", json={"seed": 3}).json()["home_id"]
+    response = client.post(
+        f"/api/homes/{home}/assistant", json={"messages": [{"role": "user", "content": question}]}
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_assistant_replaces_off_topic_answers(client: TestClient, monkeypatch) -> None:
+    from backend.app import assistant
+
+    reply = {"on_topic": False, "reply": "Paris.", "actions": [{"type": "focus_room", "target": "kitchen"}]}
+    monkeypatch.setattr(assistant, "_create", lambda **_: (reply, "test-model"))
+    assert _ask(client, "Capital of France?") == {
+        "reply": assistant.OFF_TOPIC_REPLY,
+        "actions": [],
+        "model": "test-model",
+    }
+
+
+def test_assistant_passes_on_topic_answers_and_sees_server_context(client: TestClient, monkeypatch) -> None:
+    from backend.app import assistant
+
+    seen = {}
+    actions = [{"type": "focus_room", "target": "kitchen"}, {"type": "set_view", "target": "fan"}]
+    reply = {"on_topic": True, "reply": "The kitchen looks fine so far.", "actions": actions}
+
+    def fake(**kwargs):
+        seen.update(kwargs)
+        return reply, "test-model"
+
+    monkeypatch.setattr(assistant, "_create", fake)
+    answer = _ask(client, "How is the kitchen?")
+    assert answer["reply"] == "The kitchen looks fine so far."
+    assert answer["actions"] == [{"type": "focus_room", "target": "kitchen"}]  # only room focus is offered
+    prompt = seen["messages"][-1]["content"]
+    assert "<home>" in prompt and '"hidden_answer": "not revealed"' in prompt
+
+
+def test_assistant_reads_key_from_env_file(monkeypatch, tmp_path) -> None:
+    from backend.app import assistant
+
+    env = tmp_path / ".env"
+    env.write_text("# comment\nexport ANTHROPIC_API_KEY='sk-test'\n")
+    monkeypatch.setattr(assistant, "ENV_FILE", env)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assistant._load_env_file()
+    assert assistant.os.environ["ANTHROPIC_API_KEY"] == "sk-test"
+
+
+def test_wind_direction_companion(client: TestClient) -> None:
+    response = client.get("/api/weather/smeter-hh09-2020-12-06/wind-direction")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["unit"] == "degrees_from_north" and body["provenance"] == "REAL_MEASUREMENT"
+    assert all(0 <= v <= 360 for v in body["values"] if v is not None)
+    assert client.get("/api/weather/not-a-night/wind-direction").status_code == 404

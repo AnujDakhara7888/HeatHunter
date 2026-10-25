@@ -214,6 +214,59 @@
         }
       }
     },
+    "/api/weather/{night_id}/wind-direction": {
+      "get": {
+        "tags": [
+          "homes"
+        ],
+        "summary": "Wind Direction",
+        "description": "Measured wind direction (degrees from north) for an HH09-region weather night.\n\nKept outside ``WeatherNight`` (frozen contract); read from Anuj's companion cache.",
+        "operationId": "wind_direction_api_weather__night_id__wind_direction_get",
+        "parameters": [
+          {
+            "name": "night_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Night Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Series"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/assistant/floor-plan": {
       "post": {
         "tags": [

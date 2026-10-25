@@ -24,6 +24,14 @@ export type SceneState = {
   autoRotate: boolean;
   names: Record<string, string>;
   inset: number;
+  /** Infrared camera overlay, independent of where the camera is. */
+  ir: boolean;
+  /** Direction the wind blows FROM (degrees from north), when measured. */
+  windFrom: number | null;
+  /** Compass bearing the plan's +z axis faces, when documented. */
+  zBearing: number | null;
+  /** Walk-in: a floor point the user double-clicked to walk to. */
+  walkTo: [number, number] | null;
   rates: Record<string, number | null>;
   set: (patch: Partial<SceneState>) => void;
 };
@@ -42,6 +50,10 @@ export const useScene = create<SceneState>((set) => ({
   autoRotate: false,
   names: {},
   inset: 0,
+  ir: false,
+  windFrom: null,
+  zBearing: null,
+  walkTo: null,
   rates: {},
   set: (patch) => set(patch),
 }));

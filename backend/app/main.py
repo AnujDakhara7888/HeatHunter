@@ -38,6 +38,7 @@ from .contracts import (
     RealHouse,
     RoomReport,
     RoomTechnical,
+    Series,
     WeatherLookup,
 )
 from .runtime import REPOSITORY_ROOT, load_evaluation_summary
@@ -164,6 +165,29 @@ async def weather_lookup(
         raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
     except OSError as exc:
         raise ApiFailure(503, "WEATHER_UNAVAILABLE", f"weather service unreachable: {exc}") from exc
+
+
+@app.get(
+    "/api/weather/{night_id}/wind-direction",
+    response_model=Series,
+    responses=_errors(404, 422),
+    tags=["homes"],
+)
+async def wind_direction(night_id: str) -> Series:
+    """Measured wind direction (degrees from north) for an HH09-region weather night.
+
+    Kept outside ``WeatherNight`` (frozen contract); read from Anuj's companion cache.
+    """
+
+    from backend.data_pipeline.weather import load_weather_wind_direction
+
+    try:
+        payload = load_weather_wind_direction(night_id)
+    except FileNotFoundError as exc:
+        raise ApiFailure(404, "NOT_FOUND", str(exc)) from exc
+    except ValueError as exc:
+        raise ApiFailure(422, "INVALID_REQUEST", str(exc)) from exc
+    return Series.model_validate(payload["wind_direction"])
 
 
 @app.post(
