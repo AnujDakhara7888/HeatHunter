@@ -7,7 +7,7 @@ python3 -m venv .venv
 .venv/bin/pip install -e '.[dev,assistant]'
 npm --prefix frontend ci
 npm --prefix frontend run build
-export ANTHROPIC_API_KEY=...   # optional: assistant and floor-plan reading
+cp .env.example .env           # optional: OPENAI_API_KEY or ANTHROPIC_API_KEY for the chat
 .venv/bin/uvicorn backend.app.main:app --port 8000
 ```
 
@@ -16,18 +16,57 @@ work, run `npm --prefix frontend run dev`; Vite proxies `/api` to port 8000.
 Demo homes need no network. Restarting the backend clears demo homes; real
 homes reload from `var/homes`.
 
-The assistant and floor-plan reading need `ANTHROPIC_API_KEY`, set in the
-environment or in the git-ignored repo-root `.env` (see `.env.example`). The
-default model is `claude-sonnet-5-5`; override it with
-`HEATHUNTER_ASSISTANT_MODEL`. The assistant answers only questions about
+The chat needs `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in the environment or the
+git-ignored repo-root `.env` (see `.env.example`). With only an OpenAI key it uses
+OpenAI; otherwise Claude (`claude-sonnet-5-5`, override with
+`HEATHUNTER_ASSISTANT_MODEL`). Floor-plan reading uses Claude. The assistant answers only questions about
 HeatHunter and the home it is shown; anything else gets a fixed redirect.
 Real homes and weather lookup use Open-Meteo and need internet.
 
-The UI uses API v2 throughout: `/lab` is the demo house (hidden, judge-planted or
-no fault; "Next night" advances, rooms change status, "I sealed leaks / I
-insulated" reports the repair, Analytics explains each room night by night), `/home` sets up a real home
-(plan, town, heating-off hours, sensor CSVs), and `/real` replays the real HH09
-week (heating on, so not monitored).
+The UI uses API v2 throughout. `/lab` is the demo house: pick a house shape and a
+week, then Judge mode (plant a fault) or Healthy house. "Next night" and "Week"
+advance the clock, "Run a fan test tonight" settles an unclear cause,
+"Seal leaks / Insulate / Other" reports the repair, and "Analytics" shows the
+analysis as of any night. `/home` sets up a real home (plan, town, heating-off
+hours, sensor CSVs) and can save it as a house shape.
+
+## Live judging script (3 minutes, re-tested 2026-10-25 on current main)
+
+Setup: HH09 house, week **10 Jan – 16 Jan**, **Judge mode**, severity slider at
+**×2.8**. With 4 random houses per room and fault (32 runs), the planted room was
+named correctly by night 4 in 30 runs; both misses were Living room air leaks
+named as weak insulation. At the default ×2.2, air leaks were often slower or
+misnamed (insulation faults stayed reliable). Healthy houses in this week:
+0 of 10 flagged. In 1 of 4 test houses the Living room picked up a late
+"cause unclear" flag on night 7, so stop after 2–3 nights instead of running
+the full week. Avoid the 17 Jan and 31 Jan weeks (3 of 10 healthy houses
+falsely flagged).
+
+So suggest a Kitchen or Bedroom air leak, or any insulation fault, at ×2.8.
+
+1. **Landing (10 s).** One sentence: "HeatHunter finds which room is losing
+   heat, and why, from cheap temperature sensors."
+2. **Fault Lab → HH09 → 10 Jan – 16 Jan → Judge mode (20 s).** The judge picks
+   the room, the fault and ×2.8 in secret and clicks "Hide it & start". "The
+   app never sees this; it never leaves the simulator."
+3. **Next night ×2–3 (30 s).** "Each night we fit three physics models to every
+   room. A leak gets worse with wind, a wall doesn't." A room turns orange:
+   flagged after two nights in a row. If it says "cause unclear", press
+   "Run a fan test tonight".
+4. **Thermal (10 s).** Drag the house; the crosshair reads each room.
+5. **Analytics (40 s).** *What happened*: verdict, "How it unfolded", the
+   suspects and the cost. Then *Under the hood*: "the cause gap is how it
+   names the cause."
+6. **Repair (20 s).** House → "Seal leaks" (or "Insulate") → Next night twice →
+   "Fixed". Ask the judge: "Was that what you planted?"
+7. **Learning and limits (20 s).** "One night couldn't separate a leak from a
+   weak wall (3 of 32), so we redesigned around watching night after night. The
+   house is simulated on real weather; real sensors are next."
+
+Before judging: restart the server, warm it up with one round, have the backup
+video ready. If a night ever takes too long, the app stops after 30 s with a
+message; press Next night again, or reload and reopen the house from "Your
+houses".
 
 ## The story
 
@@ -36,10 +75,9 @@ it should, it tells you which room, the likely cause, what it costs and what to
 do. You fix it yourself, and HeatHunter confirms the fix worked."
 
 The demo house is an approximate digital twin of SMETER house HH09 (a real UK
-bungalow) with a hidden fault planted by the presenter, a judge, or at random.
+bungalow), or another house shape, with a fault planted in secret by a judge.
 Its nights use real weather from the held-out winter 2020-21, which the flag
-rule never saw during tuning. The real HH09 week is shown separately in the
-Real tab; its heating was on, so it is not monitored.
+rule never saw during tuning.
 
 ## Walk the loop through the API
 

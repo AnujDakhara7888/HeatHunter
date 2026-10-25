@@ -202,7 +202,7 @@ export default function Landing() {
           <h1 className="text-[clamp(52px,8vw,104px)] font-bold leading-[0.95] tracking-[-0.045em]">
             See where your heat <span className="grad-text">escapes.</span>
           </h1>
-          <p className="mt-6 max-w-md text-[20px] leading-snug text-mute">Cheap sensors. One cold night. Physics finds the room that leaks, and why.</p>
+          <p className="mt-6 max-w-md text-[20px] leading-snug text-mute">Cheap sensors. A few cold nights. Physics finds the room that leaks, and why.</p>
           <div className="pointer-events-auto mt-9 flex flex-wrap gap-3">
             <Link to="/lab" className="btn btn-primary !px-6 !py-3 !text-[15px]">
               Find the hidden fault <ArrowRight size={16} />
