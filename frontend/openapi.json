@@ -1123,6 +1123,89 @@
         }
       }
     },
+    "/api/homes/{home_id}/history": {
+      "get": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Home History",
+        "description": "Every room's status, cause and fits after each night, to show the analysis as of any night.",
+        "operationId": "home_history_api_homes__home_id__history_get",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeHistory"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/homes/{home_id}/rooms/{room_id}/fix": {
       "post": {
         "tags": [
@@ -2381,6 +2464,59 @@
         ],
         "title": "HomeHealth"
       },
+      "HomeHistory": {
+        "properties": {
+          "home_id": {
+            "type": "string",
+            "title": "Home Id"
+          },
+          "nights": {
+            "items": {
+              "$ref": "#/components/schemas/NightInfo"
+            },
+            "type": "array",
+            "title": "Nights"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/RoomHistory"
+            },
+            "type": "array",
+            "title": "Rooms"
+          },
+          "persistence_nights": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Persistence Nights"
+          },
+          "cause_gap_bic": {
+            "type": "number",
+            "title": "Cause Gap Bic"
+          },
+          "advice": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Advice"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "home_id",
+          "nights",
+          "rooms",
+          "persistence_nights",
+          "cause_gap_bic",
+          "advice"
+        ],
+        "title": "HomeHistory",
+        "description": "Every room's status night by night, so a client can show the analysis as of any past night."
+      },
       "HomeKind": {
         "type": "string",
         "enum": [
@@ -3065,6 +3201,44 @@
         ],
         "title": "RoomHealthView"
       },
+      "RoomHistory": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "snapshots": {
+            "items": {
+              "$ref": "#/components/schemas/RoomNightSnapshot"
+            },
+            "type": "array",
+            "title": "Snapshots"
+          },
+          "fix_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FixAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "room_id",
+          "name",
+          "snapshots",
+          "fix_action"
+        ],
+        "title": "RoomHistory"
+      },
       "RoomMoney": {
         "properties": {
           "annual_cost_gbp": {
@@ -3119,6 +3293,108 @@
           "assumptions"
         ],
         "title": "RoomMoney"
+      },
+      "RoomNightSnapshot": {
+        "properties": {
+          "night_id": {
+            "type": "string",
+            "title": "Night Id"
+          },
+          "night_number": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Night Number"
+          },
+          "nights_judged": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Nights Judged"
+          },
+          "after_fix": {
+            "type": "boolean",
+            "title": "After Fix"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RoomStatus"
+          },
+          "named_cause": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "envelope_conduction"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Named Cause"
+          },
+          "leading_cause": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "envelope_conduction"
+            ],
+            "title": "Leading Cause"
+          },
+          "extra_heat_loss_percent": {
+            "type": "number",
+            "title": "Extra Heat Loss Percent"
+          },
+          "threshold_percent": {
+            "type": "number",
+            "title": "Threshold Percent"
+          },
+          "cause_gap_bic": {
+            "type": "number",
+            "title": "Cause Gap Bic"
+          },
+          "candidate": {
+            "type": "boolean",
+            "title": "Candidate"
+          },
+          "fits": {
+            "items": {
+              "$ref": "#/components/schemas/HypothesisSummary"
+            },
+            "type": "array",
+            "title": "Fits"
+          },
+          "annual_cost_gbp": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Cost Gbp"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "night_id",
+          "night_number",
+          "nights_judged",
+          "after_fix",
+          "status",
+          "named_cause",
+          "leading_cause",
+          "extra_heat_loss_percent",
+          "threshold_percent",
+          "cause_gap_bic",
+          "candidate",
+          "fits",
+          "annual_cost_gbp"
+        ],
+        "title": "RoomNightSnapshot",
+        "description": "The rule's view of one room right after one night: what the app knew at that point."
       },
       "RoomReadings": {
         "properties": {

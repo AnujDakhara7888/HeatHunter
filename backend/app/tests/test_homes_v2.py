@@ -79,6 +79,22 @@ def test_planted_leak_is_found_explained_fixed_and_revealed(client) -> None:
     after = advance(client, home)
     assert statuses(after)["bedroom_1"] == "resolved" and after["home"]["status"] == "all_clear"
 
+    history = ok(client.get(f"/api/homes/{home}/history"))
+    assert not any(word in json.dumps(history) for word in TRUTH_WORDS)
+    assert [n["night_id"] for n in history["nights"]] == [n["night_id"] for n in readings["nights"]] + [
+        n["night_id"] for n in history["nights"][3:]
+    ] and len(history["nights"]) == 5
+    room = next(r for r in history["rooms"] if r["room_id"] == "bedroom_1")
+    shots = room["snapshots"]
+    # what the app knew after each night, kept across the fix
+    assert [s["status"] for s in shots] == ["watching", "issue", "issue", "verifying", "resolved"]
+    assert [s["night_number"] for s in shots] == [1, 2, 3, 4, 5]
+    assert [s["after_fix"] for s in shots] == [False, False, False, True, True]
+    assert shots[1]["named_cause"] == "draft" and shots[1]["annual_cost_gbp"] > 0
+    assert shots[0]["named_cause"] is None and shots[3]["nights_judged"] == 1
+    assert {f["fault_type"] for f in shots[2]["fits"]} == {"normal", "draft", "envelope_conduction"}
+    assert room["fix_action"] == "seal_leaks" and history["advice"]["draft"]
+
     truth = ok(client.get(f"/api/demo/homes/{home}/reveal"))
     assert truth["fault_type"] == "draft" and truth["room_id"] == "bedroom_1"
     assert truth["app_found_it"] and truth["nights_to_find"] == 2

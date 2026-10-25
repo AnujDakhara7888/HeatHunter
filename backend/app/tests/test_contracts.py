@@ -69,6 +69,7 @@ def test_openapi_exposes_complete_route_surface_and_isolates_ground_truth() -> N
         "/api/homes",
         "/api/demo/homes",
         "/api/demo/weeks",
+        "/api/homes/{home_id}/history",
         "/api/homes/{home_id}",
         "/api/homes/{home_id}/readings",
         "/api/homes/{home_id}/rooms/{room_id}",

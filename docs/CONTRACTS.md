@@ -105,6 +105,7 @@ Only four routes are demo-only.
 | 5 | GET | `/api/homes/{home_id}/readings` | all | Chart data: room temps, weather, "expected if healthy" line |
 | 6 | GET | `/api/homes/{home_id}/rooms/{room_id}` | all | One room: why, what to do, cost, evidence over nights |
 | 7 | GET | `/api/homes/{home_id}/rooms/{room_id}/technical` | all | Fits, scores, thresholds (only when someone opens "details") |
+| 7b | GET | `/api/homes/{home_id}/history` | all | Every room's status, cause, fits and cost after each night (analysis as of any past night) |
 | 8 | POST | `/api/homes/{home_id}/rooms/{room_id}/fix` | all | "I've fixed it": starts verification |
 | 9 | POST | `/api/homes/{home_id}/readings` | real | Sensors upload readings |
 | 10 | POST | `/api/demo/homes/{home_id}/advance` | demo | Move the demo clock on by N nights |

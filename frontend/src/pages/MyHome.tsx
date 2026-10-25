@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, FileUp, Home, MapPin, PencilRuler, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, FileUp, Home, MapPin, PencilRuler, Sparkles, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, api, traced } from "../api/client";
-import type { FixAction, FloorPlanDraft, HomeHealth, HomePlan, HomeReadings, HomeSummary, RoomReport, RoomTechnical, Series } from "../api/types";
+import { Analytics } from "../components/Analytics";
+import type { FixAction, FloorPlanDraft, HomeHealth, HomeHistory, HomePlan, HomeReadings, HomeSummary, RoomReport, RoomTechnical, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
 import { EngineTrace } from "../components/EngineTrace";
 import { LineChart } from "../components/LineChart";
@@ -101,6 +102,8 @@ export default function MyHome() {
   const [technical, setTechnical] = useState<RoomTechnical | null>(null);
   const [preview, setPreview] = useState<CauseKey | null>(null);
   const [nightIdx, setNightIdx] = useState<number | null>(null);
+  const [history, setHistory] = useState<HomeHistory | null>(null);
+  const [analytics, setAnalytics] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -223,8 +226,12 @@ export default function MyHome() {
   const showHealth = async (homeId: string, h: HomeHealth) => {
     setHealth(h);
     setHome(h.home);
-    const r = await traced("readings", "GET /homes/{id}/readings", () => api.GET("/api/homes/{home_id}/readings", { params: { path: { home_id: homeId } } }), (d) => `${d.nights.length} heating-off nights`);
+    const [r, hist] = await Promise.all([
+      traced("readings", "GET /homes/{id}/readings", () => api.GET("/api/homes/{home_id}/readings", { params: { path: { home_id: homeId } } }), (d) => `${d.nights.length} heating-off nights`),
+      traced("history", "GET /homes/{id}/history", () => api.GET("/api/homes/{home_id}/history", { params: { path: { home_id: homeId } } }), (d) => `${d.rooms.length} rooms × ${d.nights.length} nights`).catch(() => null),
+    ]);
     setReadings(r);
+    setHistory(hist);
     setNightIdx(null);
     setStep("results");
     set({ view: "open" });
@@ -487,12 +494,33 @@ export default function MyHome() {
                   </button>
                 ))}
               </div>
+              <button className="btn btn-primary mt-3 w-full" disabled={!history || !readings || !nights.length} onClick={() => setAnalytics(true)}>
+                <BarChart3 size={15} /> Analytics{sel ? ` · ${sel.name}` : ""}
+              </button>
               <RoomDetail report={report} sel={sel} technical={technical} chartData={chartData} cursor={player.t} onScrub={player.setT} preview={preview} setPreview={setPreview} busy={!!busy} fix={fix} />
               {busy && <div className="mt-3 text-[12.5px] text-mute pulse-dot">{busy}</div>}
               {error && <div className="mt-3 rounded-xl border border-hot/40 bg-hot/10 px-3 py-2 text-[12px] text-hot">{error}</div>}
               <div className="mt-3 text-[10.5px] text-dim">{health.disclaimer}</div>
             </motion.aside>
           )
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {analytics && history && readings && history.nights.length > 0 && (
+          <Analytics
+            label={home?.name ?? "Your home"}
+            history={history}
+            readings={readings}
+            asOf={(nightIdx ?? nights.length - 1) + 1}
+            setAsOf={(k) => setNightIdx(k - 1)}
+            room={selected}
+            setRoom={(id) => home && openRoom(home.home_id, id)}
+            report={report}
+            technical={technical}
+            onClose={() => setAnalytics(false)}
+            onShow3D={(c) => (setAnalytics(false), setPreview(c))}
+          />
         )}
       </AnimatePresence>
 

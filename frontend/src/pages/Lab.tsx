@@ -1,24 +1,24 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, Dice5, Eye, FastForward, Gavel, HeartPulse, Home as HomeIcon, Lock, Play, Plus, RotateCcw, SkipForward, Square } from "lucide-react";
+import { BarChart3, CalendarDays, Dice5, Eye, FastForward, Gavel, HeartPulse, Home as HomeIcon, Lock, Play, Plus, RotateCcw, SkipForward, Square } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, traced } from "../api/client";
-import type { DemoHomeCreate, DemoReveal, DemoWeek, FixAction, HomeHealth, HomeReadings, HomeSummary, RoomReport, RoomTechnical, Series } from "../api/types";
+import type { DemoHomeCreate, DemoReveal, DemoWeek, FixAction, HomeHealth, HomeHistory, HomeReadings, HomeSummary, RoomHealthView, RoomReport, RoomTechnical, Series } from "../api/types";
+import { Analytics } from "../components/Analytics";
 import { useChatContext } from "../components/ChatDock";
 import { EngineTrace } from "../components/EngineTrace";
-import { RoomDetail } from "../components/RoomDetail";
 import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
 import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
 import { FLAG_STATUSES, ROOM_STATUS, strengthOf } from "../lib/diagnosis";
+import { snapAt } from "../lib/history";
 import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
-import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, fmtDate, ms, type CauseKey } from "../lib/rooms";
+import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, fmtDate, ms, roomColor, type CauseKey } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
 import { HouseCanvas } from "../three/Scene";
 
-const roomName = (id: string | null | undefined) => (id ? ROOM_NAMES[id] ?? id : "–");
 
 function slice(s: Series, a: number, b: number): Series {
   const idx = s.timestamps.map((t, i) => [ms(t), i] as const).filter(([t]) => t >= a && t <= b).map(([, i]) => i);
@@ -176,6 +176,8 @@ export default function Lab() {
   const [weekRun, setWeekRun] = useState<{ done: number; total: number } | null>(null);
   const stopWeek = useRef(false);
   const [weekPlay, setWeekPlay] = useState<number | null>(null);
+  const [history, setHistory] = useState<HomeHistory | null>(null);
+  const [analytics, setAnalytics] = useState(false);
 
   const loadHouses = () =>
     traced("homes", "GET /homes", () => api.GET("/api/homes"), (d) => `${d.length} houses`)
@@ -219,10 +221,30 @@ export default function Lab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.playing, player.t, weekPlay]);
 
+  // Rooms as the app saw them after the selected night: looking back never shows later evidence.
+  const asOf = (nightIdx ?? nights.length - 1) + 1;
+  const latest = asOf >= nights.length;
+  const rooms: RoomHealthView[] = useMemo(() => {
+    if (!health) return [];
+    if (latest || !history) return health.rooms;
+    return health.rooms.map((r) => {
+      const s = snapAt(history.rooms.find((h) => h.room_id === r.room_id), asOf);
+      return {
+        ...r,
+        status: s?.status ?? "not_enough_data",
+        likely_cause: s?.named_cause ?? null,
+        extra_heat_loss_percent: s && FLAG_STATUSES.includes(s.status) ? Math.round(s.extra_heat_loss_percent) : null,
+        annual_cost_gbp: s?.annual_cost_gbp ?? null,
+        nights_seen: s?.nights_judged ?? 0,
+        headline: "",
+      };
+    });
+  }, [health, history, asOf, latest]);
+
   // The room the app is worried about drives the 3D finding (or the user's preview).
-  const flaggedRoom = health?.rooms.find((r) => FLAG_STATUSES.includes(r.status));
+  const flaggedRoom = rooms.find((r) => FLAG_STATUSES.includes(r.status));
   useEffect(() => {
-    const r = selected ? health?.rooms.find((x) => x.room_id === selected) : flaggedRoom;
+    const r = selected ? rooms.find((x) => x.room_id === selected) : flaggedRoom;
     const target = r && FLAG_STATUSES.includes(r.status) ? r : flaggedRoom;
     if (preview && (target || selected)) {
       const room = (target ?? r)!.room_id;
@@ -234,7 +256,7 @@ export default function Lab() {
       return;
     }
     set({ finding: { room: SIM_TO_PLAN[target.room_id], cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent) } });
-  }, [health, selected, preview, flaggedRoom, set]);
+  }, [rooms, selected, preview, flaggedRoom, set]);
 
   // The server builds the assistant's context itself; we only tell the dock which home is on screen.
   useEffect(() => {
@@ -267,8 +289,12 @@ export default function Lab() {
   const refresh = async (homeId: string, h: HomeHealth, focus?: string | null) => {
     setHealth(h);
     setHome(h.home);
-    const r = await traced("readings", "GET /homes/{id}/readings", () => api.GET("/api/homes/{home_id}/readings", { params: { path: { home_id: homeId } } }), (d) => `${d.nights.length} nights · expected-if-healthy lines`);
+    const [r, hist] = await Promise.all([
+      traced("readings", "GET /homes/{id}/readings", () => api.GET("/api/homes/{home_id}/readings", { params: { path: { home_id: homeId } } }), (d) => `${d.nights.length} nights · expected-if-healthy lines`),
+      traced("history", "GET /homes/{id}/history", () => api.GET("/api/homes/{home_id}/history", { params: { path: { home_id: homeId } } }), (d) => `${d.rooms.length} rooms × ${d.nights.length} nights`).catch(() => null),
+    ]);
     setReadings(r);
+    setHistory(hist);
     setNightIdx(null);
     const room = focus ?? selected ?? h.rooms.find((x) => FLAG_STATUSES.includes(x.status))?.room_id ?? null;
     if (room) await openRoom(homeId, room);
@@ -288,7 +314,7 @@ export default function Lab() {
 
   const start = (req: DemoHomeCreate, name: string) =>
     run("Setting up the house…", async () => {
-      for (const reset of [setHealth, setReadings, setReport, setTechnical, setReveal, setSelected] as ((v: null) => void)[]) reset(null);
+      for (const reset of [setHealth, setReadings, setReport, setTechnical, setReveal, setSelected, setHistory] as ((v: null) => void)[]) reset(null);
       const h = await traced("create", "POST /demo/homes", () => api.POST("/api/demo/homes", { body: req }), (d) => d.home_id);
       setHome(h);
       setLabel(name);
@@ -308,7 +334,7 @@ export default function Lab() {
   /** Switch to another house: each keeps its own nights, statuses and repairs on the server. */
   const openHouse = (h: HomeSummary) =>
     run("Opening the house…", async () => {
-      for (const reset of [setReport, setTechnical, setReveal, setSelected] as ((v: null) => void)[]) reset(null);
+      for (const reset of [setReport, setTechnical, setReveal, setSelected, setHistory] as ((v: null) => void)[]) reset(null);
       setPicking(false);
       setLabel(loadLabels()[h.home_id] ?? h.name);
       set({ view: "open", autoRotate: false, inset: 460, focusRoom: null });
@@ -348,6 +374,7 @@ export default function Lab() {
       const h = await traced("health", "GET /homes/{id}", () => api.GET("/api/homes/{home_id}", { params: { path: { home_id: home!.home_id } } }), (d) => d.home.status);
       setHealth(h);
       setHome(h.home);
+      setHistory(await api.GET("/api/homes/{home_id}/history", { params: { path: { home_id: home!.home_id } } }).then((x) => x.data ?? null));
     });
 
   const doReveal = () =>
@@ -356,16 +383,13 @@ export default function Lab() {
       setReveal(r);
     });
 
-  const sel = health?.rooms.find((r) => r.room_id === selected);
-  const roomReadings = selected && readings ? readings.rooms[selected] : null;
-  const chartData =
-    roomReadings && window_
-      ? [
-          { id: "m", label: `${roomName(selected)} measured`, color: "#f2f3f5", series: slice(roomReadings.measured, ...window_), width: 2 },
-          ...(roomReadings.expected_if_healthy ? [{ id: "e", label: "Expected if healthy", color: "#2fd18b", series: slice(roomReadings.expected_if_healthy, ...window_), dashed: true }] : []),
-          ...(outdoor ? [{ id: "o", label: "Outside", color: "#8a90a2", series: outdoor, dashed: true, width: 1.5 }] : []),
-        ]
-      : null;
+  const sel = rooms.find((r) => r.room_id === selected);
+  const canFix = latest && sel && ["issue", "issue_cause_unclear", "still_an_issue"].includes(sel.status);
+  const showIn3D = (c: CauseKey) => {
+    setAnalytics(false);
+    setPreview(c);
+    set({ view: "open" });
+  };
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -373,10 +397,30 @@ export default function Lab() {
       <HouseCanvas className="absolute inset-0" />
 
       {home && (
-        <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center pr-[460px]">
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center gap-2 pr-[460px]">
           <ViewSwitcher views={["exterior", "thermal", "open", "inside"]} className="pointer-events-auto" />
+          <button className="glass pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold hover:bg-white/10 disabled:opacity-40" disabled={!history || !readings} onClick={() => setAnalytics(true)}>
+            <BarChart3 size={14} /> Analytics
+          </button>
         </div>
       )}
+      <AnimatePresence>
+        {analytics && history && readings && (
+          <Analytics
+            label={label}
+            history={history}
+            readings={readings}
+            asOf={asOf}
+            setAsOf={(k) => (setWeekPlay(null), setNightIdx(k - 1))}
+            room={selected}
+            setRoom={(id) => home && openRoom(home.home_id, id)}
+            report={report}
+            technical={technical}
+            onClose={() => setAnalytics(false)}
+            onShow3D={showIn3D}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {preview && sel && (
           <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-x-0 top-[166px] z-20 flex justify-center pr-[460px]">
@@ -492,25 +536,90 @@ export default function Lab() {
             <div className="text-[10px] text-dim">Blue nights were windy (≥ 4 m/s). Play a week to watch its nights back to back.</div>
           </div>
 
-          {/* rooms */}
-          <div className="mt-4 space-y-1.5">
-            {health.rooms.map((r) => (
-              <button
-                key={r.room_id}
-                onClick={() => openRoom(home.home_id, r.room_id)}
-                className={`w-full rounded-2xl border px-3 py-2.5 text-left transition ${selected === r.room_id ? "border-white/40 bg-white/[0.07]" : "border-line bg-white/[0.02] hover:border-white/25"}`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">{r.name}</span>
-                  <StatusChip status={r.status} />
-                </div>
-                <div className="mt-0.5 text-[12px] leading-snug text-mute">{r.headline}</div>
+          {/* rooms, as of the selected night */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-[11px] text-mute">{latest ? "Rooms now" : `Rooms as of night ${asOf}`}</div>
+            {!latest && (
+              <button className="text-[11px] text-warm underline" onClick={() => setNightIdx(null)}>
+                back to latest
               </button>
-            ))}
+            )}
+          </div>
+          <div className="mt-1.5 space-y-1">
+            {rooms.map((r) => {
+              const h = history?.rooms.find((x) => x.room_id === r.room_id);
+              return (
+                <button
+                  key={r.room_id}
+                  onClick={() => openRoom(home.home_id, r.room_id)}
+                  className={`w-full rounded-2xl border px-3 py-2 text-left transition ${selected === r.room_id ? "border-white/40 bg-white/[0.07]" : "border-line bg-white/[0.02] hover:border-white/25"}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2 font-semibold">
+                      <i className="h-2 w-2 rounded-full" style={{ background: roomColor(SIM_TO_PLAN[r.room_id] ?? r.room_id) }} />
+                      {r.name}
+                    </span>
+                    <StatusChip status={r.status} />
+                  </div>
+                  {h && (
+                    <div className="mt-1.5 flex gap-[3px]" aria-hidden>
+                      {nights.map((_, i) => {
+                        const s = i < asOf ? h.snapshots.find((x) => x.night_number === i + 1) : undefined;
+                        return <i key={i} className="h-1.5 flex-1 rounded-full" style={{ background: s ? ROOM_STATUS[s.status].color : "#ffffff12", opacity: s?.status === "healthy" ? 0.35 : 1 }} />;
+                      })}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* selected room */}
-          <RoomDetail report={report} sel={sel} technical={technical} chartData={chartData} cursor={player.t} onScrub={player.setT} preview={preview} setPreview={setPreview} busy={!!busy} fix={fix} />
+          {/* selected room: only what acts on the house */}
+          {sel && (
+            <div className="mt-3 space-y-2.5 rounded-2xl border border-line bg-black/20 p-3">
+              <div className="text-[13px] leading-snug">
+                <b>{sel.name}</b>
+                <span className="text-mute">
+                  {sel.extra_heat_loss_percent != null && ` · +${sel.extra_heat_loss_percent}% heat loss`}
+                  {sel.likely_cause && ` · likely ${CAUSE[sel.likely_cause].label.toLowerCase()}`}
+                  {sel.annual_cost_gbp != null && ` · £${Math.round(sel.annual_cost_gbp)}/yr`}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 text-[11.5px]">
+                <span className="text-dim">Show in 3D:</span>
+                {(["draft", "envelope_conduction", "normal"] as CauseKey[]).map((c) => (
+                  <button key={c} onClick={() => setPreview((p) => (p === c ? null : c))} className={`rounded-full border px-2 py-0.5 ${preview === c ? "border-white/60 text-ink" : "border-line text-mute hover:text-ink"}`}>
+                    {CAUSE[c].label}
+                  </button>
+                ))}
+              </div>
+              {canFix && (
+                <div>
+                  <div className="mb-1 text-[11px] text-mute">Do a repair, then keep watching:</div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {([
+                      ["seal_leaks", "Seal leaks"],
+                      ["add_insulation", "Insulate"],
+                      ["other", "Other"],
+                    ] as [FixAction, string][]).map(([a, l]) => (
+                      <button key={a} className={`btn !px-2 !py-1.5 !text-[12px] ${(sel.likely_cause === "draft" && a === "seal_leaks") || (sel.likely_cause === "envelope_conduction" && a === "add_insulation") ? "btn-hot" : "btn-ghost"}`} disabled={!!busy} onClick={() => fix(a)}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {latest && report?.fix && report.room_id === sel.room_id && (
+                <div className="text-[11.5px] text-mute">
+                  Repair: <b className="text-ink">{report.fix.action.replace("_", " ")}</b> · {report.fix.nights_since_fix} night{report.fix.nights_since_fix === 1 ? "" : "s"} since{report.status === "verifying" ? ". Press Next night to check it." : "."}
+                </div>
+              )}
+            </div>
+          )}
+
+          <button className="btn btn-primary mt-3 w-full" disabled={!history || !readings} onClick={() => setAnalytics(true)}>
+            <BarChart3 size={15} /> Analytics{sel ? ` · ${sel.name}` : ""}
+          </button>
 
           {/* reveal */}
           <div className="mt-4 border-t border-line pt-4">

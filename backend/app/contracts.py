@@ -688,6 +688,42 @@ class RoomTechnical(ContractModel):
     rule: list[Assumption]
 
 
+class RoomNightSnapshot(ContractModel):
+    """The rule's view of one room right after one night: what the app knew at that point."""
+
+    night_id: str
+    night_number: int = Field(ge=1)
+    nights_judged: int = Field(ge=1)
+    after_fix: bool
+    status: RoomStatus
+    named_cause: Literal["draft", "envelope_conduction"] | None
+    leading_cause: Literal["draft", "envelope_conduction"]
+    extra_heat_loss_percent: float
+    threshold_percent: float
+    cause_gap_bic: float
+    candidate: bool
+    fits: list[HypothesisSummary]
+    annual_cost_gbp: NonNegativeFloat | None
+
+
+class RoomHistory(ContractModel):
+    room_id: str
+    name: str
+    snapshots: list[RoomNightSnapshot]
+    fix_action: FixAction | None
+
+
+class HomeHistory(ContractModel):
+    """Every room's status night by night, so a client can show the analysis as of any past night."""
+
+    home_id: str
+    nights: list[NightInfo]
+    rooms: list[RoomHistory]
+    persistence_nights: int = Field(ge=1)
+    cause_gap_bic: float
+    advice: dict[str, list[str]]
+
+
 class FixRequest(ContractModel):
     action: FixAction
     fixed_on: date | None = None

@@ -32,6 +32,7 @@ from .contracts import (
     HomeChatRequest,
     HomeCreate,
     HomeHealth,
+    HomeHistory,
     HomePlan,
     HomeReadings,
     HomeSummary,
@@ -404,6 +405,13 @@ async def room_technical(home_id: str, room_id: str) -> RoomTechnical:
     """Fits, scores and thresholds behind a room's status (for a details panel)."""
 
     return await _v2(_homes().room_technical, home_id, room_id)
+
+
+@app.get("/api/homes/{home_id}/history", response_model=HomeHistory, responses=V2_ERRORS, tags=["homes-v2"])
+async def home_history(home_id: str) -> HomeHistory:
+    """Every room's status, cause and fits after each night, to show the analysis as of any night."""
+
+    return await _v2(_homes().history, home_id)
 
 
 @app.post(
