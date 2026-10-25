@@ -215,7 +215,7 @@ export default function Landing() {
               <div className="text-[28px] font-bold text-ink">3</div>suspects tested
             </div>
             <div>
-              <div className="text-[28px] font-bold text-ink">0</div>pre-baked answers
+              <div className="text-[28px] font-bold text-ink">28</div>winter nights watched
             </div>
           </div>
         </motion.div>
@@ -258,7 +258,7 @@ export default function Landing() {
 
       <section className="relative flex min-h-screen flex-col justify-center px-[6vw]">
         <h2 className="max-w-3xl text-[clamp(40px,5.5vw,72px)] font-bold leading-[1] tracking-[-0.04em]">
-          Nothing on this page is scripted. <span className="text-mute">Try it.</span>
+          Pick a home. Watch it cool. <span className="text-mute">Catch the leak.</span>
         </h2>
         <div className="pointer-events-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
           {[
