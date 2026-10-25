@@ -5,7 +5,6 @@ import { api, traced } from "../api/client";
 import type { DemoHomeCreate, DemoReveal, DemoWeek, FixAction, HomeHealth, HomeHistory, HomeReadings, HomeSummary, RoomHealthView, RoomReport, RoomTechnical, Series } from "../api/types";
 import { Analytics } from "../components/Analytics";
 import { useChatContext } from "../components/ChatDock";
-import { EngineTrace } from "../components/EngineTrace";
 import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
 import { Timeline } from "../components/Timeline";
@@ -265,13 +264,15 @@ export default function Lab() {
       {
         page: "Fault Lab: simulated HH09 twin watched night after night",
         nights: nights.length,
+        selected_room_id: report?.room_id,
+        visible_window: night ? { start: night.start, end: night.end } : undefined,
         rooms: health?.rooms.map((r) => `${r.name}: ${ROOM_STATUS[r.status].label} — ${r.headline}`),
         selected_room: report && { name: report.name, headline: report.headline, why: report.why, what_to_do: report.what_to_do, money: report.money && { annual_cost_gbp: report.money.annual_cost_gbp, repair_cost_gbp: report.money.repair_cost_gbp, payback_years: report.money.payback_years } },
         revealed_truth: reveal ? reveal.summary : "not revealed yet",
       },
       ["Which room is the problem?", "Why do several nights matter?", "Is it worth fixing?"],
     );
-  }, [home, health, report, reveal, nights.length]);
+  }, [home, health, report, reveal, nights.length, night?.night_id]);
 
   const run = async <T,>(what: string, fn: () => Promise<T>) => {
     setBusy(what);
@@ -394,7 +395,7 @@ export default function Lab() {
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <Nav transparent />
-      <HouseCanvas className="absolute inset-0" />
+      <HouseCanvas className="absolute inset-0" focusControl />
 
       {home && (
         <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center gap-2 pr-[460px]">
@@ -667,7 +668,6 @@ export default function Lab() {
 
       {home && (
         <div className="pointer-events-none absolute bottom-4 left-4 right-[476px] z-20 flex flex-col gap-2">
-          <EngineTrace className="pointer-events-auto max-w-[520px]" />
           <Timeline
             className="pointer-events-auto max-w-[640px]"
             {...player}

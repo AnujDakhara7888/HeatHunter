@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { api, traced } from "../api/client";
 import type { RealHouse, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
-import { EngineTrace } from "../components/EngineTrace";
 import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
 import { Timeline } from "../components/Timeline";
@@ -67,6 +66,7 @@ export default function Real() {
         measured_heat_transfer_coefficient: house?.reference_htc,
         airtightness: house?.airtightness,
         night_on_screen: window_ ? fmtDate(window_[0]) : "whole week",
+        visible_window: window_ ? { start: new Date(window_[0]).toISOString(), end: new Date(window_[1]).toISOString() } : undefined,
         monitoring: "Not monitored: the heating was on during this week, so heating-off nights do not exist.",
       },
       ["Is this real data?", "Which room cools fastest?", "Why no fault labels?"],
@@ -85,7 +85,7 @@ export default function Real() {
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <Nav transparent />
-      <HouseCanvas className="absolute inset-0" />
+      <HouseCanvas className="absolute inset-0" focusControl />
       <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center pr-[460px]">
         <ViewSwitcher views={["exterior", "thermal", "open", "inside", "top"]} className="pointer-events-auto" />
       </div>
@@ -153,7 +153,6 @@ export default function Real() {
       </motion.aside>
 
       <div className="pointer-events-none absolute bottom-4 left-4 right-[476px] z-20 flex flex-col gap-2">
-        <EngineTrace className="pointer-events-auto max-w-[520px]" />
         <Timeline className="pointer-events-auto max-w-[640px]" {...player} onPlay={player.play} onPause={player.pause} onScrub={player.setT} caption={window_ ? "Real night · occupied home, heating schedule unknown" : "Real measurements · 30-minute sensor readings"} />
       </div>
     </div>

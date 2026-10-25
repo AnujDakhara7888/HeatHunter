@@ -5,7 +5,6 @@ import { ApiError, api, traced } from "../api/client";
 import { Analytics } from "../components/Analytics";
 import type { FixAction, FloorPlanDraft, HomeHealth, HomeHistory, HomePlan, HomeReadings, HomeSummary, RoomReport, RoomTechnical, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
-import { EngineTrace } from "../components/EngineTrace";
 import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
 import { PlanEditor } from "../components/PlanEditor";
@@ -112,7 +111,7 @@ export default function MyHome() {
   const sensed = plan.rooms.filter((r) => r.has_sensor !== false);
 
   useEffect(() => {
-    set({ view: "open", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: false, inset: 0, temps: {}, rates: {}, ir: false });
+    set({ view: "open", finding: null, focusRoom: null, fanOn: false, labels: true, autoRotate: false, inset: 0, temps: {}, rates: {}, ir: false, zBearing: null, windFrom: null });
     useTrace.getState().clear();
     traced("homes", "GET /homes", () => api.GET("/api/homes"), (d) => `${d.length} homes`)
       .then((all) => setSaved(all.filter((h) => h.kind === "real")))
@@ -150,13 +149,15 @@ export default function MyHome() {
       {
         page: "Your home: the user's own plan and sensor readings, monitored night after night",
         step,
+        selected_room_id: report?.room_id,
+        visible_window: night ? { start: night.start, end: night.end } : undefined,
         rooms: health ? health.rooms.map((r) => `${r.name}: ${ROOM_STATUS[r.status].label} — ${r.headline}`) : plan.rooms.map((r) => r.name),
         selected_room: report && { name: report.name, headline: report.headline, why: report.why, what_to_do: report.what_to_do, money: report.money && { annual_cost_gbp: report.money.annual_cost_gbp, repair_cost_gbp: report.money.repair_cost_gbp, payback_years: report.money.payback_years } },
         nights: nights.length,
       },
       step === "plan" ? ["How do I draw my rooms?", "What sensors should I buy?", "Can you read my plan?"] : ["What does this mean?", "Is it worth fixing?", "Why several nights?"],
     );
-  }, [step, plan, home, health, report, nights.length]);
+  }, [step, plan, home, health, report, nights.length, night?.night_id]);
 
   const run = async <T,>(what: string, fn: () => Promise<T>) => {
     setBusy(what);
@@ -293,7 +294,7 @@ export default function MyHome() {
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <Nav transparent />
-      <HouseCanvas className={`absolute inset-0 ${step === "results" ? "" : "left-[min(52vw,760px)]"}`} />
+      <HouseCanvas className={`absolute inset-0 ${step === "results" ? "" : "left-[min(52vw,760px)]"}`} focusControl />
 
       <div className={`pointer-events-none absolute top-16 z-20 flex justify-center ${step === "results" ? "inset-x-0 pr-[460px]" : "left-[min(52vw,760px)] right-0"}`}>
         <ViewSwitcher views={["top", "open", "exterior", "thermal", "inside"]} className="pointer-events-auto" />
@@ -526,7 +527,6 @@ export default function MyHome() {
 
       {step === "results" && (
         <div className="pointer-events-none absolute bottom-4 left-4 right-[476px] z-20 flex flex-col gap-2">
-          <EngineTrace className="pointer-events-auto max-w-[520px]" />
           <Timeline className="pointer-events-auto max-w-[640px]" {...player} onPlay={player.play} onPause={player.pause} onScrub={player.setT} caption="Your readings, replayed through your house" />
         </div>
       )}

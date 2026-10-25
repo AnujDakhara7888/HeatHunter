@@ -1,11 +1,13 @@
 import { CameraControls, Stars } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { LocateFixed } from "lucide-react";
+import { Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import * as THREE from "three";
 import { planBounds, roomCenter } from "../lib/plan";
 import { useScene, type View } from "../store/scene";
-import { Airflow, Compass, HeatFlux, Wind } from "./Effects";
+import { CompassHeading, CompassHud } from "./CompassHud";
+import { Airflow, HeatFlux, Wind } from "./Effects";
 import { RoomHopper, ThermalHud } from "./Overlays";
 import { outwardNormal, wallPieces } from "./geometry";
 import { House } from "./House";
@@ -72,8 +74,9 @@ function useShot(): Shot {
   }, [plan, view, focus, finding]);
 }
 
-function Rig() {
+function Rig({ focusRequest }: { focusRequest: number }) {
   const ref = useRef<CameraControls>(null);
+  const lastFocusRequest = useRef(0);
   const shot = useShot();
   const view = useScene((s) => s.view);
   const plan = useScene((s) => s.plan);
@@ -120,12 +123,16 @@ function Rig() {
     // resume orbiting from wherever the walk left the camera
     const fwd = camera.getWorldDirection(new THREE.Vector3());
     c.setLookAt(camera.position.x, camera.position.y, camera.position.z, camera.position.x + fwd.x * 3, camera.position.y + fwd.y * 3, camera.position.z + fwd.z * 3, false);
-    const aspect = size.width / size.height;
-    const k = Math.min(1.7, Math.max(1, 1.5 / aspect));
+    const refocusing = focusRequest !== lastFocusRequest.current;
+    lastFocusRequest.current = focusRequest;
+    const availableWidth = size.width - (refocusing && size.width > 900 ? Math.max(0, inset) : 0);
+    const aspect = availableWidth / size.height;
+    // Leave room for labels and the playback controls when returning to the overview.
+    const k = Math.min(1.7, Math.max(refocusing ? 1.3 : 1, 1.5 / aspect));
     const [px, py, pz] = shot.pos;
     const [tx, ty, tz] = shot.target;
     c.setLookAt(tx + (px - tx) * k, ty + (py - ty) * k, tz + (pz - tz) * k, tx, ty, tz, true);
-  }, [shot, inside, camera, size.width, size.height]);
+  }, [shot, inside, camera, size.width, size.height, inset, focusRequest]);
 
   // Walk-in: glide to the room's standing point unless we walked there ourselves.
   useEffect(() => {
@@ -318,7 +325,19 @@ function Atmosphere() {
   return null;
 }
 
-export function HouseCanvas({ className, effects = true }: { className?: string; effects?: boolean }) {
+export function HouseCanvas({ className, effects = true, focusControl = false }: {
+  className?: string;
+  effects?: boolean;
+  focusControl?: boolean;
+}) {
+  const [focusRequest, setFocusRequest] = useState(0);
+  const compassNeedle = useRef<SVGGElement>(null);
+  const inset = useScene((s) => s.inset);
+  const focusHouse = () => {
+    useScene.getState().set({ view: "open", focusRoom: null, walkTo: null, autoRotate: false, fanOn: false });
+    // Trigger even when the view is already open: orbiting does not change scene state.
+    setFocusRequest((request) => request + 1);
+  };
   return (
     <div className={`${className ?? ""} isolate`}>
       <Canvas
@@ -336,8 +355,8 @@ export function HouseCanvas({ className, effects = true }: { className?: string;
           <Wind />
           <HeatFlux />
           <Airflow />
-          <Rig />
-          <Compass />
+          <Rig focusRequest={focusRequest} />
+          {focusControl && <CompassHeading needle={compassNeedle} />}
           {effects && (
             <EffectComposer multisampling={0}>
               <Bloom intensity={0.55} luminanceThreshold={0.82} luminanceSmoothing={0.2} mipmapBlur />
@@ -346,6 +365,23 @@ export function HouseCanvas({ className, effects = true }: { className?: string;
           )}
         </Suspense>
       </Canvas>
+      {focusControl && (
+        <div
+          className="pointer-events-none absolute inset-x-4 top-[118px] z-20 flex items-center justify-end gap-2 min-[901px]:pr-[var(--scene-inset)]"
+          style={{ "--scene-inset": `${Math.max(0, inset)}px` } as CSSProperties}
+        >
+          <CompassHud needle={compassNeedle} />
+          <button
+            type="button"
+            onClick={focusHouse}
+            aria-label="Focus house"
+            title="Focus house — show the whole house"
+            className="glass pointer-events-auto grid h-11 w-11 place-items-center rounded-full text-mute transition hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          >
+            <LocateFixed size={20} aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <RoomHopper />
       <ThermalHud />
     </div>
