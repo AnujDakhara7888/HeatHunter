@@ -376,6 +376,19 @@ class MeasuredMetric(ContractModel):
     provenance: Literal[Provenance.REAL_MEASUREMENT]
 
 
+class SurfaceInsulation(ContractModel):
+    """How well insulated each room's outside surfaces are; the UI's infrared view
+    uses it to estimate surface temperatures from measured air temperatures."""
+
+    envelope_u_w_per_m2k: dict[str, PositiveFloat]  # per room, keyed like the response's rooms
+    # each room's nominal seasonal heat loss (W/K): what extra_heat_loss_percent is a fraction of
+    room_heat_loss_w_per_k: dict[str, PositiveFloat]
+    default_envelope_u_w_per_m2k: PositiveFloat  # for rooms with no figure of their own
+    window_u_w_per_m2k: PositiveFloat
+    provenance: Literal[Provenance.MODEL_ESTIMATE] = Provenance.MODEL_ESTIMATE
+    notes: str
+
+
 class RealHouse(ContractModel):
     house_id: str
     display_name: str
@@ -391,6 +404,7 @@ class RealHouse(ContractModel):
     measurement_end: datetime
     timestamp_notes: str
     scientific_disclaimer: str
+    insulation: SurfaceInsulation | None = None
 
 
 class ConfusionMatrix(ContractModel):
@@ -628,6 +642,7 @@ class HomeReadings(ContractModel):
     wind_speed: Series
     rooms: dict[str, RoomReadings]
     nights: list[NightInfo]
+    insulation: SurfaceInsulation | None = None
 
 
 class RoomMoney(ContractModel):

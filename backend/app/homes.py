@@ -18,12 +18,13 @@ import math
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
 import numpy as np
 
-from backend.engine import load_model_extension, load_public_template
+from backend.engine import load_model_extension, load_public_template, seasonal_conductance
 from backend.engine.assumptions import load_assumptions, value
 from backend.engine.model import LeakageLaw, ModelExtension
 
@@ -38,6 +39,7 @@ from .contracts import (
     RoomTemplate,
     Series,
     SourceMetadata,
+    SurfaceInsulation,
     WeatherLookup,
 )
 
@@ -48,6 +50,7 @@ HH09_EXPOSED = {  # exterior wall length (m) and floor area (m2) of the calibrat
     "bedroom_2": (1.14, 2.72),
 }
 HH09_CEILING_M = 2.4
+HH09_TWIN_PATH = Path(__file__).resolve().parents[2] / "data" / "processed" / "hh09_twin_inputs.json"
 WINDOW_HEIGHT_M = 1.2
 TOL = 0.05  # m; plan edges closer than this are treated as touching
 
@@ -142,19 +145,18 @@ def build_home(plan: HomePlan) -> tuple[HomeTemplate, ModelExtension]:
     sensed = [r for r in plan.rooms if r.has_sensor]
     if not sensed:
         raise HomeError("at least one room needs a temperature sensor")
+    exposed = exposed_m2(plan, exterior)
     for room in sensed:
         area = room.width * room.depth
         volume = area * h
-        exposed = exterior[room.room_id] * h + area * (room.exposed_floor + room.exposed_roof)
-        if exposed <= 0:
-            exposed = 0.1 * area  # fully interior room: keep a small, explicit path
         rooms.append(
             RoomTemplate(
                 room_id=room.room_id,
                 room_name=room.name,
                 volume_m3=volume,
                 nominal_capacitance_j_per_k=tmp * area + air_c * volume,
-                nominal_envelope_conductance_w_per_k=coefficients["envelope_w_per_m2k"] * exposed,
+                nominal_envelope_conductance_w_per_k=coefficients["envelope_w_per_m2k"]
+                * exposed[room.room_id],
                 nominal_infiltration_conductance_w_per_k=coefficients["infiltration_w_per_m3k"] * volume,
                 wind_sensitivity_s_per_m=coefficients["wind_sensitivity_s_per_m"],
                 nominal_leakage_share=0.0,
@@ -212,6 +214,74 @@ def build_home(plan: HomePlan) -> tuple[HomeTemplate, ModelExtension]:
         assumptions=assumptions,
     )
     return home, extension
+
+
+def exposed_m2(plan: HomePlan, exterior: dict[str, float]) -> dict[str, float]:
+    """Wall, floor and roof area (m2) each room loses heat through to the outside."""
+
+    h = plan.ceiling_height_m
+    exposed = {}
+    for room in plan.rooms:
+        area = room.width * room.depth
+        m2 = exterior[room.room_id] * h + area * (room.exposed_floor + room.exposed_roof)
+        # a fully interior room keeps a small, explicit path
+        exposed[room.room_id] = m2 if m2 > 0 else 0.1 * area
+    return exposed
+
+
+def hh09_exposed_m2() -> dict[str, float]:
+    return {room_id: wall * HH09_CEILING_M + 2 * floor for room_id, (wall, floor) in HH09_EXPOSED.items()}
+
+
+@lru_cache(maxsize=1)
+def hh09_source_room_ids() -> dict[str, str]:
+    """Simulator room id -> real HH09 sensor room id, from the twin package."""
+
+    payload = json.loads(HH09_TWIN_PATH.read_text(encoding="utf-8"))
+    return {room["simulator_room_id"]: room["source_room_id"] for room in payload["rooms"]}
+
+
+def surface_insulation(
+    template: PublicTemplate,
+    exposed: dict[str, float],
+    extension: ModelExtension | None,
+    rename: dict[str, str] | None = None,
+) -> SurfaceInsulation:
+    """Each room's nominal envelope conductance per m2 of exposed envelope (an effective U-value)
+    and its nominal seasonal heat loss."""
+
+    rename = rename or {}
+    return SurfaceInsulation(
+        envelope_u_w_per_m2k={
+            rename.get(r.room_id, r.room_id): r.nominal_envelope_conductance_w_per_k / exposed[r.room_id]
+            for r in template.rooms
+            if exposed.get(r.room_id)
+        },
+        room_heat_loss_w_per_k={
+            rename.get(r.room_id, r.room_id): seasonal_conductance(template, r.room_id, extension=extension)
+            for r in template.rooms
+        },
+        default_envelope_u_w_per_m2k=unit_coefficients()["envelope_w_per_m2k"],
+        window_u_w_per_m2k=value(load_assumptions(), "physical", "window_u_value"),
+        notes="Engine estimate: each room's nominal envelope conductance (HH09 calibration, training data) "
+        "per m2 of exposed wall, roof and floor; windows use the SAP default double-glazing U-value. "
+        "Used only to estimate surface temperatures for the infrared view.",
+    )
+
+
+def plan_insulation(
+    plan: HomePlan, template: PublicTemplate, extension: ModelExtension | None
+) -> SurfaceInsulation:
+    exterior, _, _ = plan_geometry(plan)
+    return surface_insulation(template, exposed_m2(plan, exterior), extension)
+
+
+def hh09_real_insulation() -> SurfaceInsulation:
+    """The demo template's figures, keyed by the real HH09 sensor rooms."""
+
+    return surface_insulation(
+        load_public_template(), hh09_exposed_m2(), load_model_extension(), rename=hh09_source_room_ids()
+    )
 
 
 def _transfer_source() -> SourceMetadata:

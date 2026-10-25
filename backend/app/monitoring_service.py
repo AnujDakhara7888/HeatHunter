@@ -79,7 +79,7 @@ from .contracts import (
     RoomTechnical,
     Series,
 )
-from .homes import build_home, geocode
+from .homes import build_home, geocode, hh09_exposed_m2, plan_insulation, surface_insulation
 from .insight import predicted_series
 from .real_homes import (
     HOMES_DIR,
@@ -848,6 +848,9 @@ class HomeService:
                 wind_speed=joined(
                     [n.weather.wind_speed for n in nights], nights[0].weather.wind_speed.provenance, "m/s"
                 ),
+                insulation=plan_insulation(state.record.plan, state.template, state.extension)
+                if state.record is not None
+                else surface_insulation(state.template, hh09_exposed_m2(), state.extension),
                 rooms=out_rooms,
                 nights=[
                     NightInfo(
