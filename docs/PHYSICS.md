@@ -461,6 +461,61 @@ Open issue: on a fan night the draft hypothesis still mispredicts severe (×4)
 drafts in the large rooms, so passive + fan can rank them as conduction. The
 fan is therefore an optional suggested check, not the main evidence.
 
+## Multi-night monitoring rule (`backend/diagnosis/monitoring.py`)
+
+The product monitors a home over consecutive heating-off nights instead of
+judging one night. `assess_rooms(nights, template, settings)` returns, for every
+room, `healthy`, `watching` (suspicious, not yet persistent), `issue` (room and
+cause named) or `issue_cause_unclear`.
+
+- **Measure.** For each room, all nights so far are fitted together under
+  normal, draft and envelope conduction. The leading fault's *excess heat loss*
+  is its extra seasonal conductance as a fraction of the room's nominal seasonal
+  heat loss (`engine.excess_fraction`). This is the number a user sees ("this
+  room loses 30% more heat than expected").
+- **Threshold per cause, strict early.** A room is a candidate when the excess
+  exceeds `a + b / sqrt(nights)` for its leading cause and the fault fits better
+  than normal. Separate thresholds are essential: healthy rooms whose best fault
+  is a draft show at most 6–17% excess, while ordinary ±12% house variation
+  looks like a 21–44% envelope excess. One shared threshold detected no drafts.
+- **Persistence and cause.** A room is flagged after `persistence_nights`
+  consecutive candidate nights with the same leading cause. The cause is named
+  only when the draft/envelope BIC gap exceeds `cause_gap_bic`.
+
+**Tuned settings** (`backend/diagnosis/monitoring_settings.json`): draft
+`a = 0.05, b = 0.05`; envelope `a = 0.20, b = 0.30`; persistence 2 nights;
+cause gap 10 BIC. The file fingerprints the engine assets it was tuned against
+and is rejected when they change.
+
+**How it was tuned (TRAINING winter 2019-20 only).**
+`python -m backend.simulation.monitoring_study --houses 6 --nights 14` simulates
+192 houses (healthy; draft and envelope faults ×1.6/×2.2/×3 in every room) over
+14 consecutive real-weather nights from random start dates, and saves every
+fit (about 10 minutes; raw output is not committed).
+`python -m backend.simulation.tune_monitoring` grid-searches the six settings on
+even-numbered houses with two constraints: no healthy house flagged and at most
+two wrong confident answers. (One was infeasible: the best settings call two
+severe drafts envelope losses, in the right room.) Odd-numbered houses are
+scored once and never tuned on. A test replays the cached fits and checks that
+the live rule makes identical decisions.
+
+| Check houses (never tuned on) | Correct room + cause | Median night | Worst night |
+|---|---|---|---|
+| Draft ×1.6 | 8/12 | 4.5 | 12 |
+| Draft ×2.2 | 12/12 | 3 | 5 |
+| Draft ×3 | 10/12 | 3 | 6 |
+| Envelope ×1.6 | 11/12 | 3 | 4 |
+| Envelope ×2.2, ×3 | 24/24 | 2 | 2 |
+| Healthy houses flagged | 1/24 | | |
+| Confident but wrong | 2/72 | | |
+
+Full numbers are in `reports/monitoring/flag_rule_tuning.json`. These are
+TRAINING-season simulated results, not held-out or real-home accuracy. The
+held-out winter 2020-21 is reserved for the final benchmark. Caveat: the public
+template's calibration used the legacy night 2020-12-06, which lies in that
+winter, so the benchmark must exclude that night or the template must first be
+recalibrated on winter 2019-20 nights only.
+
 ## Calibration (`calibrate_public_template`)
 
 - **Inputs:** healthy, simulated, TRAINING-split observations only. 40 houses

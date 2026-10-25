@@ -22,7 +22,14 @@ from .model import (
     load_model_extension,
     simulate_public,
 )
-from .money import MoneyOverrides, PublicMoneyEstimator, estimate_money, remeasured_savings_kwh
+from .money import (
+    MoneyOverrides,
+    PublicMoneyEstimator,
+    estimate_money,
+    excess_fraction,
+    remeasured_savings_kwh,
+    seasonal_conductance,
+)
 from .prediction import predict_experiment
 
 __all__ = [
@@ -40,6 +47,7 @@ __all__ = [
     "PublicNightInputs",
     "calibrate_public_template",
     "estimate_money",
+    "excess_fraction",
     "fit_hypothesis",
     "fit_hypothesis_detailed",
     "load_model_extension",
@@ -47,5 +55,6 @@ __all__ = [
     "predict_experiment",
     "remeasured_savings_kwh",
     "save_calibration",
+    "seasonal_conductance",
     "simulate_public",
 ]

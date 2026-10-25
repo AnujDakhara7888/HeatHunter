@@ -1,0 +1,173 @@
+{
+  "rule": "excess heat-loss fraction > a + b/sqrt(nights) for the leading cause; persistence; cause named if BIC gap > cause_gap",
+  "settings": {
+    "draft_a": 0.05,
+    "draft_b": 0.05,
+    "envelope_a": 0.2,
+    "envelope_b": 0.3,
+    "cause_gap": 10.0,
+    "persistence": 2
+  },
+  "grid": {
+    "draft_a": [
+      0.03,
+      0.05,
+      0.07,
+      0.09,
+      0.11,
+      0.13
+    ],
+    "draft_b": [
+      0.0,
+      0.05,
+      0.1,
+      0.15,
+      0.2
+    ],
+    "envelope_a": [
+      0.1,
+      0.125,
+      0.15,
+      0.175,
+      0.2,
+      0.225,
+      0.25,
+      0.275,
+      0.3,
+      0.325,
+      0.35
+    ],
+    "envelope_b": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "cause_gap": [
+      10.0,
+      20.0,
+      40.0
+    ],
+    "persistence": [
+      1,
+      2,
+      3
+    ]
+  },
+  "constraints": "tuning houses: no healthy house flagged; at most 2 wrong confident",
+  "tuning_houses": [
+    0,
+    2,
+    4
+  ],
+  "check_houses": [
+    1,
+    3,
+    5
+  ],
+  "tuning": {
+    "healthy_flagged": 0,
+    "healthy_cases": 24,
+    "wrong_confident": 2,
+    "correct": 67,
+    "faulty_cases": 72,
+    "groups": {
+      "draft x1.6": {
+        "correct": 11,
+        "cases": 12,
+        "median_night": 4,
+        "worst_night": 11,
+        "right_room_cause_unclear": 1
+      },
+      "draft x2.2": {
+        "correct": 12,
+        "cases": 12,
+        "median_night": 3.5,
+        "worst_night": 14,
+        "right_room_cause_unclear": 0
+      },
+      "draft x3.0": {
+        "correct": 10,
+        "cases": 12,
+        "median_night": 2.0,
+        "worst_night": 5,
+        "right_room_cause_unclear": 0
+      },
+      "envelope_conduction x1.6": {
+        "correct": 10,
+        "cases": 12,
+        "median_night": 3.0,
+        "worst_night": 12,
+        "right_room_cause_unclear": 0
+      },
+      "envelope_conduction x2.2": {
+        "correct": 12,
+        "cases": 12,
+        "median_night": 2.0,
+        "worst_night": 3,
+        "right_room_cause_unclear": 0
+      },
+      "envelope_conduction x3.0": {
+        "correct": 12,
+        "cases": 12,
+        "median_night": 2.0,
+        "worst_night": 2,
+        "right_room_cause_unclear": 0
+      }
+    }
+  },
+  "check": {
+    "healthy_flagged": 1,
+    "healthy_cases": 24,
+    "wrong_confident": 2,
+    "correct": 65,
+    "faulty_cases": 72,
+    "groups": {
+      "draft x1.6": {
+        "correct": 8,
+        "cases": 12,
+        "median_night": 4.5,
+        "worst_night": 12,
+        "right_room_cause_unclear": 0
+      },
+      "draft x2.2": {
+        "correct": 12,
+        "cases": 12,
+        "median_night": 3.0,
+        "worst_night": 5,
+        "right_room_cause_unclear": 0
+      },
+      "draft x3.0": {
+        "correct": 10,
+        "cases": 12,
+        "median_night": 3.0,
+        "worst_night": 6,
+        "right_room_cause_unclear": 0
+      },
+      "envelope_conduction x1.6": {
+        "correct": 11,
+        "cases": 12,
+        "median_night": 3,
+        "worst_night": 4,
+        "right_room_cause_unclear": 0
+      },
+      "envelope_conduction x2.2": {
+        "correct": 12,
+        "cases": 12,
+        "median_night": 2.0,
+        "worst_night": 2,
+        "right_room_cause_unclear": 0
+      },
+      "envelope_conduction x3.0": {
+        "correct": 12,
+        "cases": 12,
+        "median_night": 2.0,
+        "worst_night": 2,
+        "right_room_cause_unclear": 0
+      }
+    }
+  },
+  "split": "training season only; held-out winter untouched",
+  "template_id": "hh09-public-template-v1"
+}

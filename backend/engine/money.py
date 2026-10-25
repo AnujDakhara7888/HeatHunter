@@ -77,6 +77,46 @@ def excess_conductance(
     raise ValueError("only fault hypotheses have an excess heat-loss path")
 
 
+def seasonal_conductance(
+    template: PublicTemplate,
+    room_id: str,
+    *,
+    assumptions: dict[str, Any] | None = None,
+    extension: ModelExtension | None = AUTO,
+) -> float:
+    """A room's nominal seasonal heat-loss conductance (W/K): envelope + air path at season-mean wind."""
+
+    assumptions = assumptions or load_assumptions()
+    arrays = TemplateArrays.from_template(template, resolve_extension(template, extension))
+    i = arrays.index(room_id)
+    law = arrays.leakage_law
+    wind = value(assumptions, "economic", "heating_season_mean_wind_speed")
+    delta_t = law.reference_delta_t_k if law is not None else 0.0
+    air_side = arrays.window[i] + arrays.infiltration[i] * float(
+        leakage_factor(arrays.wind_sensitivity[i], law, wind, delta_t)
+    )
+    return float(arrays.conduction[i] + series_conductance(arrays.air_fabric[i], air_side))
+
+
+def excess_fraction(
+    template: PublicTemplate,
+    room_id: str,
+    cause: HypothesisType,
+    multiplier: float,
+    *,
+    assumptions: dict[str, Any] | None = None,
+    extension: ModelExtension | None = AUTO,
+) -> float:
+    """Extra seasonal heat loss implied by a hypothesis, as a fraction of the room's nominal loss."""
+
+    assumptions = assumptions or load_assumptions()
+    layer = resolve_extension(template, extension)
+    excess = excess_conductance(
+        template, room_id, cause, multiplier, assumptions=assumptions, extension=layer
+    )
+    return excess / seasonal_conductance(template, room_id, assumptions=assumptions, extension=layer)
+
+
 def annual_gas_kwh(excess_conductance_w_per_k: float, assumptions: dict[str, Any] | None = None) -> float:
     assumptions = assumptions or load_assumptions()
     degree_days = value(assumptions, "economic", "heating_degree_days")

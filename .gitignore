@@ -11,3 +11,6 @@ htmlcov/
 node_modules/
 frontend/dist/
 *.tsbuildinfo
+
+# Raw monitoring-study fits (about 4 MB); regenerate with backend.simulation.monitoring_study
+reports/monitoring/nights_needed_raw.json
