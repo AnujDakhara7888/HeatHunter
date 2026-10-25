@@ -10,7 +10,7 @@ PAGE_GUIDES = {
     ),
     "fault_lab": (
         "Fault Lab: simulated HH09-inspired indoor temperatures with real regional weather. "
-        "Choose Hidden fault, Judge mode or Healthy house; Next night adds a simulated night. "
+        "Choose Judge mode (plant a fault) or Healthy house; Next night adds a simulated night. "
         "Room status comes from physics; coloured floors show temperatures, not a confirmed fault."
     ),
     "real_home": (
@@ -33,7 +33,7 @@ VIEW_GUIDES = {
     "top": "Overhead house layout.",
 }
 PAGE_CONTROLS = {
-    "overview": ["Fault Lab link", "Real home link", "Your home link", "scroll through the product story"],
+    "overview": ["Fault Lab link", "Your home link", "scroll through the product story"],
     "real_home": ["Replay one night date buttons", "whole week", "Play/Pause", "time slider",
                   "3D view buttons", "original floor plan"],
     "your_home": ["draw/upload a plan", "location and heating-off setup", "upload CSV readings",
@@ -51,8 +51,8 @@ def screen_context(screen: AssistantScreen | None, *, has_home: bool = False) ->
             "IR is a visualisation computed from temperatures, not a thermal-camera measurement."
         ) if screen.infrared else None,
         "available_controls": PAGE_CONTROLS.get(screen.page, (
-            ["Next night", "Three nights", "room details", "reveal answer", "3D view buttons"]
-            if has_home else ["Hidden fault", "Judge mode", "Healthy house"]
+            ["Next night", "Week", "room details", "repair buttons", "Analytics", "3D view buttons"]
+            if has_home else ["Judge mode", "Healthy house"]
         )),
     }
     if screen.page == "real_home":

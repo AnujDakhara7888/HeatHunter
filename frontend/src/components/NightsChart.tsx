@@ -126,7 +126,7 @@ export function NightsChart({ nights, series, height = 180, unit = "", format = 
           role="img"
           aria-label={series.map((s) => s.label).join(", ")}
         >
-          {y.ticks(4).map((v) => (
+          {y.ticks(Math.max(2, Math.min(4, Math.floor((height - M.top - M.bottom) / 28)))).map((v) => (
             <g key={v}>
               <line x1={M.left} x2={width - M.right} y1={y(v)} y2={y(v)} stroke={v === 0 ? "#ffffff30" : "#ffffff0d"} />
               <text x={M.left - 6} y={y(v) + 3} textAnchor="end" fill="#626a7d" fontSize="10" className="num">

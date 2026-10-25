@@ -126,10 +126,9 @@ export function ThermalHud() {
     <AnimatePresence>
       {thermal && (
         <motion.div key="hud" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-0 z-10 font-mono text-white">
-          <div className="absolute left-4 top-16 rounded-md bg-black/35 px-2.5 py-1.5 text-[11px] leading-snug">
+          <div className="absolute left-4 top-[116px] rounded-md bg-black/35 px-2.5 py-1.5 text-[11px] leading-snug">
             <div className="font-semibold tracking-wider">◈ IR VIEW</div>
-            <div className="text-white/70">estimated surface temperatures, worked out from measured air temperatures</div>
-            <div className="text-white/50">not a camera image · scale fixed for this night</div>
+            <div className="text-white/70">estimated surface temperatures</div>
           </div>
           <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: `calc(50% - ${Math.max(0, inset) / 2}px)` }}>
             <svg width="120" height="120" viewBox="0 0 120 120" className="drop-shadow">

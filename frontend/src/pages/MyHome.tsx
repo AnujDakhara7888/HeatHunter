@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, BarChart3, FileUp, Home, MapPin, PencilRuler, Sp
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, api, traced } from "../api/client";
 import { Analytics } from "../components/Analytics";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import type { FixAction, FloorPlanDraft, HomeHealth, HomeHistory, HomePlan, HomeReadings, HomeSummary, RoomReport, RoomTechnical, Series } from "../api/types";
 import { useChatContext } from "../components/ChatDock";
 import { LineChart } from "../components/LineChart";
@@ -13,7 +14,7 @@ import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
 import { FLAG_STATUSES, ROOM_STATUS, strengthOf } from "../lib/diagnosis";
 import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
-import { fmtDate, ms, roomColor, type CauseKey } from "../lib/rooms";
+import { fmtDate, ms, roomColor } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
@@ -100,7 +101,6 @@ export default function MyHome() {
   const [selected, setSelected] = useState<string | null>(null);
   const [report, setReport] = useState<RoomReport | null>(null);
   const [technical, setTechnical] = useState<RoomTechnical | null>(null);
-  const [preview, setPreview] = useState<CauseKey | null>(null);
   const [nightIdx, setNightIdx] = useState<number | null>(null);
   const [history, setHistory] = useState<HomeHistory | null>(null);
   const [analytics, setAnalytics] = useState(false);
@@ -138,13 +138,8 @@ export default function MyHome() {
   const flagged = health?.rooms.find((r) => FLAG_STATUSES.includes(r.status));
   useEffect(() => {
     const target = flagged;
-    if (preview && target) {
-      const extra = target.extra_heat_loss_percent ?? 25;
-      set({ finding: preview === "normal" ? null : { room: target.room_id, cause: preview, strength: strengthOf(extra), extra: extra / 100 } });
-      return;
-    }
     set({ finding: target ? { room: target.room_id, cause: target.status === "verifying" ? null : target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent), extra: (target.extra_heat_loss_percent ?? 0) / 100 } : null });
-  }, [flagged, preview, set]);
+  }, [flagged, set]);
 
   useEffect(() => {
     useChatContext.getState().setHome(home?.home_id ?? null);
@@ -217,7 +212,6 @@ export default function MyHome() {
 
   const openRoom = async (homeId: string, roomId: string) => {
     setSelected(roomId);
-    setPreview(null);
     set({ focusRoom: roomId });
     const [rep, tech] = await Promise.all([
       traced("room", "GET /rooms/{room}", () => api.GET("/api/homes/{home_id}/rooms/{room_id}", { params: { path: { home_id: homeId, room_id: roomId } } }), (d) => ROOM_STATUS[d.status].label),
@@ -501,7 +495,7 @@ export default function MyHome() {
               <button className="btn btn-primary mt-3 w-full" disabled={!history || !readings || !nights.length} onClick={() => setAnalytics(true)}>
                 <BarChart3 size={15} /> Analytics{sel ? ` · ${sel.name}` : ""}
               </button>
-              <RoomDetail report={report} sel={sel} technical={technical} chartData={chartData} cursor={player.t} onScrub={player.setT} preview={preview} setPreview={setPreview} busy={!!busy} fix={fix} />
+              <RoomDetail report={report} sel={sel} technical={technical} chartData={chartData} cursor={player.t} onScrub={player.setT} busy={!!busy} fix={fix} />
               {busy && <div className="mt-3 text-[12.5px] text-mute pulse-dot">{busy}</div>}
               {error && <div className="mt-3 rounded-xl border border-hot/40 bg-hot/10 px-3 py-2 text-[12px] text-hot">{error}</div>}
               <div className="mt-3 text-[10.5px] text-dim">{health.disclaimer}</div>
@@ -512,6 +506,7 @@ export default function MyHome() {
 
       <AnimatePresence>
         {analytics && history && readings && history.nights.length > 0 && (
+          <ErrorBoundary title="Analytics hit a problem showing this night." resetLabel="Back to the house" onReset={() => setAnalytics(false)}>
           <Analytics
             label={home?.name ?? "Your home"}
             history={history}
@@ -523,8 +518,8 @@ export default function MyHome() {
             report={report}
             technical={technical}
             onClose={() => setAnalytics(false)}
-            onShow3D={(c) => (setAnalytics(false), setPreview(c))}
           />
+          </ErrorBoundary>
         )}
       </AnimatePresence>
 

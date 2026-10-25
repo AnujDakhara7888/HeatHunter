@@ -515,8 +515,7 @@ class FloorPlanDraft(ContractModel):
 
 # ---------------------------------------------------------------------------
 # API v2: homes monitored night after night (docs/CONTRACTS.md, "API v2").
-# Demo and real homes share these shapes. No model here carries hidden truth
-# except DemoReveal, which only the reveal route returns.
+# Demo and real homes share these shapes. No model here carries hidden truth.
 # ---------------------------------------------------------------------------
 
 
@@ -762,18 +761,6 @@ class DemoWeek(ContractModel):
 
 class AdvanceRequest(ContractModel):
     nights: int = Field(default=1, ge=1, le=14)
-
-
-class DemoReveal(ContractModel):
-    fault_type: FaultType
-    room_id: str | None
-    severity: NonNegativeFloat
-    app_found_it: bool
-    nights_to_find: int | None
-    summary: str
-    fault_free_twin: dict[str, Series]
-    fault_free_night_id: str
-    provenance: Literal[Provenance.SIMULATED_GROUND_TRUTH] = Provenance.SIMULATED_GROUND_TRUTH
 
 
 class AssistantScreen(ContractModel):

@@ -14,7 +14,6 @@ export function Nav({ transparent = false }: { transparent?: boolean }) {
         HeatHunter
       </NavLink>
       <NavLink to="/lab" className={link}>Fault Lab</NavLink>
-      <NavLink to="/real" className={link}>Real home</NavLink>
       <NavLink to="/home" className={link}>Your home</NavLink>
       <NavLink to="/lab" className="btn btn-primary !px-4 !py-1.5 !text-[13px]">Start the night →</NavLink>
     </header>

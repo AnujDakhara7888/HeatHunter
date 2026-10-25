@@ -1,18 +1,18 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, CalendarDays, Dice5, Eye, FastForward, Gavel, HeartPulse, Home as HomeIcon, Lock, Play, Plus, RotateCcw, SkipForward, Square } from "lucide-react";
+import { BarChart3, CalendarDays, FastForward, Gavel, HeartPulse, Home as HomeIcon, Lock, Play, Plus, SkipForward, Square, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, traced } from "../api/client";
-import type { DemoHomeCreate, DemoReveal, DemoWeek, FixAction, HomeHealth, HomeHistory, HomeReadings, HomeSummary, RoomHealthView, RoomReport, RoomTechnical, Series } from "../api/types";
+import type { DemoHomeCreate, DemoWeek, FixAction, HomeHealth, HomeHistory, HomeReadings, HomeSummary, RoomHealthView, RoomReport, RoomTechnical, Series } from "../api/types";
 import { Analytics } from "../components/Analytics";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { useChatContext } from "../components/ChatDock";
-import { LineChart } from "../components/LineChart";
 import { Nav } from "../components/Nav";
 import { Timeline } from "../components/Timeline";
 import { ViewSwitcher } from "../components/ViewSwitcher";
 import { FLAG_STATUSES, ROOM_STATUS, strengthOf } from "../lib/diagnosis";
 import { snapAt } from "../lib/history";
 import { HH09_PLAN, HH09_Z_BEARING } from "../lib/plan";
-import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, fmtDate, ms, roomColor, type CauseKey } from "../lib/rooms";
+import { CAUSE, ROOM_NAMES, SIM_TO_PLAN, fmtDate, ms, roomColor } from "../lib/rooms";
 import { useNight } from "../lib/useNight";
 import { useScene } from "../store/scene";
 import { useTrace } from "../store/trace";
@@ -43,7 +43,7 @@ function saveLabel(id: string, label: string) {
 const weekName = (w: DemoWeek) =>
   `${new Date(w.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${new Date(w.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 
-function StartCard({ onStart, houses, onOpen }: { onStart: (req: DemoHomeCreate, label: string) => void; houses: HomeSummary[]; onOpen: (h: HomeSummary) => void }) {
+function StartCard({ onStart, houses, onOpen, onDelete }: { onStart: (req: DemoHomeCreate, label: string) => void; houses: HomeSummary[]; onOpen: (h: HomeSummary) => void; onDelete: (h: HomeSummary) => void }) {
   const [weeks, setWeeks] = useState<DemoWeek[]>([]);
   const [week, setWeek] = useState<DemoWeek | null>(null);
   useEffect(() => {
@@ -57,7 +57,6 @@ function StartCard({ onStart, houses, onOpen }: { onStart: (req: DemoHomeCreate,
   const [fault, setFault] = useState<"draft" | "envelope_conduction">("draft");
   const [severity, setSeverity] = useState(1.8);
   const cards = [
-    { icon: <Dice5 size={18} />, title: "Hidden fault", line: "A random fault, room and severity. Or none at all.", go: () => go({ house: "hh09", random_fault: true, seed: Math.floor(Math.random() * 2 ** 31) }, "Hidden fault") },
     { icon: <Gavel size={18} />, title: "Judge mode", line: "You plant the fault. The app has to find it.", go: () => setJudge(true) },
     { icon: <HeartPulse size={18} />, title: "Healthy house", line: "No fault. Does the app stay calm?", go: () => go({ house: "hh09", fault: null, random_fault: false, seed: Math.floor(Math.random() * 2 ** 31) }, "Healthy house") },
   ];
@@ -71,9 +70,14 @@ function StartCard({ onStart, houses, onOpen }: { onStart: (req: DemoHomeCreate,
         <div className="mt-4 flex flex-wrap items-center gap-1.5 text-[12px] text-mute">
           <HomeIcon size={13} /> Your houses:
           {houses.map((h) => (
-            <button key={h.home_id} onClick={() => onOpen(h)} className="rounded-full border border-line px-2.5 py-1 hover:border-white/40 hover:text-ink">
-              {loadLabels()[h.home_id] ?? h.name} · night {h.nights_monitored} · {h.status.replace("_", " ")}
-            </button>
+            <span key={h.home_id} className="inline-flex items-center rounded-full border border-line hover:border-white/40">
+              <button onClick={() => onOpen(h)} className="py-1 pl-2.5 pr-1.5 hover:text-ink">
+                {loadLabels()[h.home_id] ?? h.name} · night {h.nights_monitored} · {h.status.replace("_", " ")}
+              </button>
+              <button onClick={() => onDelete(h)} className="rounded-full p-1 pr-2 text-dim hover:text-hot" aria-label="Delete this house" title="Delete this house">
+                <X size={12} />
+              </button>
+            </span>
           ))}
         </div>
       )}
@@ -101,7 +105,7 @@ function StartCard({ onStart, houses, onOpen }: { onStart: (req: DemoHomeCreate,
         </div>
       </div>
       {!judge ? (
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
           {cards.map((c) => (
             <button key={c.title} onClick={c.go} className="rounded-2xl border border-line bg-white/[0.03] p-4 text-left transition hover:border-white/30 hover:bg-white/[0.06]">
               <div className="grid h-9 w-9 place-items-center rounded-full bg-white/10">{c.icon}</div>
@@ -112,7 +116,7 @@ function StartCard({ onStart, houses, onOpen }: { onStart: (req: DemoHomeCreate,
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          <div className="text-sm text-mute">Pick it in secret. The monitoring engine never sees it; only the reveal does.</div>
+          <div className="text-sm text-mute">Pick a room and a fault. The monitoring engine is never told; it has to find it from the nights alone.</div>
           <div className="flex flex-wrap gap-2">
             {Object.keys(SIM_TO_PLAN).map((id) => (
               <button key={id} onClick={() => setRoom(id)} className={`btn !py-1.5 ${room === id ? "btn-primary" : "btn-ghost"}`}>
@@ -165,9 +169,7 @@ export default function Lab() {
   const [selected, setSelected] = useState<string | null>(null);
   const [report, setReport] = useState<RoomReport | null>(null);
   const [technical, setTechnical] = useState<RoomTechnical | null>(null);
-  const [reveal, setReveal] = useState<DemoReveal | null>(null);
   const [nightIdx, setNightIdx] = useState<number | null>(null);
-  const [preview, setPreview] = useState<CauseKey | null>(null);
   const [windDirs, setWindDirs] = useState<Record<string, Series | null>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -242,23 +244,17 @@ export default function Lab() {
     });
   }, [health, history, asOf, latest]);
 
-  // The room the app is worried about drives the 3D finding (or the user's preview).
+  // The room the app is worried about drives the 3D finding.
   const flaggedRoom = rooms.find((r) => FLAG_STATUSES.includes(r.status));
   useEffect(() => {
     const r = selected ? rooms.find((x) => x.room_id === selected) : flaggedRoom;
     const target = r && FLAG_STATUSES.includes(r.status) ? r : flaggedRoom;
-    if (preview && (target || selected)) {
-      const room = (target ?? r)!.room_id;
-      const extra = target?.extra_heat_loss_percent ?? 25;
-      set({ finding: preview === "normal" ? null : { room: SIM_TO_PLAN[room], cause: preview, strength: strengthOf(extra), extra: extra / 100 } });
-      return;
-    }
     if (!target || target.status === "verifying") {
       set({ finding: target ? { room: SIM_TO_PLAN[target.room_id], cause: null, strength: 0.3 } : null });
       return;
     }
     set({ finding: { room: SIM_TO_PLAN[target.room_id], cause: target.likely_cause ?? null, strength: strengthOf(target.extra_heat_loss_percent), extra: (target.extra_heat_loss_percent ?? 0) / 100 } });
-  }, [rooms, selected, preview, flaggedRoom, set]);
+  }, [rooms, selected, flaggedRoom, set]);
 
   // The server builds the assistant's context itself; we only tell the dock which home is on screen.
   useEffect(() => {
@@ -271,11 +267,10 @@ export default function Lab() {
         visible_window: night ? { start: night.start, end: night.end } : undefined,
         rooms: health?.rooms.map((r) => `${r.name}: ${ROOM_STATUS[r.status].label} — ${r.headline}`),
         selected_room: report && { name: report.name, headline: report.headline, why: report.why, what_to_do: report.what_to_do, money: report.money && { annual_cost_gbp: report.money.annual_cost_gbp, repair_cost_gbp: report.money.repair_cost_gbp, payback_years: report.money.payback_years } },
-        revealed_truth: reveal ? reveal.summary : "not revealed yet",
       },
       ["Which room is the problem?", "Why do several nights matter?", "Is it worth fixing?"],
     );
-  }, [home, health, report, reveal, nights.length, night?.night_id]);
+  }, [home, health, report, nights.length, night?.night_id]);
 
   const run = async <T,>(what: string, fn: () => Promise<T>) => {
     setBusy(what);
@@ -306,7 +301,6 @@ export default function Lab() {
 
   const openRoom = async (homeId: string, roomId: string) => {
     setSelected(roomId);
-    setPreview(null);
     set({ focusRoom: SIM_TO_PLAN[roomId] });
     const [rep, tech] = await Promise.all([
       traced("room", "GET /rooms/{room}", () => api.GET("/api/homes/{home_id}/rooms/{room_id}", { params: { path: { home_id: homeId, room_id: roomId } } }), (d) => ROOM_STATUS[d.status].label),
@@ -318,7 +312,7 @@ export default function Lab() {
 
   const start = (req: DemoHomeCreate, name: string) =>
     run("Setting up the house…", async () => {
-      for (const reset of [setHealth, setReadings, setReport, setTechnical, setReveal, setSelected, setHistory] as ((v: null) => void)[]) reset(null);
+      for (const reset of [setHealth, setReadings, setReport, setTechnical, setSelected, setHistory] as ((v: null) => void)[]) reset(null);
       const h = await traced("create", "POST /demo/homes", () => api.POST("/api/demo/homes", { body: req }), (d) => d.home_id);
       setHome(h);
       setLabel(name);
@@ -338,7 +332,7 @@ export default function Lab() {
   /** Switch to another house: each keeps its own nights, statuses and repairs on the server. */
   const openHouse = (h: HomeSummary) =>
     run("Opening the house…", async () => {
-      for (const reset of [setReport, setTechnical, setReveal, setSelected, setHistory] as ((v: null) => void)[]) reset(null);
+      for (const reset of [setReport, setTechnical, setSelected, setHistory] as ((v: null) => void)[]) reset(null);
       setPicking(false);
       setLabel(loadLabels()[h.home_id] ?? h.name);
       set({ view: "open", autoRotate: false, inset: 460, focusRoom: null });
@@ -381,19 +375,24 @@ export default function Lab() {
       setHistory(await api.GET("/api/homes/{home_id}/history", { params: { path: { home_id: home!.home_id } } }).then((x) => x.data ?? null));
     });
 
-  const doReveal = () =>
-    run("Opening the envelope…", async () => {
-      const r = await traced("reveal", "GET /demo/homes/{id}/reveal", () => api.GET("/api/demo/homes/{home_id}/reveal", { params: { path: { home_id: home!.home_id } } }), (d) => (d.app_found_it ? "found" : "missed"));
-      setReveal(r);
+  /** Forget a simulated house and all its nights; back to the start card if it was on screen. */
+  const removeHouse = (h: HomeSummary) => {
+    if (!window.confirm(`Delete "${loadLabels()[h.home_id] ?? h.name}" and all its nights? This cannot be undone.`)) return;
+    void run("Deleting the house…", async () => {
+      const { response } = await api.DELETE("/api/homes/{home_id}", { params: { path: { home_id: h.home_id } } });
+      if (!response.ok && response.status !== 404) throw new Error(`Could not delete the house (HTTP ${response.status})`);
+      if (home?.home_id === h.home_id) {
+        setHome(null);
+        setHealth(null);
+        setPicking(false);
+        set({ view: "exterior", autoRotate: true, inset: 0, finding: null, focusRoom: null });
+      }
+      await loadHouses();
     });
+  };
 
   const sel = rooms.find((r) => r.room_id === selected);
   const canFix = latest && sel && ["issue", "issue_cause_unclear", "still_an_issue"].includes(sel.status);
-  const showIn3D = (c: CauseKey) => {
-    setAnalytics(false);
-    setPreview(c);
-    set({ view: "open" });
-  };
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -410,6 +409,7 @@ export default function Lab() {
       )}
       <AnimatePresence>
         {analytics && history && readings && (
+          <ErrorBoundary title="Analytics hit a problem showing this night." resetLabel="Back to the house" onReset={() => setAnalytics(false)}>
           <Analytics
             label={label}
             history={history}
@@ -421,23 +421,8 @@ export default function Lab() {
             report={report}
             technical={technical}
             onClose={() => setAnalytics(false)}
-            onShow3D={showIn3D}
           />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {preview && sel && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-x-0 top-[166px] z-20 flex justify-center pr-[460px]">
-            <div className="glass pointer-events-auto flex items-center gap-3 rounded-full py-1.5 pl-4 pr-1.5 text-[12.5px]">
-              <span>
-                Previewing <b style={{ color: CAUSE[preview].color }}>{CAUSE[preview].label.toLowerCase()}</b>
-                <span className="text-mute"> · {preview === sel.likely_cause ? "the app's likely cause" : "an alternative"}</span>
-              </span>
-              <button onClick={() => setPreview(null)} className="rounded-full bg-ink px-3 py-1 font-semibold text-black">
-                Back to the app's view
-              </button>
-            </div>
-          </motion.div>
+          </ErrorBoundary>
         )}
       </AnimatePresence>
 
@@ -445,7 +430,7 @@ export default function Lab() {
         {!home && (
           <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-end gap-3 pb-[8vh]">
             {(busy || error) && <div className={`glass rounded-full px-4 py-2 text-[13px] ${error ? "text-hot" : "text-mute"}`}>{error ?? busy}</div>}
-            <StartCard onStart={start} houses={houses} onOpen={openHouse} />
+            <StartCard onStart={start} houses={houses} onOpen={openHouse} onDelete={removeHouse} />
           </div>
         )}
       </AnimatePresence>
@@ -493,16 +478,17 @@ export default function Lab() {
             {picking && (
               <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-2 space-y-1 rounded-2xl border border-line bg-black/30 p-2">
                 {houses.map((h) => (
-                  <button
-                    key={h.home_id}
-                    onClick={() => openHouse(h)}
-                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-[12px] ${h.home_id === home.home_id ? "bg-white/10 text-ink" : "text-mute hover:bg-white/5 hover:text-ink"}`}
-                  >
-                    <span className="truncate">{loadLabels()[h.home_id] ?? h.name}</span>
-                    <span className="num shrink-0 text-dim">
-                      night {h.nights_monitored} · {h.status.replace("_", " ")}
-                    </span>
-                  </button>
+                  <div key={h.home_id} className={`flex items-center rounded-xl text-[12px] ${h.home_id === home.home_id ? "bg-white/10 text-ink" : "text-mute hover:bg-white/5 hover:text-ink"}`}>
+                    <button onClick={() => openHouse(h)} className="flex min-w-0 flex-1 items-center justify-between gap-2 px-2.5 py-1.5 text-left">
+                      <span className="truncate">{loadLabels()[h.home_id] ?? h.name}</span>
+                      <span className="num shrink-0 text-dim">
+                        night {h.nights_monitored} · {h.status.replace("_", " ")}
+                      </span>
+                    </button>
+                    <button onClick={() => removeHouse(h)} className="shrink-0 rounded-lg p-1.5 text-dim hover:text-hot" aria-label="Delete this house" title="Delete this house">
+                      <X size={13} />
+                    </button>
+                  </div>
                 ))}
                 <button onClick={() => (setHome(null), setHealth(null), setPicking(false), set({ view: "exterior", autoRotate: true, inset: 0, finding: null, focusRoom: null }))} className="flex w-full items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[12px] text-ink hover:bg-white/5">
                   <Plus size={13} /> New house (keeps these)
@@ -589,14 +575,6 @@ export default function Lab() {
                   {sel.annual_cost_gbp != null && ` · £${Math.round(sel.annual_cost_gbp)}/yr`}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5 text-[11.5px]">
-                <span className="text-dim">Show in 3D:</span>
-                {(["draft", "envelope_conduction", "normal"] as CauseKey[]).map((c) => (
-                  <button key={c} onClick={() => setPreview((p) => (p === c ? null : c))} className={`rounded-full border px-2 py-0.5 ${preview === c ? "border-white/60 text-ink" : "border-line text-mute hover:text-ink"}`}>
-                    {CAUSE[c].label}
-                  </button>
-                ))}
-              </div>
               {canFix && (
                 <div>
                   <div className="mb-1 text-[11px] text-mute">Do a repair, then keep watching:</div>
@@ -625,39 +603,6 @@ export default function Lab() {
             <BarChart3 size={15} /> Analytics{sel ? ` · ${sel.name}` : ""}
           </button>
 
-          {/* reveal */}
-          <div className="mt-4 border-t border-line pt-4">
-            {reveal ? (
-              <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`rounded-3xl border p-4 ${reveal.app_found_it ? "border-ok/60 bg-ok/10" : "border-hot/60 bg-hot/10"}`}>
-                <div className="eyebrow">The hidden answer</div>
-                <div className="mt-1 text-[17px] font-bold leading-snug">{reveal.summary}</div>
-                {reveal.room_id && readings?.rooms[reveal.room_id] && reveal.fault_free_twin[reveal.room_id] && (
-                  <div className="mt-3">
-                    <LineChart
-                      height={140}
-                      data={[
-                        { id: "m", label: "With the fault", color: "#ff6a3d", series: slice(readings.rooms[reveal.room_id].measured, ms(reveal.fault_free_twin[reveal.room_id].timestamps[0]), ms(reveal.fault_free_twin[reveal.room_id].timestamps.at(-1)!)) },
-                        { id: "t", label: "Same night, no fault", color: "#2fd18b", series: reveal.fault_free_twin[reveal.room_id], dashed: true },
-                      ]}
-                    />
-                  </div>
-                )}
-                <div className="mt-2 text-[11px] text-dim">Simulated ground truth, opened only now. Synthetic test, not field validation.</div>
-                <div className="mt-3 flex gap-2">
-                  <button className="btn btn-primary flex-1" onClick={() => start({ house: "hh09", random_fault: true, seed: Math.floor(Math.random() * 2 ** 31) }, "Hidden random fault")}>
-                    <Dice5 size={15} /> Another house
-                  </button>
-                  <button className="btn btn-ghost" onClick={() => (setHome(null), setHealth(null), set({ view: "exterior", autoRotate: true, inset: 0, finding: null, focusRoom: null }))}>
-                    <RotateCcw size={15} />
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              <button className="btn btn-ghost w-full" onClick={doReveal} disabled={!!busy || home.nights_monitored < 1}>
-                <Eye size={15} /> Reveal what was hidden
-              </button>
-            )}
-          </div>
 
           {busy && (
             <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-[12.5px] text-mute">

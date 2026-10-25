@@ -232,7 +232,11 @@ export interface paths {
         get: operations["home_health_api_homes__home_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Home
+         * @description Forget a home and all its nights (a real home's saved file is deleted too).
+         */
+        delete: operations["delete_home_api_homes__home_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -356,26 +360,6 @@ export interface paths {
          * @description Run the demo house through its next heating-off nights.
          */
         post: operations["advance_demo_api_demo_homes__home_id__advance_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/demo/homes/{home_id}/reveal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Reveal Demo
-         * @description The hidden fault, whether the app found it, and the same night without the fault.
-         */
-        get: operations["reveal_demo_api_demo_homes__home_id__reveal_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -595,32 +579,6 @@ export interface components {
             /** Seed */
             seed?: number | null;
         };
-        /** DemoReveal */
-        DemoReveal: {
-            fault_type: components["schemas"]["FaultType"];
-            /** Room Id */
-            room_id: string | null;
-            /** Severity */
-            severity: number;
-            /** App Found It */
-            app_found_it: boolean;
-            /** Nights To Find */
-            nights_to_find: number | null;
-            /** Summary */
-            summary: string;
-            /** Fault Free Twin */
-            fault_free_twin: {
-                [key: string]: components["schemas"]["Series"];
-            };
-            /** Fault Free Night Id */
-            fault_free_night_id: string;
-            /**
-             * Provenance
-             * @default SIMULATED_GROUND_TRUTH
-             * @constant
-             */
-            provenance: "SIMULATED_GROUND_TRUTH";
-        };
         /**
          * DemoWeek
          * @description A week of the held-out winter a demo house can start on, with its real weather.
@@ -683,11 +641,6 @@ export interface components {
              */
             provenance: "MODEL_ESTIMATE";
         };
-        /**
-         * FaultType
-         * @enum {string}
-         */
-        FaultType: "draft" | "envelope_conduction" | "none";
         /**
          * FixAction
          * @enum {string}
@@ -1832,6 +1785,71 @@ export interface operations {
             };
         };
     };
+    delete_home_api_homes__home_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                home_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unknown home, room or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid for this home now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (assistant, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     home_readings_api_homes__home_id__readings_get: {
         parameters: {
             query?: {
@@ -2271,73 +2289,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HomeHealth"];
-                };
-            };
-            /** @description Unknown home, room or asset. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The action is not valid for this home now. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The request is invalid. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description The owning scientific or data service is not available. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description An optional online service (assistant, weather) is unavailable. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    reveal_demo_api_demo_homes__home_id__reveal_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                home_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DemoReveal"];
                 };
             };
             /** @description Unknown home, room or asset. */

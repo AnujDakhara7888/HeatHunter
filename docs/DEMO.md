@@ -25,7 +25,7 @@ Real homes and weather lookup use Open-Meteo and need internet.
 
 The UI uses API v2 throughout: `/lab` is the demo house (hidden, judge-planted or
 no fault; "Next night" advances, rooms change status, "I sealed leaks / I
-insulated" reports the repair, Reveal at the end), `/home` sets up a real home
+insulated" reports the repair, Analytics explains each room night by night), `/home` sets up a real home
 (plan, town, heating-off hours, sensor CSVs), and `/real` replays the real HH09
 week (heating on, so not monitored).
 
@@ -68,13 +68,12 @@ call(f"/homes/{home}/rooms/bedroom_1/fix", {"action": "seal_leaks"})
 for night in range(2):
     health = call(f"/demo/homes/{home}/advance", {"nights": 1})
 print([(r["name"], r["status"]) for r in health["rooms"]])
-print(call(f"/demo/homes/{home}/reveal")["summary"])
 PY
 ```
 
 Expected: the Bedroom is `watching` after night 1 and an `issue` (air leaks)
-from night 2. After the fix it is `verifying`, then `resolved`. The reveal says
-it was found after 2 nights. `backend/app/tests/test_homes_v2.py` checks this
+from night 2. After the fix it is `verifying`, then `resolved`.
+`backend/app/tests/test_homes_v2.py` checks this
 flow, a wrong repair (`still_an_issue`), a healthy house and the error cases.
 
 ## Numbers you can quote
@@ -103,7 +102,8 @@ real-home accuracy:
    after the fix.
 5. Money figures are screening estimates under stated UK assumptions (Ofgem
    price cap, HH09's boiler efficiency), not quotes or audited savings.
-6. Reveal the hidden fault only after the app has concluded.
+6. In Judge mode the audience plants the fault, so they can check the app's
+   answer themselves; the app is never told it.
 
 ## Historical material
 
@@ -116,8 +116,8 @@ results.
 
 - Run the full pytest suite and Ruff.
 - Verify the checked-in OpenAPI matches the app (a test does this).
-- Walk a planted leak, a planted envelope fault, a random fault and a healthy
-  house through the UI.
-- Verify no planted-fault information appears before reveal.
+- Walk a planted leak, a planted envelope fault and a healthy house through
+  the UI.
+- Verify no planted-fault information appears anywhere in the app or chat.
 - Restart the backend and repeat a demo loop without network access.
 - Run the held-out benchmark (winter 2020-21) and record a backup video.

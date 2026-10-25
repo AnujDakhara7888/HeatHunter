@@ -713,6 +713,80 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Delete Home",
+        "description": "Forget a home and all its nights (a real home's saved file is deleted too).",
+        "operationId": "delete_home_api_homes__home_id__delete",
+        "parameters": [
+          {
+            "name": "home_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Home Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (assistant, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/homes/{home_id}/readings": {
@@ -1344,89 +1418,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HomeHealth"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown home, room or asset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The action is not valid for this home now.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The request is invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The owning scientific or data service is not available.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "An optional online service (assistant, weather) is unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/demo/homes/{home_id}/reveal": {
-      "get": {
-        "tags": [
-          "homes-v2"
-        ],
-        "summary": "Reveal Demo",
-        "description": "The hidden fault, whether the app found it, and the same night without the fault.",
-        "operationId": "reveal_demo_api_demo_homes__home_id__reveal_get",
-        "parameters": [
-          {
-            "name": "home_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Home Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DemoReveal"
                 }
               }
             }
@@ -2159,78 +2150,6 @@
         "type": "object",
         "title": "DemoHomeCreate"
       },
-      "DemoReveal": {
-        "properties": {
-          "fault_type": {
-            "$ref": "#/components/schemas/FaultType"
-          },
-          "room_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Room Id"
-          },
-          "severity": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Severity"
-          },
-          "app_found_it": {
-            "type": "boolean",
-            "title": "App Found It"
-          },
-          "nights_to_find": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nights To Find"
-          },
-          "summary": {
-            "type": "string",
-            "title": "Summary"
-          },
-          "fault_free_twin": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/Series"
-            },
-            "type": "object",
-            "title": "Fault Free Twin"
-          },
-          "fault_free_night_id": {
-            "type": "string",
-            "title": "Fault Free Night Id"
-          },
-          "provenance": {
-            "type": "string",
-            "const": "SIMULATED_GROUND_TRUTH",
-            "title": "Provenance",
-            "default": "SIMULATED_GROUND_TRUTH"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "fault_type",
-          "room_id",
-          "severity",
-          "app_found_it",
-          "nights_to_find",
-          "summary",
-          "fault_free_twin",
-          "fault_free_night_id"
-        ],
-        "title": "DemoReveal"
-      },
       "DemoWeek": {
         "properties": {
           "start_date": {
@@ -2397,15 +2316,6 @@
           "disclaimer"
         ],
         "title": "EvaluationSummary"
-      },
-      "FaultType": {
-        "type": "string",
-        "enum": [
-          "draft",
-          "envelope_conduction",
-          "none"
-        ],
-        "title": "FaultType"
       },
       "FixAction": {
         "type": "string",

@@ -23,7 +23,6 @@ export type RoomReport = S["RoomReport"];
 export type RoomTechnical = S["RoomTechnical"];
 export type NightEvidence = S["NightEvidence"];
 export type DemoHomeCreate = S["DemoHomeCreate"];
-export type DemoReveal = S["DemoReveal"];
 export type FixAction = S["FixAction"];
 export type HomeCreate = S["HomeCreate"];
 export type DemoWeek = S["DemoWeek"];

@@ -42,7 +42,7 @@ def statuses(health: dict) -> dict[str, str]:
     return {room["room_id"]: room["status"] for room in health["rooms"]}
 
 
-def test_planted_leak_is_found_explained_fixed_and_revealed(client) -> None:
+def test_planted_leak_is_found_explained_and_fixed(client) -> None:
     home = demo(client, fault={"type": "draft", "room_id": "bedroom_1", "severity": 1.2}, seed=4242)
     created = ok(client.get(f"/api/homes/{home}"))
     assert created["home"]["status"] == "monitoring"
@@ -98,12 +98,8 @@ def test_planted_leak_is_found_explained_fixed_and_revealed(client) -> None:
     assert shots[0]["named_cause"] is None and shots[3]["nights_judged"] == 1
     assert {f["fault_type"] for f in shots[2]["fits"]} == {"normal", "draft", "envelope_conduction"}
     assert room["fix_action"] == "seal_leaks" and history["advice"]["draft"]
-
-    truth = ok(client.get(f"/api/demo/homes/{home}/reveal"))
-    assert truth["fault_type"] == "draft" and truth["room_id"] == "bedroom_1"
-    assert truth["app_found_it"] and truth["nights_to_find"] == 2
-    assert set(truth["fault_free_twin"]) == {"living_room", "kitchen", "bedroom_1", "bedroom_2"}
-    assert truth["provenance"] == "SIMULATED_GROUND_TRUTH"
+    # the planted fault never leaves the simulator: there is no reveal route
+    assert client.get(f"/api/demo/homes/{home}/reveal").status_code in {404, 405}
 
 
 def test_the_wrong_repair_changes_nothing(client) -> None:
@@ -116,18 +112,24 @@ def test_the_wrong_repair_changes_nothing(client) -> None:
     assert after["home"]["status"] == "issue"
 
 
-def test_healthy_demo_home_stays_clear_and_reveals_no_fault(client) -> None:
+def test_healthy_demo_home_stays_clear(client) -> None:
     home = demo(client, seed=9)
     health = advance(client, home, 3)
     assert set(statuses(health).values()) == {"healthy"} and health["home"]["status"] == "all_clear"
-    truth = ok(client.get(f"/api/demo/homes/{home}/reveal"))
-    assert truth["fault_type"] == "none" and truth["room_id"] is None and truth["app_found_it"]
+
+
+def test_deleting_a_demo_home_forgets_it(client) -> None:
+    home = demo(client, seed=11)
+    advance(client, home)
+    assert client.delete(f"/api/homes/{home}").status_code == 204
+    assert home not in {h["home_id"] for h in ok(client.get("/api/homes"))}
+    assert client.get(f"/api/homes/{home}").status_code == 404
+    assert client.delete(f"/api/homes/{home}").status_code == 404
 
 
 def test_homes_list_and_state_errors(client) -> None:
     home = demo(client, random_fault=True, seed=5)
     assert home in {h["home_id"] for h in ok(client.get("/api/homes"))}
-    assert client.get(f"/api/demo/homes/{home}/reveal").status_code == 409  # no nights yet
     assert client.get("/api/homes/demo-unknown").status_code == 404
     assert client.get(f"/api/homes/{home}/rooms/attic").status_code == 404
     upload = {"room_temperature_series": {"kitchen": {"timestamps": [], "values": []}}}
@@ -210,6 +212,10 @@ def test_real_home_turns_uploads_into_nights_and_persists(tmp_path, monkeypatch)
     assert set(insulation.envelope_u_w_per_m2k) == set(sensed)  # transferred per m2, so every room matches
     default = insulation.default_envelope_u_w_per_m2k
     assert all(math.isclose(u, default) for u in insulation.envelope_u_w_per_m2k.values())
+
+    reloaded.delete(summary.home_id)  # the saved file goes too, so a restart does not bring it back
+    assert not list(tmp_path.glob("home-*.json"))
+    assert summary.home_id not in {h.home_id for h in HomeService(homes_dir=tmp_path).list_homes()}
 
 
 def test_real_house_carries_insulation_for_its_own_rooms(client) -> None:

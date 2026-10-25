@@ -14,7 +14,7 @@ flags it again. For a demo home, the fix also changes the simulated house,
 because the user is playing the person doing the repair.
 
 Hidden truth stays inside ``backend.simulation.demo_home.DemoHome``; this
-module reads it only in ``reveal``.
+module never reads it.
 """
 
 from __future__ import annotations
@@ -50,7 +50,6 @@ from backend.engine.model import ModelExtension
 from .contracts import (
     Assumption,
     DemoHomeCreate,
-    DemoReveal,
     FaultType,
     FixAction,
     FixRecord,
@@ -89,6 +88,7 @@ from .real_homes import (
     RealHomeRecord,
     build_night,
     complete_nights,
+    delete_home_file,
     load_homes,
     merge_readings,
     save_home,
@@ -213,7 +213,6 @@ class FixState:
 class RoomTrack:
     history: list[NightScore] = field(default_factory=list)  # scores after 1, 2, ... judged nights
     judged_ids: list[str] = field(default_factory=list)
-    timeline: list[tuple[int, RoomStatus, HypothesisType | None, bool]] = field(default_factory=list)
     # (night id, scores so far, status) after every scored night; unlike history, kept across a fix
     snapshots: list[tuple[str, NightScore, RoomStatus, bool]] = field(default_factory=list)
     fix: FixState | None = None
@@ -233,7 +232,6 @@ class HomeState:
     tracks: dict[str, RoomTrack] = field(default_factory=dict)
     lock: threading.RLock = field(default_factory=threading.RLock)
     demo: object | None = None  # backend.simulation.demo_home.DemoHome, never inspected here
-    revealed: bool = False
     record: RealHomeRecord | None = None
     home_template: HomeTemplate | None = None
     readings_cache: tuple[tuple, dict[str, dict[str, Series]]] | None = None
@@ -407,7 +405,6 @@ class HomeService:
             for track in state.tracks.values():  # an earlier night arrived late: rescore from scratch
                 track.history.clear()
                 track.judged_ids.clear()
-                track.timeline.clear()
                 track.snapshots.clear()
         state.nights = merged
 
@@ -421,15 +418,11 @@ class HomeService:
                 window = judged[max(0, count - FIT_WINDOW_NIGHTS) : count]
                 jobs.append((_score_job, window, room_id, state.template, state.settings, state.extension))
                 keys.append((room_id, judged[count - 1].night_id))
-        position = {night.night_id: index + 1 for index, night in enumerate(state.nights)}
         for (room_id, night_id), score in zip(keys, _run(jobs), strict=True):
             track = state.tracks[room_id]
             track.history.append(score)
             track.judged_ids.append(night_id)
             status, _ = self._status(state, room_id)
-            track.timeline.append(
-                (position[night_id], status, self._named(track, status), track.fix is not None)
-            )
             track.snapshots.append((night_id, score, status, track.fix is not None))
 
     def _ensure_current(self, state: HomeState) -> None:
@@ -936,78 +929,23 @@ class HomeService:
                 nights=[_night_info(n) for n in nights],
             )
 
-    def reveal(self, home_id: str) -> DemoReveal:
-        state = self._get(home_id)
-        if state.kind != HomeKind.DEMO:
-            raise HomeStateError("real homes have no hidden answer to reveal")
-        with state.lock:
-            if not state.nights:
-                raise HomeStateError("advance at least one night before revealing")
-            truth = state.demo.reveal()
-            before_fix = {
-                room: [(n, s, c) for n, s, c, fixed in track.timeline if not fixed]
-                for room, track in state.tracks.items()
-            }
-            if truth.fault_type == FaultType.NONE:
-                flagged = sorted(
-                    room for room, line in before_fix.items() if any(s in ISSUE_STATUSES for _, s, _ in line)
-                )
-                found, nights_to_find = not flagged, None
-                summary = (
-                    "There was no hidden fault, and the app raised no alarm."
-                    if found
-                    else "There was no hidden fault, but the app flagged: "
-                    + ", ".join(state.room_names[r] for r in flagged)
-                    + "."
-                )
-            else:
-                hits = [
-                    n
-                    for n, s, c in before_fix[truth.room_id]
-                    if s == RoomStatus.ISSUE and c is not None and c.value == truth.fault_type.value
-                ]
-                found = bool(hits)
-                nights_to_find = hits[0] if hits else None
-                cause = "an air leak" if truth.fault_type == FaultType.DRAFT else "wall/roof/floor heat loss"
-                where = state.room_names[truth.room_id]
-                summary = (
-                    f"The hidden fault was {cause} in the {where} ({1 + truth.severity:.1f}x normal). "
-                    + (
-                        f"The app named it correctly after {nights_to_find} nights."
-                        if found
-                        else "The app had not named it correctly before any fix."
-                    )
-                )
-            twin = state.demo.fault_free_night(len(state.nights) - 1)
-            state.revealed = True
-            return DemoReveal(
-                fault_type=truth.fault_type,
-                room_id=truth.room_id,
-                severity=truth.severity,
-                app_found_it=found,
-                nights_to_find=nights_to_find,
-                summary=summary,
-                fault_free_twin=dict(twin.room_temperature_series),
-                fault_free_night_id=twin.night_id,
-            )
+    def delete(self, home_id: str) -> None:
+        """Forget a home and its nights; a real home's file goes too."""
+
+        with self._lock:
+            state = self._homes.pop(home_id, None)
+        if state is None:
+            raise KeyError(f"unknown home {home_id!r}")
+        if state.kind == HomeKind.REAL:
+            delete_home_file(home_id, self._homes_dir)
 
     def assistant_context(self, home_id: str) -> dict:
         health = self.health(home_id)
-        state = self._get(home_id)
-        context = {
+        return {
             "home": health.model_dump(mode="json"),
             "flagged_rooms": [
                 self.room_report(home_id, room.room_id).model_dump(mode="json")
                 for room in health.rooms
                 if room.status in ISSUE_STATUSES or room.status == RoomStatus.VERIFYING
             ],
-            "hidden_answer": "not revealed",
         }
-        if state.kind == HomeKind.DEMO and state.revealed:
-            truth = state.demo.reveal()
-            context["hidden_answer"] = {
-                "fault_type": truth.fault_type.value,
-                "room_id": truth.room_id,
-                "severity_excess_multiplier": truth.severity,
-            }
-        return context

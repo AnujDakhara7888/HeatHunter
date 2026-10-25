@@ -16,14 +16,12 @@ type Props = {
   chartData: ChartSeries[] | null;
   cursor: number | null;
   onScrub: (t: number) => void;
-  preview: CauseKey | null;
-  setPreview: (fn: (p: CauseKey | null) => CauseKey | null) => void;
   busy: boolean;
   fix: (action: FixAction) => void;
 };
 
 /** One room's report: why, evidence night by night, cost, what to do and the repair buttons. */
-export function RoomDetail({ report, sel, technical, chartData, cursor, onScrub, preview, setPreview, busy, fix }: Props) {
+export function RoomDetail({ report, sel, technical, chartData, cursor, onScrub, busy, fix }: Props) {
   const [showTech, setShowTech] = useState(false);
   const canFix = report && (report.status === "issue" || report.status === "issue_cause_unclear" || report.status === "still_an_issue");
   return (
@@ -42,16 +40,6 @@ export function RoomDetail({ report, sel, technical, chartData, cursor, onScrub,
                 <li key={w}>· {w}</li>
               ))}
             </ul>
-          )}
-          {(sel.likely_cause || canFix) && (
-            <div className="flex flex-wrap gap-1.5 text-[11.5px]">
-              <span className="text-dim">Show in 3D:</span>
-              {(["draft", "envelope_conduction", "normal"] as CauseKey[]).map((c) => (
-                <button key={c} onClick={() => setPreview((p) => (p === c ? null : c))} className={`rounded-full border px-2 py-0.5 ${preview === c ? "border-white/60 text-ink" : "border-line text-mute hover:text-ink"}`}>
-                  {CAUSE[c].label}
-                </button>
-              ))}
-            </div>
           )}
           {report.money && (
             <div className="grid grid-cols-3 gap-2">

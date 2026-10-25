@@ -15,7 +15,7 @@ from typing import Annotated
 
 from fastapi import FastAPI, File, Query, Request, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .contracts import (
@@ -23,7 +23,6 @@ from .contracts import (
     ApiError,
     ChatReply,
     DemoHomeCreate,
-    DemoReveal,
     DemoWeek,
     EvaluationSummary,
     FixRequest,
@@ -439,13 +438,18 @@ async def advance_demo(home_id: str, request: AdvanceRequest) -> HomeHealth:
     return await _v2(_homes().advance, home_id, request.nights)
 
 
-@app.get(
-    "/api/demo/homes/{home_id}/reveal", response_model=DemoReveal, responses=V2_ERRORS, tags=["homes-v2"]
+@app.delete(
+    "/api/homes/{home_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    responses=V2_ERRORS,
+    tags=["homes-v2"],
 )
-async def reveal_demo(home_id: str) -> DemoReveal:
-    """The hidden fault, whether the app found it, and the same night without the fault."""
+async def delete_home(home_id: str) -> Response:
+    """Forget a home and all its nights (a real home's saved file is deleted too)."""
 
-    return await _v2(_homes().reveal, home_id)
+    await _v2(_homes().delete, home_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.post("/api/assistant/help", response_model=ChatReply, responses=_errors(422, 503), tags=["assistant"])

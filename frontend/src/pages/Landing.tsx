@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, FlaskConical, Home, Upload } from "lucide-react";
+import { ArrowRight, FlaskConical, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, traced } from "../api/client";
@@ -264,10 +264,9 @@ export default function Landing() {
         <h2 className="max-w-3xl text-[clamp(40px,5.5vw,72px)] font-bold leading-[1] tracking-[-0.04em]">
           Nothing on this page is scripted. <span className="text-mute">Try it.</span>
         </h2>
-        <div className="pointer-events-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
+        <div className="pointer-events-auto mt-10 grid max-w-4xl gap-4 md:grid-cols-2">
           {[
-            { to: "/lab", icon: <FlaskConical size={20} />, t: "Fault Lab", d: "Hide a fault in the digital twin, or let a judge hide it. Advance night by night and watch it get caught." },
-            { to: "/real", icon: <Home size={20} />, t: "Real home", d: "A week of real HH09 sensor data, replayed in 3D, room by room." },
+            { to: "/lab", icon: <FlaskConical size={20} />, t: "Fault Lab", d: "Plant a fault in a simulated house, or let a judge plant it. Advance night by night and watch it get caught." },
             { to: "/home", icon: <Upload size={20} />, t: "Your home", d: "Upload a floor plan and your sensor logs. HeatHunter watches your rooms night after night." },
           ].map((c) => (
             <Link key={c.t} to={c.to} className="glass group rounded-3xl p-6 transition hover:-translate-y-1">
