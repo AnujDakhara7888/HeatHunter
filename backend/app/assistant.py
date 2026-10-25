@@ -261,7 +261,8 @@ def home_chat(messages: list[ChatMessage], context: dict) -> ChatReply:
         raise AssistantUnavailable("the assistant returned an invalid reply") from exc
     if not result.on_topic or not result.reply.strip():
         return ChatReply(reply=OFF_TOPIC_REPLY, actions=[], model=model)
-    room_ids = {r["room_id"] for r in context.get("home", {}).get("rooms", [])}
+    home = context.get("home")  # a plain note, not a dict, when no home is open
+    room_ids = {r["room_id"] for r in home.get("rooms", [])} if isinstance(home, dict) else set()
     actions = [
         a for a in result.actions[:3] if a.type == "focus_room" and a.target in room_ids
     ]
