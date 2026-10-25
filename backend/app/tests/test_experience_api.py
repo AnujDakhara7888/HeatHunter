@@ -117,3 +117,13 @@ def test_wind_direction_for_monitoring_nights(client: TestClient) -> None:
     body = client.get("/api/weather/hh09-night-2020-12-23/wind-direction").json()
     assert body["unit"] == "degrees_from_north" and len(body["values"]) > 10
     assert client.get("/api/weather/hh09-night-1990-01-01/wind-direction").status_code == 404
+
+
+def test_demo_weeks_list_real_weather(client: TestClient) -> None:
+    weeks = client.get("/api/demo/weeks").json()
+    assert len(weeks) >= 4
+    first = weeks[0]
+    assert first["start_date"] == "2020-11-01" and first["windy_nights"] + first["calm_nights"] <= 7
+    # every listed week must be accepted as a demo start date
+    created = client.post("/api/demo/homes", json={"start_date": weeks[-1]["start_date"], "seed": 1})
+    assert created.status_code == 201

@@ -25,3 +25,4 @@ export type DemoHomeCreate = S["DemoHomeCreate"];
 export type DemoReveal = S["DemoReveal"];
 export type FixAction = S["FixAction"];
 export type HomeCreate = S["HomeCreate"];
+export type DemoWeek = S["DemoWeek"];

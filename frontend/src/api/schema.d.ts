@@ -178,6 +178,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo/weeks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Demo Weeks
+         * @description Weeks a demo house can start on (held-out winter 2020-21), with each week's real weather.
+         */
+        get: operations["demo_weeks_api_demo_weeks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demo/homes": {
         parameters: {
             query?: never;
@@ -514,6 +534,30 @@ export interface components {
              * @constant
              */
             provenance: "SIMULATED_GROUND_TRUTH";
+        };
+        /**
+         * DemoWeek
+         * @description A week of the held-out winter a demo house can start on, with its real weather.
+         */
+        DemoWeek: {
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Mean Outdoor C */
+            mean_outdoor_c: number;
+            /** Mean Wind M S */
+            mean_wind_m_s: number;
+            /** Windy Nights */
+            windy_nights: number;
+            /** Calm Nights */
+            calm_nights: number;
         };
         /** EvaluationSummary */
         EvaluationSummary: {
@@ -1358,6 +1402,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HomeSummary"];
+                };
+            };
+            /** @description Unknown home, room or asset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The action is not valid for this home now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The owning scientific or data service is not available. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description An optional online service (Claude, weather) is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    demo_weeks_api_demo_weeks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoWeek"][];
                 };
             };
             /** @description Unknown home, room or asset. */

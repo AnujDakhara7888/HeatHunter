@@ -698,6 +698,17 @@ class ReadingsUpload(ContractModel):
     room_temperature_series: dict[str, Series] = Field(min_length=1)
 
 
+class DemoWeek(ContractModel):
+    """A week of the held-out winter a demo house can start on, with its real weather."""
+
+    start_date: date
+    end_date: date
+    mean_outdoor_c: float
+    mean_wind_m_s: NonNegativeFloat
+    windy_nights: int = Field(ge=0)
+    calm_nights: int = Field(ge=0)
+
+
 class AdvanceRequest(ContractModel):
     nights: int = Field(default=1, ge=1, le=14)
 

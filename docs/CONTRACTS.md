@@ -99,6 +99,7 @@ Only four routes are demo-only.
 |---|---|---|---|---|
 | 1 | GET | `/api/homes` | all | House picker: list of homes |
 | 2 | POST | `/api/demo/homes` | demo | Load any scenario: house + fault (or random, or none) |
+| 2b | GET | `/api/demo/weeks` | demo | Weeks a demo house can start on, with each week's real weather (mean °C, wind, windy/calm nights) |
 | 3 | POST | `/api/homes` | real | Set up a real home: plan, location, heating-off hours |
 | 4 | GET | `/api/homes/{home_id}` | all | Home health: every room's status in plain words |
 | 5 | GET | `/api/homes/{home_id}/readings` | all | Chart data: room temps, weather, "expected if healthy" line |

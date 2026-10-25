@@ -474,6 +474,82 @@
         }
       }
     },
+    "/api/demo/weeks": {
+      "get": {
+        "tags": [
+          "homes-v2"
+        ],
+        "summary": "Demo Weeks",
+        "description": "Weeks a demo house can start on (held-out winter 2020-21), with each week's real weather.",
+        "operationId": "demo_weeks_api_demo_weeks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DemoWeek"
+                  },
+                  "type": "array",
+                  "title": "Response Demo Weeks Api Demo Weeks Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown home, room or asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The action is not valid for this home now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The owning scientific or data service is not available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "An optional online service (Claude, weather) is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/demo/homes": {
       "post": {
         "tags": [
@@ -1838,6 +1914,51 @@
           "fault_free_night_id"
         ],
         "title": "DemoReveal"
+      },
+      "DemoWeek": {
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "mean_outdoor_c": {
+            "type": "number",
+            "title": "Mean Outdoor C"
+          },
+          "mean_wind_m_s": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Mean Wind M S"
+          },
+          "windy_nights": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Windy Nights"
+          },
+          "calm_nights": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Calm Nights"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start_date",
+          "end_date",
+          "mean_outdoor_c",
+          "mean_wind_m_s",
+          "windy_nights",
+          "calm_nights"
+        ],
+        "title": "DemoWeek",
+        "description": "A week of the held-out winter a demo house can start on, with its real weather."
       },
       "EvaluationSummary": {
         "properties": {

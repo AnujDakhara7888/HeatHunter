@@ -24,6 +24,7 @@ from .contracts import (
     ChatReply,
     DemoHomeCreate,
     DemoReveal,
+    DemoWeek,
     EvaluationSummary,
     FixRequest,
     FloorPlanDraft,
@@ -293,6 +294,43 @@ async def list_homes() -> list[HomeSummary]:
     """House picker: every demo and real home."""
 
     return await _v2(_homes().list_homes)
+
+
+@app.get("/api/demo/weeks", response_model=list[DemoWeek], responses=V2_ERRORS, tags=["homes-v2"])
+async def demo_weeks() -> list[DemoWeek]:
+    """Weeks a demo house can start on (held-out winter 2020-21), with each week's real weather."""
+
+    return await _v2(_demo_weeks)
+
+
+def _demo_weeks() -> list[DemoWeek]:
+    from statistics import fmean
+
+    from backend.data_pipeline.weather_timeline import (
+        CALM_MAX_WIND,
+        WINDY_MIN_WIND,
+        night_dates,
+        timeline_night,
+    )
+    from backend.simulation.demo_home import MAX_NIGHTS
+
+    dates = night_dates("heldout")
+    weeks = []
+    for start in range(0, len(dates) - MAX_NIGHTS + 1, 7):
+        nights = [timeline_night("heldout", d) for d in dates[start : start + 7]]
+        winds = [fmean(v for v in n.wind_speed.values if v is not None) for n in nights]
+        temps = [fmean(v for v in n.outdoor_temperature.values if v is not None) for n in nights]
+        weeks.append(
+            DemoWeek(
+                start_date=dates[start],
+                end_date=dates[start + 6],
+                mean_outdoor_c=round(fmean(temps), 1),
+                mean_wind_m_s=round(fmean(winds), 1),
+                windy_nights=sum(w >= WINDY_MIN_WIND for w in winds),
+                calm_nights=sum(w <= CALM_MAX_WIND for w in winds),
+            )
+        )
+    return weeks
 
 
 @app.post(
